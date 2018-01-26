@@ -1,0 +1,8 @@
+*.txt
+lib/*
+!lib/.gitkeep
+out/
+
+# Idea ignores
+.idea/
+*.iml
