@@ -1,8 +1,8 @@
-package com.stochastic.bean;
+package com.stochastic.registry;
 
 import java.time.LocalDateTime;
 
-public class ParameterBean {
+public class Parameters {
     /**
      * used to store data from Parameters.xml.
      */
@@ -10,7 +10,7 @@ public class ParameterBean {
     private LocalDateTime windowStart;
     private LocalDateTime windowEnd;
 
-    public ParameterBean() {
+    public Parameters() {
         windowStart = null;
         windowEnd = null;
     }
