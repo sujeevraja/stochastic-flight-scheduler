@@ -14,14 +14,14 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
-public class LegDAO {
+public class ScheduleDAO {
     /**
      * Used to read relevant leg data from Schedule.xml
      */
     private ArrayList<Leg> legs;
     private DateTimeFormatter format;
 
-    public LegDAO(String filePath) {
+    public ScheduleDAO(String filePath) {
         try {
             File xmlFile = new File(filePath);
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();

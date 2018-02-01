@@ -5,17 +5,16 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-
-import com.stochastic.registry.Parameters;
 import org.w3c.dom.Document;
 
-public class ParameterDAO {
+public class ParametersDAO {
     /**
      * Used to read scenario parameters from Parameters.xml.
      */
-    private Parameters parameters;
+    private LocalDateTime windowStart;
+    private LocalDateTime windowEnd;
 
-    public ParameterDAO(String filePath) {
+    public ParametersDAO(String filePath) {
         try {
             File xmlFile = new File(filePath);
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -24,20 +23,23 @@ public class ParameterDAO {
             doc.getDocumentElement().normalize();
 
             DateTimeFormatter format = DateTimeFormatter.ISO_DATE_TIME;
-            parameters = new Parameters();
 
-            String windowStart = doc.getElementsByTagName("windowStart").item(0).getTextContent();
-            parameters.setWindowStart(LocalDateTime.parse(windowStart, format));
+            String ws = doc.getElementsByTagName("windowStart").item(0).getTextContent();
+            windowStart = LocalDateTime.parse(ws, format);
 
-            String windowEnd = doc.getElementsByTagName("windowEnd").item(0).getTextContent();
-            parameters.setWindowEnd(LocalDateTime.parse(windowEnd, format));
+            String we = doc.getElementsByTagName("windowEnd").item(0).getTextContent();
+            windowEnd = LocalDateTime.parse(we, format);
         } catch (Exception e ) {
             e.printStackTrace();
             System.exit(1);
         }
     }
 
-    public Parameters getParameters() {
-        return parameters;
+    public LocalDateTime getWindowStart() {
+        return windowStart;
+    }
+
+    public LocalDateTime getWindowEnd() {
+        return windowEnd;
     }
 }

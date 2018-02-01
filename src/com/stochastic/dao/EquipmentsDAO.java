@@ -10,14 +10,15 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 
-public class EquipmentDAO {
+public class EquipmentsDAO {
     /**
      * Used to load equipment and tail data.
      */
     private ArrayList<Equipment> equipments;
 
-    public EquipmentDAO(String filePath) {
+    public EquipmentsDAO(String filePath) {
         try {
             File xmlFile = new File(filePath);
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -53,8 +54,13 @@ public class EquipmentDAO {
             Element tailElem = (Element) tailList.item(i);
             Integer tail = Integer.parseInt(tailElem.getTextContent());
             tails.add(tail);
+
+            // read in a small subset of data for testing purposes.
+            if (i == 4)
+                break;
         }
 
+        Collections.sort(tails);
         return new Equipment(id, capacity, tails);
     }
 }

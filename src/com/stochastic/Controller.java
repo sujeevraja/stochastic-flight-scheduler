@@ -1,10 +1,9 @@
 package com.stochastic;
 
 import com.stochastic.domain.Leg;
-import com.stochastic.registry.Parameters;
-import com.stochastic.dao.EquipmentDAO;
-import com.stochastic.dao.ParameterDAO;
-import com.stochastic.dao.LegDAO;
+import com.stochastic.dao.EquipmentsDAO;
+import com.stochastic.dao.ParametersDAO;
+import com.stochastic.dao.ScheduleDAO;
 import com.stochastic.registry.DataRegistry;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -13,33 +12,39 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.util.ArrayList;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 class Controller {
     /**
      * Class that controls the entire solution process from reading data to writing output.
      */
-
-    private Parameters parameters;
+    private final static Logger logger = LogManager.getLogger(Controller.class);
     private DataRegistry dataRegistry;
 
     Controller() {
-        parameters = null;
+        dataRegistry = new DataRegistry();
     }
 
     final void readData() {
+        logger.info("Started reading data...");
         String scenarioPath = getScenarioPath();
 
         // Read parameters
-        parameters = new ParameterDAO(scenarioPath + "\\Parameters.xml").getParameters();
+        ParametersDAO parametersDAO = new ParametersDAO(scenarioPath + "\\Parameters.xml");
+        dataRegistry.setWindowStart(parametersDAO.getWindowStart());
+        dataRegistry.setWindowEnd(parametersDAO.getWindowEnd());
+        logger.info("Read parameter data.");
 
         // Read equipment data
-        dataRegistry = new DataRegistry();
-        dataRegistry.setEquipments(new EquipmentDAO(scenarioPath + "\\Equipments.xml").getEquipments());
-        dataRegistry.buildTailEqpMap();
+        dataRegistry.setEquipment(new EquipmentsDAO(scenarioPath + "\\Equipments.xml").getEquipments().get(0));
+        logger.info("Read equipment data.");
 
-        // Read leg data
-        ArrayList<Leg> legs = new LegDAO(scenarioPath + "\\Schedule.xml").getLegs();
-        int a = 1;
+        // Read leg data and remove unnecessary legs
+        ArrayList<Leg> legs = new ScheduleDAO(scenarioPath + "\\Schedule.xml").getLegs();
+        dataRegistry.buildOrigSchedule(legs);
+        logger.info("Built original schedule.");
+        logger.info("Completed reading data.");
     }
 
     private String getScenarioPath() {
