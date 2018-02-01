@@ -11,8 +11,11 @@ public class Main {
     private final static Logger logger = LogManager.getLogger(Main.class);
 
     public static void main(String[] args) {
+        logger.info("Started optimization...");
         Controller controller = new Controller();
         controller.readData();
+        controller.solveSecondStage();
+        logger.info("Completed optimization.");
     }
 }
 

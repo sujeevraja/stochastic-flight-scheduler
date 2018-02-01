@@ -4,6 +4,7 @@ import com.stochastic.domain.Leg;
 import com.stochastic.dao.EquipmentsDAO;
 import com.stochastic.dao.ParametersDAO;
 import com.stochastic.dao.ScheduleDAO;
+import com.stochastic.network.Network;
 import com.stochastic.registry.DataRegistry;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -34,17 +35,22 @@ class Controller {
         ParametersDAO parametersDAO = new ParametersDAO(scenarioPath + "\\Parameters.xml");
         dataRegistry.setWindowStart(parametersDAO.getWindowStart());
         dataRegistry.setWindowEnd(parametersDAO.getWindowEnd());
-        logger.info("Read parameter data.");
+        logger.info("Completed reading parameter data.");
 
         // Read equipment data
         dataRegistry.setEquipment(new EquipmentsDAO(scenarioPath + "\\Equipments.xml").getEquipments().get(0));
-        logger.info("Read equipment data.");
+        logger.info("Completed reading equipment data.");
 
         // Read leg data and remove unnecessary legs
         ArrayList<Leg> legs = new ScheduleDAO(scenarioPath + "\\Schedule.xml").getLegs();
         dataRegistry.buildOrigSchedule(legs);
         logger.info("Built original schedule.");
         logger.info("Completed reading data.");
+    }
+
+    final void solveSecondStage() {
+        Network network = new Network(dataRegistry.getLegs());
+        network.enumeratePaths();
     }
 
     private String getScenarioPath() {

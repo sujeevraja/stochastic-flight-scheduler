@@ -15,29 +15,29 @@ public class DataRegistry {
     private LocalDateTime windowStart;
     private LocalDateTime windowEnd;
     private Equipment equipment;
-    private HashMap<Integer, ArrayList<Leg>> origSchedule; // keys are tail ids
+    private ArrayList<Leg> legs;
+    private HashMap<Integer, Leg> legHashMap; // keys are leg ids.
+    private HashMap<Integer, ArrayList<Integer>> origSchedule; // keys are tail ids, values are leg ids.
 
     public DataRegistry() {
         windowStart = null;
         windowEnd = null;
         equipment = null;
-        origSchedule = null;
+        legs = new ArrayList<>();
+        legHashMap = new HashMap<>();
+        origSchedule = new HashMap<>();
+    }
+
+    public ArrayList<Leg> getLegs() {
+        return legs;
     }
 
     public void setWindowStart(LocalDateTime windowStart) {
         this.windowStart = windowStart;
     }
 
-    public LocalDateTime getWindowStart() {
-        return windowStart;
-    }
-
     public void setWindowEnd(LocalDateTime windowEnd) {
         this.windowEnd = windowEnd;
-    }
-
-    public LocalDateTime getWindowEnd() {
-        return windowEnd;
     }
 
     public void setEquipment(Equipment equipment) {
@@ -45,7 +45,6 @@ public class DataRegistry {
     }
 
     public void buildOrigSchedule(ArrayList<Leg> legs) {
-        origSchedule = new HashMap<>();
         ArrayList<Integer> tails = equipment.getTails();
         for(Leg leg : legs) {
             if(leg.getArrTime().isBefore(windowStart)
@@ -56,11 +55,14 @@ public class DataRegistry {
             if(!tails.contains(tail))
                 continue;
 
+            this.legs.add(leg);
+            legHashMap.put(leg.getId(), leg);
+
             if(origSchedule.containsKey(tail))
-                origSchedule.get(tail).add(leg);
+                origSchedule.get(tail).add(leg.getId());
             else {
-                ArrayList<Leg> tailLegs = new ArrayList<>();
-                tailLegs.add(leg);
+                ArrayList<Integer> tailLegs = new ArrayList<>();
+                tailLegs.add(leg.getId());
                 origSchedule.put(tail, tailLegs);
             }
         }
