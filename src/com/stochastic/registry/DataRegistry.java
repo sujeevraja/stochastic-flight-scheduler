@@ -2,6 +2,7 @@ package com.stochastic.registry;
 
 import com.stochastic.domain.Equipment;
 import com.stochastic.domain.Leg;
+import com.stochastic.domain.Tail;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -17,15 +18,13 @@ public class DataRegistry {
     private Equipment equipment;
     private ArrayList<Leg> legs;
     private HashMap<Integer, Leg> legHashMap; // keys are leg ids.
-    private HashMap<Integer, ArrayList<Integer>> origSchedule; // keys are tail ids, values are leg ids.
-
+    private ArrayList<Tail> tails;
     public DataRegistry() {
         windowStart = null;
         windowEnd = null;
         equipment = null;
         legs = new ArrayList<>();
-        legHashMap = new HashMap<>();
-        origSchedule = new HashMap<>();
+        tails = new ArrayList<>();
     }
 
     public ArrayList<Leg> getLegs() {
@@ -36,35 +35,43 @@ public class DataRegistry {
         this.windowStart = windowStart;
     }
 
+    public LocalDateTime getWindowStart() {
+        return windowStart;
+    }
+
     public void setWindowEnd(LocalDateTime windowEnd) {
         this.windowEnd = windowEnd;
+    }
+
+    public LocalDateTime getWindowEnd() {
+        return windowEnd;
     }
 
     public void setEquipment(Equipment equipment) {
         this.equipment = equipment;
     }
 
-    public void buildOrigSchedule(ArrayList<Leg> legs) {
-        ArrayList<Integer> tails = equipment.getTails();
+    public Equipment getEquipment() {
+        return equipment;
+    }
+
+    public void setLegs(ArrayList<Leg> legs) {
+        this.legs = legs;
+    }
+
+    public void buildLegHasMap() {
+        legHashMap = new HashMap<>();
         for(Leg leg : legs) {
-            if(leg.getArrTime().isBefore(windowStart)
-                || leg.getDepTime().isAfter(windowEnd))
-                continue;
-
-            Integer tail = leg.getOrigTail();
-            if(!tails.contains(tail))
-                continue;
-
-            this.legs.add(leg);
             legHashMap.put(leg.getId(), leg);
-
-            if(origSchedule.containsKey(tail))
-                origSchedule.get(tail).add(leg.getId());
-            else {
-                ArrayList<Integer> tailLegs = new ArrayList<>();
-                tailLegs.add(leg.getId());
-                origSchedule.put(tail, tailLegs);
-            }
         }
     }
+
+    public void setLegHashMap(HashMap<Integer, Leg> legHashMap) {
+        this.legHashMap = legHashMap;
+    }
+
+    public void setTails(ArrayList<Tail> tails) {
+        this.tails = tails;
+    }
+
 }

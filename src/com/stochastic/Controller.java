@@ -4,6 +4,7 @@ import com.stochastic.domain.Leg;
 import com.stochastic.dao.EquipmentsDAO;
 import com.stochastic.dao.ParametersDAO;
 import com.stochastic.dao.ScheduleDAO;
+import com.stochastic.domain.Tail;
 import com.stochastic.network.Network;
 import com.stochastic.registry.DataRegistry;
 import org.w3c.dom.Document;
@@ -12,7 +13,9 @@ import org.w3c.dom.Node;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
-import java.util.ArrayList;
+import java.time.LocalDateTime;
+import java.util.*;
+
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
@@ -35,16 +38,16 @@ class Controller {
         ParametersDAO parametersDAO = new ParametersDAO(scenarioPath + "\\Parameters.xml");
         dataRegistry.setWindowStart(parametersDAO.getWindowStart());
         dataRegistry.setWindowEnd(parametersDAO.getWindowEnd());
-        logger.info("Completed reading parameter data.");
+        logger.info("Completed reading parameter data from Parameters.xml.");
 
         // Read equipment data
         dataRegistry.setEquipment(new EquipmentsDAO(scenarioPath + "\\Equipments.xml").getEquipments().get(0));
-        logger.info("Completed reading equipment data.");
+        logger.info("Completed reading equipment data from Equipments.xml.");
 
         // Read leg data and remove unnecessary legs
         ArrayList<Leg> legs = new ScheduleDAO(scenarioPath + "\\Schedule.xml").getLegs();
-        dataRegistry.buildOrigSchedule(legs);
-        logger.info("Built original schedule.");
+        storeLegs(legs);
+        logger.info("Collected leg and tail data from Schedule.xml.");
         logger.info("Completed reading data.");
     }
 
@@ -68,5 +71,50 @@ class Controller {
             System.exit(1);
         }
         return null;
+    }
+
+    private void storeLegs(ArrayList<Leg> inputLegs) {
+        final ArrayList<Integer> tailIds = dataRegistry.getEquipment().getTailIds();
+        final LocalDateTime windowStart = dataRegistry.getWindowStart();
+        final LocalDateTime windowEnd = dataRegistry.getWindowEnd();
+        ArrayList<Leg> legs = new ArrayList<>();
+        HashMap<Integer, Leg> legHashMap = new HashMap<>();
+        HashMap<Integer, ArrayList<Leg>> tailHashMap = new HashMap<>();
+
+        // Cleanup unnecessary legs.
+        for(Leg leg : inputLegs) {
+            if(leg.getArrTime().isBefore(windowStart)
+                    || leg.getDepTime().isAfter(windowEnd))
+                continue;
+
+            Integer tailId = leg.getOrigTail();
+            if(!tailIds.contains(tailId))
+                continue;
+
+            legs.add(leg);
+            legHashMap.put(leg.getId(), leg);
+
+            if(tailHashMap.containsKey(tailId))
+                tailHashMap.get(tailId).add(leg);
+            else {
+                ArrayList<Leg> tailLegs = new ArrayList<>();
+                tailLegs.add(leg);
+                tailHashMap.put(tailId, tailLegs);
+            }
+        }
+
+        dataRegistry.setLegs(legs);
+        dataRegistry.setLegHashMap(legHashMap);
+
+        // build tails from schedule
+        ArrayList<Tail> tails = new ArrayList<>();
+        for(Map.Entry<Integer, ArrayList<Leg>> entry : tailHashMap.entrySet()) {
+            ArrayList<Leg> tailLegs = entry.getValue();
+            tailLegs.sort(Comparator.comparing(Leg::getDepTime));
+            tails.add(new Tail(entry.getKey(), tailLegs));
+        }
+
+        tails.sort(Comparator.comparing(Tail::getId));
+        dataRegistry.setTails(tails);
     }
 }
