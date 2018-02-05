@@ -74,4 +74,7 @@ public class DataRegistry {
         this.tails = tails;
     }
 
+    public ArrayList<Tail> getTails() {
+        return tails;
+    }
 }

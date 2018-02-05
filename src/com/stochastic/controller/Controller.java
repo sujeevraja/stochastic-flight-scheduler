@@ -1,11 +1,10 @@
-package com.stochastic;
+package com.stochastic.controller;
 
 import com.stochastic.domain.Leg;
 import com.stochastic.dao.EquipmentsDAO;
 import com.stochastic.dao.ParametersDAO;
 import com.stochastic.dao.ScheduleDAO;
 import com.stochastic.domain.Tail;
-import com.stochastic.network.Network;
 import com.stochastic.registry.DataRegistry;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -19,18 +18,18 @@ import java.util.*;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
-class Controller {
+public class Controller {
     /**
      * Class that controls the entire solution process from reading data to writing output.
      */
     private final static Logger logger = LogManager.getLogger(Controller.class);
     private DataRegistry dataRegistry;
 
-    Controller() {
+    public Controller() {
         dataRegistry = new DataRegistry();
     }
 
-    final void readData() {
+    public final void readData() {
         logger.info("Started reading data...");
         String scenarioPath = getScenarioPath();
 
@@ -51,9 +50,14 @@ class Controller {
         logger.info("Completed reading data.");
     }
 
-    final void solveSecondStage() {
-        Network network = new Network(dataRegistry.getLegs());
-        network.enumeratePaths();
+    public final void solveSecondStage() {
+        SecondStageController ssc = new SecondStageController(dataRegistry.getLegs(), dataRegistry.getTails(),
+                dataRegistry.getWindowStart(), dataRegistry.getWindowEnd());
+
+        if(ssc.disruptionExists())
+            logger.info("Can solve second stage");
+        else
+            logger.warn("Calling second-stage solver without any disruptions.");
     }
 
     private String getScenarioPath() {

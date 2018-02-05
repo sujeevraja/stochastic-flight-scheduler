@@ -30,4 +30,8 @@ public class Tail {
     public Integer getId() {
         return id;
     }
+
+    public ArrayList<Leg> getOrigSchedule() {
+        return origSchedule;
+    }
 }
