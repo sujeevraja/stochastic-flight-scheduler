@@ -52,12 +52,13 @@ public class EquipmentsDAO {
         NodeList tailList = eqpElem.getElementsByTagName("tail");
         for(int i = 0; i < tailList.getLength(); ++i) {
             Element tailElem = (Element) tailList.item(i);
-            Integer tail = Integer.parseInt(tailElem.getTextContent());
-            tails.add(tail);
+            Integer tailId = Integer.parseInt(tailElem.getTextContent());
+            if(tailId == 10001 || tailId == 10010)
+                tails.add(tailId);
 
             // read in a small subset of data for testing purposes.
-            if (i == 4)
-                break;
+            // if (i == 4)
+            //    break;
         }
 
         Collections.sort(tails);

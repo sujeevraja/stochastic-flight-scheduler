@@ -50,12 +50,23 @@ public class Controller {
         logger.info("Completed reading data.");
     }
 
+    public final void createTestDisruption() {
+        for(Tail tail : dataRegistry.getTails()) {
+            if(tail.getId() == 10001) {
+                Leg firstLeg = tail.getOrigSchedule().get(0);
+                firstLeg.setTurnTimeInMin(60);
+                return;
+            }
+        }
+    }
+
     public final void solveSecondStage() {
         SecondStageController ssc = new SecondStageController(dataRegistry.getLegs(), dataRegistry.getTails(),
                 dataRegistry.getWindowStart(), dataRegistry.getWindowEnd());
 
-        if(ssc.disruptionExists())
-            logger.info("Can solve second stage");
+        if(ssc.disruptionExists()) {
+            ssc.solve();
+        }
         else
             logger.warn("Calling second-stage solver without any disruptions.");
     }

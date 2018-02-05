@@ -43,10 +43,6 @@ public class Leg {
         return turnTimeInMin;
     }
 
-    public Integer getFltNum() {
-        return fltNum;
-    }
-
     public Integer getOrigTail() {
         return origTail;
     }
@@ -57,5 +53,9 @@ public class Leg {
 
     public LocalDateTime getArrTime() {
         return arrTime;
+    }
+
+    public void setTurnTimeInMin(Integer turnTimeInMin) {
+        this.turnTimeInMin = turnTimeInMin;
     }
 }
