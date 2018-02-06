@@ -1,3 +1,4 @@
+*.lp
 *.txt
 lib/*
 !lib/.gitkeep

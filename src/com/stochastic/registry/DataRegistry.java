@@ -17,7 +17,6 @@ public class DataRegistry {
     private LocalDateTime windowEnd;
     private Equipment equipment;
     private ArrayList<Leg> legs;
-    private HashMap<Integer, Leg> legHashMap; // keys are leg ids.
     private ArrayList<Tail> tails;
     public DataRegistry() {
         windowStart = null;
@@ -57,17 +56,6 @@ public class DataRegistry {
 
     public void setLegs(ArrayList<Leg> legs) {
         this.legs = legs;
-    }
-
-    public void buildLegHasMap() {
-        legHashMap = new HashMap<>();
-        for(Leg leg : legs) {
-            legHashMap.put(leg.getId(), leg);
-        }
-    }
-
-    public void setLegHashMap(HashMap<Integer, Leg> legHashMap) {
-        this.legHashMap = legHashMap;
     }
 
     public void setTails(ArrayList<Tail> tails) {

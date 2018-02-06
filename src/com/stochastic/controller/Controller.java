@@ -6,17 +6,21 @@ import com.stochastic.dao.ParametersDAO;
 import com.stochastic.dao.ScheduleDAO;
 import com.stochastic.domain.Tail;
 import com.stochastic.registry.DataRegistry;
+import com.stochastic.utility.OptException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
+import org.xml.sax.SAXException;
 
 public class Controller {
     /**
@@ -29,7 +33,7 @@ public class Controller {
         dataRegistry = new DataRegistry();
     }
 
-    public final void readData() {
+    public final void readData() throws OptException {
         logger.info("Started reading data...");
         String scenarioPath = getScenarioPath();
 
@@ -60,7 +64,7 @@ public class Controller {
         }
     }
 
-    public final void solveSecondStage() {
+    public final void solveSecondStage() throws OptException {
         SecondStageController ssc = new SecondStageController(dataRegistry.getLegs(), dataRegistry.getTails(),
                 dataRegistry.getWindowStart(), dataRegistry.getWindowEnd());
 
@@ -71,7 +75,7 @@ public class Controller {
             logger.warn("Calling second-stage solver without any disruptions.");
     }
 
-    private String getScenarioPath() {
+    private String getScenarioPath() throws OptException {
         try {
             File xmlFile = new File("config.xml");
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -81,11 +85,16 @@ public class Controller {
 
             Node scenarioNode = doc.getElementsByTagName("scenarioPath").item(0);
             return scenarioNode.getTextContent();
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.exit(1);
+        } catch (ParserConfigurationException pce) {
+            logger.error(pce);
+            throw new OptException("Unable to create DocumentBuilder to read config.xml");
+        } catch (IOException ioe) {
+            logger.error(ioe);
+            throw new OptException("Unable to read config.xml");
+        } catch (SAXException se) {
+            logger.error(se);
+            throw new OptException("Possibly ill-formed xml in config.xml");
         }
-        return null;
     }
 
     private void storeLegs(ArrayList<Leg> inputLegs) {
@@ -97,6 +106,7 @@ public class Controller {
         HashMap<Integer, ArrayList<Leg>> tailHashMap = new HashMap<>();
 
         // Cleanup unnecessary legs.
+        Integer index = 0;
         for(Leg leg : inputLegs) {
             if(leg.getArrTime().isBefore(windowStart)
                     || leg.getDepTime().isAfter(windowEnd))
@@ -106,6 +116,8 @@ public class Controller {
             if(!tailIds.contains(tailId))
                 continue;
 
+            leg.setIndex(index);
+            ++index;
             legs.add(leg);
             legHashMap.put(leg.getId(), leg);
 
@@ -119,7 +131,6 @@ public class Controller {
         }
 
         dataRegistry.setLegs(legs);
-        dataRegistry.setLegHashMap(legHashMap);
 
         // build tails from schedule
         ArrayList<Tail> tails = new ArrayList<>();
@@ -130,6 +141,9 @@ public class Controller {
         }
 
         tails.sort(Comparator.comparing(Tail::getId));
+        for(int i = 0; i < tails.size(); ++i)
+            tails.get(i).setIndex(i);
+
         dataRegistry.setTails(tails);
     }
 }

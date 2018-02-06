@@ -4,6 +4,8 @@ import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
 import com.stochastic.network.Network;
 import com.stochastic.network.Path;
+import com.stochastic.solver.SecondStageSolver;
+import com.stochastic.utility.OptException;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
@@ -53,8 +55,10 @@ class SecondStageController {
         return false;
     }
 
-    void solve() {
+    void solve() throws OptException {
         Network network = new Network(tails, legs, windowStart, windowEnd);
         ArrayList<Path> paths = network.enumeratePaths();
+        SecondStageSolver sss = new SecondStageSolver(paths, legs, tails);
+        sss.solveWithCPLEX();
     }
 }

@@ -13,16 +13,28 @@ public class Path {
      */
     private Tail tail;
     private ArrayList<Leg> legs;
-    private Double cost;
+    private double cost;
 
     Path(Tail tail) {
         this.tail = tail;
         legs = new ArrayList<>();
-        cost = 0.0;
+        cost = CostUtility.getBasePathCost();
     }
 
     void addLeg(Leg leg) {
         legs.add(leg);
         cost += CostUtility.getAssignCostForLeg(leg, tail);
+    }
+
+    public Tail getTail() {
+        return tail;
+    }
+
+    public ArrayList<Leg> getLegs() {
+        return legs;
+    }
+
+    public double getCost() {
+        return cost;
     }
 }

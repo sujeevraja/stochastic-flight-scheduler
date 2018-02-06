@@ -7,6 +7,7 @@ public class Leg {
      * Class used to represent leg data
      */
     private Integer id;
+    private Integer index; // position of object in an ArrayList that will store all legs.
     private Integer depPort;
     private Integer arrPort;
     private Integer turnTimeInMin;
@@ -17,6 +18,7 @@ public class Leg {
     public Leg(Integer id, Integer depPort, Integer arrPort, Integer turnTimeInMin, Integer origTailId,
                LocalDateTime depTime, LocalDateTime arrTime) {
         this.id = id;
+        this.index = null;
         this.depPort = depPort;
         this.arrPort = arrPort;
         this.turnTimeInMin = turnTimeInMin;
@@ -27,6 +29,14 @@ public class Leg {
 
     public Integer getId() {
         return id;
+    }
+
+    public void setIndex(Integer index) {
+        this.index = index;
+    }
+
+    public Integer getIndex() {
+        return index;
     }
 
     public Integer getDepPort() {
