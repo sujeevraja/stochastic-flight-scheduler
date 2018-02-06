@@ -10,19 +10,17 @@ public class Leg {
     private Integer depPort;
     private Integer arrPort;
     private Integer turnTimeInMin;
-    private Integer fltNum;
-    private Integer origTail;
+    private Integer origTailId;
     private LocalDateTime depTime;
     private LocalDateTime arrTime;
 
-    public Leg(Integer id, Integer depPort, Integer arrPort, Integer turnTimeInMin, Integer fltNum,
-               Integer origTail, LocalDateTime depTime, LocalDateTime arrTime) {
+    public Leg(Integer id, Integer depPort, Integer arrPort, Integer turnTimeInMin, Integer origTailId,
+               LocalDateTime depTime, LocalDateTime arrTime) {
         this.id = id;
         this.depPort = depPort;
         this.arrPort = arrPort;
         this.turnTimeInMin = turnTimeInMin;
-        this.fltNum = fltNum;
-        this.origTail = origTail;
+        this.origTailId = origTailId;
         this.depTime = depTime;
         this.arrTime = arrTime;
     }
@@ -43,8 +41,8 @@ public class Leg {
         return turnTimeInMin;
     }
 
-    public Integer getOrigTail() {
-        return origTail;
+    public Integer getOrigTailId() {
+        return origTailId;
     }
 
     public LocalDateTime getDepTime() {
@@ -57,5 +55,11 @@ public class Leg {
 
     public void setTurnTimeInMin(Integer turnTimeInMin) {
         this.turnTimeInMin = turnTimeInMin;
+    }
+
+    @Override
+    public final String toString() {
+        return ("Leg(id=" + id + ",depPort=" + depPort + ",depTime=" + depTime + ",arrPort=" + arrPort + ",arrTime="
+                + arrTime + "origTail=" + origTailId);
     }
 }

@@ -61,6 +61,6 @@ public class ScheduleDAO {
         String arrTimeStr = legElem.getElementsByTagName("arrTime").item(0).getTextContent();
         LocalDateTime arrTime = LocalDateTime.parse(arrTimeStr, format);
 
-        return new Leg(id, depPort, arrPort, turnTime, fltNum, tail, depTime, arrTime);
+        return new Leg(id, depPort, arrPort, turnTime, tail, depTime, arrTime);
     }
 }

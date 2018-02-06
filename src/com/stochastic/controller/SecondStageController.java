@@ -3,6 +3,7 @@ package com.stochastic.controller;
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
 import com.stochastic.network.Network;
+import com.stochastic.network.Path;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
@@ -53,7 +54,7 @@ class SecondStageController {
     }
 
     void solve() {
-        Network network = new Network(legs);
-        network.enumeratePaths();
+        Network network = new Network(tails, legs, windowStart, windowEnd);
+        ArrayList<Path> paths = network.enumeratePaths();
     }
 }

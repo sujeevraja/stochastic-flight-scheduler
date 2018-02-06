@@ -102,7 +102,7 @@ public class Controller {
                     || leg.getDepTime().isAfter(windowEnd))
                 continue;
 
-            Integer tailId = leg.getOrigTail();
+            Integer tailId = leg.getOrigTailId();
             if(!tailIds.contains(tailId))
                 continue;
 
