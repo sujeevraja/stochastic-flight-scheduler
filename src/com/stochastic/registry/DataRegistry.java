@@ -2,6 +2,7 @@ package com.stochastic.registry;
 
 import com.stochastic.domain.Equipment;
 import com.stochastic.domain.Leg;
+import com.stochastic.domain.Tail;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -15,13 +16,18 @@ public class DataRegistry {
     private LocalDateTime windowStart;
     private LocalDateTime windowEnd;
     private Equipment equipment;
-    private HashMap<Integer, ArrayList<Leg>> origSchedule; // keys are tail ids
-
+    private ArrayList<Leg> legs;
+    private ArrayList<Tail> tails;
     public DataRegistry() {
         windowStart = null;
         windowEnd = null;
         equipment = null;
-        origSchedule = null;
+        legs = new ArrayList<>();
+        tails = new ArrayList<>();
+    }
+
+    public ArrayList<Leg> getLegs() {
+        return legs;
     }
 
     public void setWindowStart(LocalDateTime windowStart) {
@@ -44,25 +50,19 @@ public class DataRegistry {
         this.equipment = equipment;
     }
 
-    public void buildOrigSchedule(ArrayList<Leg> legs) {
-        origSchedule = new HashMap<>();
-        ArrayList<Integer> tails = equipment.getTails();
-        for(Leg leg : legs) {
-            if(leg.getArrTime().isBefore(windowStart)
-                || leg.getDepTime().isAfter(windowEnd))
-                continue;
+    public Equipment getEquipment() {
+        return equipment;
+    }
 
-            Integer tail = leg.getOrigTail();
-            if(!tails.contains(tail))
-                continue;
+    public void setLegs(ArrayList<Leg> legs) {
+        this.legs = legs;
+    }
 
-            if(origSchedule.containsKey(tail))
-                origSchedule.get(tail).add(leg);
-            else {
-                ArrayList<Leg> tailLegs = new ArrayList<>();
-                tailLegs.add(leg);
-                origSchedule.put(tail, tailLegs);
-            }
-        }
+    public void setTails(ArrayList<Tail> tails) {
+        this.tails = tails;
+    }
+
+    public ArrayList<Tail> getTails() {
+        return tails;
     }
 }

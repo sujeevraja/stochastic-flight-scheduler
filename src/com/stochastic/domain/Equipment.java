@@ -8,19 +8,19 @@ public class Equipment {
      */
     private Integer id;
     private Integer capacity;
-    private ArrayList<Integer> tails;
+    private ArrayList<Integer> tailIds;
 
-    public Equipment(Integer id, Integer capacity, ArrayList<Integer> tails) {
+    public Equipment(Integer id, Integer capacity, ArrayList<Integer> tailIds) {
         this.id = id;
         this.capacity = capacity;
-        this.tails = tails;
+        this.tailIds = tailIds;
     }
 
     public Integer getId() {
         return id;
     }
 
-    public ArrayList<Integer> getTails() {
-        return tails;
+    public ArrayList<Integer> getTailIds() {
+        return tailIds;
     }
 }
