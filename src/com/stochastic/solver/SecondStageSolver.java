@@ -92,12 +92,8 @@ public class SecondStageSolver {
 
             double[] pathVals = cplex.getValues(pathVars);
             for(int i = 0; i < numPaths; ++i) {
-                if(pathVals[i] > eps) {
-                    logger.info("selected path " + i);
-                    logger.info("legs");
-                    for(Leg pathLeg : paths.get(i).getLegs())
-                        logger.info(pathLeg);
-                }
+                if(pathVals[i] > eps)
+                    paths.get(i).print();
             }
 
         } catch (IloException e) {

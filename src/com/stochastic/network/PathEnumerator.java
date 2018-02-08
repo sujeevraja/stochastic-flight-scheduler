@@ -2,6 +2,7 @@ package com.stochastic.network;
 
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
+import com.stochastic.utility.CostUtility;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -31,9 +32,12 @@ public class PathEnumerator {
         pathsFromLegToSink = new HashMap<>();
         ArrayList<Path> paths = new ArrayList<>();
 
-        // add empty path if possible
-        if(tail.getSourcePort().equals(tail.getSinkPort()))
-            paths.add(new Path(tail));
+        // add empty path to ensure feasibility
+        Path emptyPath = new Path(tail);
+        emptyPath.setCost(CostUtility.getEmptyPathCost());
+
+        // if(tail.getSourcePort().equals(tail.getSinkPort()))
+        //    paths.add(new Path(tail));
 
         // add paths through legs
         for(Leg leg : legs) {
@@ -47,7 +51,7 @@ public class PathEnumerator {
                 Path path = new Path(tail);
 
                 for(Leg pathLeg : pathLegs)
-                    path.addLeg(pathLeg);
+                    path.addLeg(pathLeg, 0);
 
                 paths.add(path);
             }

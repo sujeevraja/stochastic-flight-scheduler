@@ -65,8 +65,12 @@ public class EquipmentsDAO {
         for(int i = 0; i < tailList.getLength(); ++i) {
             Element tailElem = (Element) tailList.item(i);
             Integer tailId = Integer.parseInt(tailElem.getTextContent());
-            if(tailId == 10001 || tailId == 10010)
+
+            if(tailId == 10001)
                 tails.add(tailId);
+
+            // if(tailId == 10001 || tailId == 10010)
+            //    tails.add(tailId);
 
             // read in a small subset of data for testing purposes.
             // if (i == 4)

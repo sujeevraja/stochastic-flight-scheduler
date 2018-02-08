@@ -102,7 +102,6 @@ public class Controller {
         final LocalDateTime windowStart = dataRegistry.getWindowStart();
         final LocalDateTime windowEnd = dataRegistry.getWindowEnd();
         ArrayList<Leg> legs = new ArrayList<>();
-        HashMap<Integer, Leg> legHashMap = new HashMap<>();
         HashMap<Integer, ArrayList<Leg>> tailHashMap = new HashMap<>();
 
         // Cleanup unnecessary legs.
@@ -119,7 +118,6 @@ public class Controller {
             leg.setIndex(index);
             ++index;
             legs.add(leg);
-            legHashMap.put(leg.getId(), leg);
 
             if(tailHashMap.containsKey(tailId))
                 tailHashMap.get(tailId).add(leg);

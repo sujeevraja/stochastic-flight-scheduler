@@ -1,5 +1,6 @@
 package com.stochastic.domain;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 public class Leg {
@@ -14,6 +15,7 @@ public class Leg {
     private Integer origTailId;
     private LocalDateTime depTime;
     private LocalDateTime arrTime;
+    private Integer blockTimeInMin;
 
     public Leg(Integer id, Integer depPort, Integer arrPort, Integer turnTimeInMin, Integer origTailId,
                LocalDateTime depTime, LocalDateTime arrTime) {
@@ -25,6 +27,7 @@ public class Leg {
         this.origTailId = origTailId;
         this.depTime = depTime;
         this.arrTime = arrTime;
+        this.blockTimeInMin = (int) Duration.between(depTime, arrTime).toMinutes();
     }
 
     public Integer getId() {
@@ -63,6 +66,10 @@ public class Leg {
         return arrTime;
     }
 
+    public Integer getBlockTimeInMin() {
+        return blockTimeInMin;
+    }
+
     public void setTurnTimeInMin(Integer turnTimeInMin) {
         this.turnTimeInMin = turnTimeInMin;
     }
@@ -70,6 +77,6 @@ public class Leg {
     @Override
     public final String toString() {
         return ("Leg(id=" + id + ",depPort=" + depPort + ",depTime=" + depTime + ",arrPort=" + arrPort + ",arrTime="
-                + arrTime + "origTail=" + origTailId);
+                + arrTime + ",origTail=" + origTailId + ")");
     }
 }
