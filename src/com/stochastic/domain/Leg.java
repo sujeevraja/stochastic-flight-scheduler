@@ -13,21 +13,23 @@ public class Leg {
     private Integer arrPort;
     private Integer turnTimeInMin;
     private Integer origTailId;
+    private Integer blockTimeInMin;
     private LocalDateTime depTime;
     private LocalDateTime arrTime;
-    private Integer blockTimeInMin;
+    private LocalDateTime latestDepTime; // based on maximum allowed delay
 
     public Leg(Integer id, Integer depPort, Integer arrPort, Integer turnTimeInMin, Integer origTailId,
-               LocalDateTime depTime, LocalDateTime arrTime) {
+               LocalDateTime depTime, LocalDateTime arrTime, LocalDateTime latestDepTime) {
         this.id = id;
         this.index = null;
         this.depPort = depPort;
         this.arrPort = arrPort;
         this.turnTimeInMin = turnTimeInMin;
         this.origTailId = origTailId;
+        this.blockTimeInMin = (int) Duration.between(depTime, arrTime).toMinutes();
         this.depTime = depTime;
         this.arrTime = arrTime;
-        this.blockTimeInMin = (int) Duration.between(depTime, arrTime).toMinutes();
+        this.latestDepTime = latestDepTime;
     }
 
     public Integer getId() {
@@ -72,6 +74,10 @@ public class Leg {
 
     public void setTurnTimeInMin(Integer turnTimeInMin) {
         this.turnTimeInMin = turnTimeInMin;
+    }
+
+    public LocalDateTime getLatestDepTime() {
+        return latestDepTime;
     }
 
     @Override

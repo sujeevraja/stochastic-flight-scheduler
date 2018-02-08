@@ -41,6 +41,7 @@ public class Controller {
         ParametersDAO parametersDAO = new ParametersDAO(scenarioPath + "\\Parameters.xml");
         dataRegistry.setWindowStart(parametersDAO.getWindowStart());
         dataRegistry.setWindowEnd(parametersDAO.getWindowEnd());
+        dataRegistry.setMaxLegDelayInMin(parametersDAO.getMaxFlightDelayInMin());
         logger.info("Completed reading parameter data from Parameters.xml.");
 
         // Read equipment data
@@ -48,7 +49,8 @@ public class Controller {
         logger.info("Completed reading equipment data from Equipments.xml.");
 
         // Read leg data and remove unnecessary legs
-        ArrayList<Leg> legs = new ScheduleDAO(scenarioPath + "\\Schedule.xml").getLegs();
+        ArrayList<Leg> legs = new ScheduleDAO(scenarioPath + "\\Schedule.xml",
+                dataRegistry.getMaxLegDelayInMin()).getLegs();
         storeLegs(legs);
         logger.info("Collected leg and tail data from Schedule.xml.");
         logger.info("Completed reading data.");

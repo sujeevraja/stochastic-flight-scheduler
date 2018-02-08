@@ -15,6 +15,7 @@ public class DataRegistry {
 
     private LocalDateTime windowStart;
     private LocalDateTime windowEnd;
+    private Integer maxLegDelayInMin;
     private Equipment equipment;
     private ArrayList<Leg> legs;
     private ArrayList<Tail> tails;
@@ -44,6 +45,14 @@ public class DataRegistry {
 
     public LocalDateTime getWindowEnd() {
         return windowEnd;
+    }
+
+    public void setMaxLegDelayInMin(Integer maxLegDelayInMin) {
+        this.maxLegDelayInMin = maxLegDelayInMin;
+    }
+
+    public Integer getMaxLegDelayInMin() {
+        return maxLegDelayInMin;
     }
 
     public void setEquipment(Equipment equipment) {
