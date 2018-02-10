@@ -23,40 +23,19 @@ class SecondStageController {
     private ArrayList<Tail> tails;
     private LocalDateTime windowStart;
     private LocalDateTime windowEnd;
+    private Integer maxLegDelayInMin;
 
     SecondStageController(ArrayList<Leg> legs, ArrayList<Tail> tails, LocalDateTime windowStart,
-                          LocalDateTime windowEnd) {
+                          LocalDateTime windowEnd, Integer maxLegDelayInMin) {
         this.legs = legs;
         this.tails = tails;
         this.windowStart = windowStart;
         this.windowEnd = windowEnd;
-    }
-
-    Boolean disruptionExists() {
-        for(Tail tail : tails) {
-            ArrayList<Leg> tailLegs = tail.getOrigSchedule();
-            final Integer numLegs = tailLegs.size();
-            if(numLegs <= 1)
-                continue;
-
-            for(int i = 0; i < numLegs - 1; ++i) {
-                Leg currLeg = tailLegs.get(i);
-                Leg nextLeg = tailLegs.get(i+1);
-
-                final Integer turnTime = (int) Duration.between(currLeg.getArrTime(), nextLeg.getDepTime()).toMinutes();
-                if(turnTime < currLeg.getTurnTimeInMin()) {
-                    logger.info("turn time violated for legs " + currLeg.getId() + " and " + nextLeg.getId()
-                            + " on tail " + tail.getId());
-                    logger.info("expected turn time: " + currLeg.getTurnTimeInMin() + " actual: " + turnTime);
-                    return true;
-                }
-            }
-        }
-        return false;
+        this.maxLegDelayInMin = maxLegDelayInMin;
     }
 
     void solve() throws OptException {
-        Network network = new Network(tails, legs, windowStart, windowEnd);
+        Network network = new Network(tails, legs, windowStart, windowEnd, maxLegDelayInMin);
         ArrayList<Path> paths = network.enumeratePaths();
         SecondStageSolver sss = new SecondStageSolver(paths, legs, tails);
         sss.solveWithCPLEX();

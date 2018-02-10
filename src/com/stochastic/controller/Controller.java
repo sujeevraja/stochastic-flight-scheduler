@@ -15,6 +15,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -67,14 +68,15 @@ public class Controller {
     }
 
     public final void solveSecondStage() throws OptException {
-        SecondStageController ssc = new SecondStageController(dataRegistry.getLegs(), dataRegistry.getTails(),
-                dataRegistry.getWindowStart(), dataRegistry.getWindowEnd());
-
-        if(ssc.disruptionExists()) {
-            ssc.solve();
-        }
-        else
+        if(!disruptionExists()) {
             logger.warn("Calling second-stage solver without any disruptions.");
+            logger.warn("Solver not called.");
+            return;
+        }
+
+        SecondStageController ssc = new SecondStageController(dataRegistry.getLegs(), dataRegistry.getTails(),
+                dataRegistry.getWindowStart(), dataRegistry.getWindowEnd(), dataRegistry.getMaxLegDelayInMin());
+        ssc.solve();
     }
 
     private String getScenarioPath() throws OptException {
@@ -145,5 +147,30 @@ public class Controller {
             tails.get(i).setIndex(i);
 
         dataRegistry.setTails(tails);
+    }
+
+    boolean disruptionExists() {
+        for(Tail tail : dataRegistry.getTails()) {
+            ArrayList<Leg> tailLegs = tail.getOrigSchedule();
+            final Integer numLegs = tailLegs.size();
+            if(numLegs <= 1)
+                continue;
+
+            for(int i = 0; i < numLegs - 1; ++i) {
+                Leg currLeg = tailLegs.get(i);
+                Leg nextLeg = tailLegs.get(i+1);
+
+                final Integer turnTime = ((int) Duration.between(currLeg.getArrTime(),
+                        nextLeg.getDepTime()).toMinutes());
+
+                if(turnTime < currLeg.getTurnTimeInMin()) {
+                    logger.info("turn time violated for legs " + currLeg.getId() + " and " + nextLeg.getId()
+                            + " on tail " + tail.getId());
+                    logger.info("expected turn time: " + currLeg.getTurnTimeInMin() + " actual: " + turnTime);
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
