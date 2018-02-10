@@ -7,14 +7,8 @@ public class CostUtility {
     /**
      * Utility class to calculate all costs for the solver.
      */
-
-    private static final double basePathCost = 5.0;
     private static final double emptyPathCost = -5000.0;
     private static final double legCancelCost = 1000.0;
-
-    public static double getBasePathCost() {
-        return basePathCost;
-    }
 
     public static double getEmptyPathCost() {
         return emptyPathCost;

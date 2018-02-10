@@ -5,7 +5,10 @@ import com.stochastic.dao.EquipmentsDAO;
 import com.stochastic.dao.ParametersDAO;
 import com.stochastic.dao.ScheduleDAO;
 import com.stochastic.domain.Tail;
+import com.stochastic.network.Network;
+import com.stochastic.network.Path;
 import com.stochastic.registry.DataRegistry;
+import com.stochastic.solver.SecondStageSolver;
 import com.stochastic.utility.OptException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -74,9 +77,15 @@ public class Controller {
             return;
         }
 
-        SecondStageController ssc = new SecondStageController(dataRegistry.getLegs(), dataRegistry.getTails(),
-                dataRegistry.getWindowStart(), dataRegistry.getWindowEnd(), dataRegistry.getMaxLegDelayInMin());
-        ssc.solve();
+        ArrayList<Tail> tails = dataRegistry.getTails();
+        ArrayList<Leg> legs = dataRegistry.getLegs();
+
+        Network network = new Network(tails, legs, dataRegistry.getWindowStart(),
+                dataRegistry.getWindowEnd(), dataRegistry.getMaxLegDelayInMin());
+        ArrayList<Path> paths = network.enumerateAllPaths();
+
+        SecondStageSolver sss = new SecondStageSolver(paths, legs, tails);
+        sss.solveWithCPLEX();
     }
 
     private String getScenarioPath() throws OptException {

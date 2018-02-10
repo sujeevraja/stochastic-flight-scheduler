@@ -22,7 +22,7 @@ public class Path {
         this.tail = tail;
         legs = new ArrayList<>();
         delayTimesInMin = new ArrayList<>();
-        cost = CostUtility.getBasePathCost();
+        cost = 0.0;
     }
 
     void addLeg(Leg leg, Integer delayTimeInMin) {
