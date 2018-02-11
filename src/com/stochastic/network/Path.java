@@ -28,7 +28,7 @@ public class Path {
     void addLeg(Leg leg, Integer delayTimeInMin) {
         legs.add(leg);
         delayTimesInMin.add(delayTimeInMin);
-        cost += CostUtility.getAssignCostForLegToTail(leg, tail);
+        cost += CostUtility.getAssignCostForLegToTail(leg, tail, delayTimeInMin);
     }
 
     public Tail getTail() {

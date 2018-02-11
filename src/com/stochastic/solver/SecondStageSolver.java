@@ -53,7 +53,7 @@ public class SecondStageSolver {
                 final String varName = "y_" + legs.get(i).getId();
                 cancelVars[i] = cplex.intVar(0, 1, varName);
 
-                objExpr.addTerm(-1.0 * CostUtility.getLegCancelCost(), cancelVars[i]);
+                objExpr.addTerm(CostUtility.getLegCancelCost(), cancelVars[i]);
                 legCoverConstraints[i].addTerm(1.0, cancelVars[i]);
             }
 
@@ -72,7 +72,7 @@ public class SecondStageSolver {
             }
 
             // Build model
-            cplex.addMaximize(objExpr);
+            cplex.addMinimize(objExpr);
             for(int i = 0; i < numLegs; ++i)
                 cplex.addEq(legCoverConstraints[i], 1.0, "leg_" + legs.get(i).getId());
             for(int i = 0; i < numTails; ++i)
