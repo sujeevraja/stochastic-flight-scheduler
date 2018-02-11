@@ -5,7 +5,10 @@ import com.stochastic.dao.EquipmentsDAO;
 import com.stochastic.dao.ParametersDAO;
 import com.stochastic.dao.ScheduleDAO;
 import com.stochastic.domain.Tail;
+import com.stochastic.network.Network;
+import com.stochastic.network.Path;
 import com.stochastic.registry.DataRegistry;
+import com.stochastic.solver.SecondStageSolver;
 import com.stochastic.utility.OptException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -15,6 +18,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -41,6 +45,7 @@ public class Controller {
         ParametersDAO parametersDAO = new ParametersDAO(scenarioPath + "\\Parameters.xml");
         dataRegistry.setWindowStart(parametersDAO.getWindowStart());
         dataRegistry.setWindowEnd(parametersDAO.getWindowEnd());
+        dataRegistry.setMaxLegDelayInMin(parametersDAO.getMaxFlightDelayInMin());
         logger.info("Completed reading parameter data from Parameters.xml.");
 
         // Read equipment data
@@ -48,7 +53,8 @@ public class Controller {
         logger.info("Completed reading equipment data from Equipments.xml.");
 
         // Read leg data and remove unnecessary legs
-        ArrayList<Leg> legs = new ScheduleDAO(scenarioPath + "\\Schedule.xml").getLegs();
+        ArrayList<Leg> legs = new ScheduleDAO(scenarioPath + "\\Schedule.xml",
+                dataRegistry.getMaxLegDelayInMin()).getLegs();
         storeLegs(legs);
         logger.info("Collected leg and tail data from Schedule.xml.");
         logger.info("Completed reading data.");
@@ -65,14 +71,21 @@ public class Controller {
     }
 
     public final void solveSecondStage() throws OptException {
-        SecondStageController ssc = new SecondStageController(dataRegistry.getLegs(), dataRegistry.getTails(),
-                dataRegistry.getWindowStart(), dataRegistry.getWindowEnd());
-
-        if(ssc.disruptionExists()) {
-            ssc.solve();
-        }
-        else
+        if(!disruptionExists()) {
             logger.warn("Calling second-stage solver without any disruptions.");
+            logger.warn("Solver not called.");
+            return;
+        }
+
+        ArrayList<Tail> tails = dataRegistry.getTails();
+        ArrayList<Leg> legs = dataRegistry.getLegs();
+
+        Network network = new Network(tails, legs, dataRegistry.getWindowStart(),
+                dataRegistry.getWindowEnd(), dataRegistry.getMaxLegDelayInMin());
+        ArrayList<Path> paths = network.enumerateAllPaths();
+
+        SecondStageSolver sss = new SecondStageSolver(paths, legs, tails);
+        sss.solveWithCPLEX();
     }
 
     private String getScenarioPath() throws OptException {
@@ -102,7 +115,6 @@ public class Controller {
         final LocalDateTime windowStart = dataRegistry.getWindowStart();
         final LocalDateTime windowEnd = dataRegistry.getWindowEnd();
         ArrayList<Leg> legs = new ArrayList<>();
-        HashMap<Integer, Leg> legHashMap = new HashMap<>();
         HashMap<Integer, ArrayList<Leg>> tailHashMap = new HashMap<>();
 
         // Cleanup unnecessary legs.
@@ -119,7 +131,6 @@ public class Controller {
             leg.setIndex(index);
             ++index;
             legs.add(leg);
-            legHashMap.put(leg.getId(), leg);
 
             if(tailHashMap.containsKey(tailId))
                 tailHashMap.get(tailId).add(leg);
@@ -145,5 +156,30 @@ public class Controller {
             tails.get(i).setIndex(i);
 
         dataRegistry.setTails(tails);
+    }
+
+    boolean disruptionExists() {
+        for(Tail tail : dataRegistry.getTails()) {
+            ArrayList<Leg> tailLegs = tail.getOrigSchedule();
+            final Integer numLegs = tailLegs.size();
+            if(numLegs <= 1)
+                continue;
+
+            for(int i = 0; i < numLegs - 1; ++i) {
+                Leg currLeg = tailLegs.get(i);
+                Leg nextLeg = tailLegs.get(i+1);
+
+                final Integer turnTime = ((int) Duration.between(currLeg.getArrTime(),
+                        nextLeg.getDepTime()).toMinutes());
+
+                if(turnTime < currLeg.getTurnTimeInMin()) {
+                    logger.info("turn time violated for legs " + currLeg.getId() + " and " + nextLeg.getId()
+                            + " on tail " + tail.getId());
+                    logger.info("expected turn time: " + currLeg.getTurnTimeInMin() + " actual: " + turnTime);
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

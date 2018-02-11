@@ -3,95 +3,106 @@ package com.stochastic.network;
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
 
+import java.lang.Math;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public class PathEnumerator {
     /**
-     * Class used to enumerate paths between source and sink for a particular tail.
+     * Class used to enumerate all paths for a particular tail.
      */
     private Tail tail;
     private ArrayList<Leg> legs;
-    private HashMap<Integer, ArrayList<Leg>> adjacencyList;
+    private HashMap<Integer, ArrayList<Integer>> adjacencyList;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-    private HashMap<Integer, ArrayList<ArrayList<Leg>>> pathsFromLegToSink;  // keys are leg ids.
+    private Integer maxLegDelayInMin;
 
-    PathEnumerator(Tail tail, ArrayList<Leg> legs, HashMap<Integer, ArrayList<Leg>> adjacencyList,
-                   LocalDateTime startTime, LocalDateTime endTime) {
+    private ArrayList<Path> paths;
+    private ArrayList<Integer> currentPath;
+    private ArrayList<Integer> delayTimes;
+    private boolean[] onPath;
+
+    PathEnumerator(Tail tail, ArrayList<Leg> legs, HashMap<Integer, ArrayList<Integer>> adjacencyList,
+                   LocalDateTime startTime, LocalDateTime endTime, Integer maxLegDelayInMin)  {
         this.tail = tail;
         this.legs = legs;
         this.adjacencyList = adjacencyList;
         this.startTime = startTime;
         this.endTime = endTime;
+        this.maxLegDelayInMin = maxLegDelayInMin;
+
+        paths = new ArrayList<>();
+        currentPath = new ArrayList<>();
+        delayTimes = new ArrayList<>();
+        onPath = new boolean[legs.size()];
+        for(int i = 0; i < legs.size(); ++i)
+            onPath[i] = false;
     }
 
-    ArrayList<Path> getPaths() {
-        pathsFromLegToSink = new HashMap<>();
-        ArrayList<Path> paths = new ArrayList<>();
+    public ArrayList<Path> generatePaths() {
+        for(int i = 0; i < legs.size(); ++i) {
+            Leg leg = legs.get(i);
 
-        // add empty path if possible
-        if(tail.getSourcePort().equals(tail.getSinkPort()))
-            paths.add(new Path(tail));
-
-        // add paths through legs
-        for(Leg leg : legs) {
-            if(!canConnectToSource(leg))
+            if(!tail.getSourcePort().equals(leg.getDepPort()))
                 continue;
 
-            if(!pathsFromLegToSink.containsKey(leg.getId()))
-                addPathsFromLeg(leg);
-
-            for(ArrayList<Leg> pathLegs : pathsFromLegToSink.get(leg.getId())) {
-                Path path = new Path(tail);
-
-                for(Leg pathLeg : pathLegs)
-                    path.addLeg(pathLeg);
-
-                paths.add(path);
-            }
+            Integer delayTime = Math.max(0, (int) Duration.between(leg.getDepTime(), startTime).toMinutes());
+            if(delayTime <= maxLegDelayInMin)
+                depthFirstSearch(i, delayTime);
         }
-
         return paths;
     }
 
-    private void addPathsFromLeg(Leg leg) {
-        ArrayList<ArrayList<Leg>> legsOnPaths = new ArrayList<>();
+    private void depthFirstSearch(Integer legIndex, Integer delayTimeInMin) {
+        // add index to current path
+        currentPath.add(legIndex);
+        onPath[legIndex] = true;
+        delayTimes.add(delayTimeInMin);
+        Leg leg = legs.get(legIndex);
 
-        // add direct path to sink if possible
-        if(canConnectToSink(leg)) {
-            ArrayList<Leg> pathLegs = new ArrayList<>();
-            pathLegs.add(leg);
-            legsOnPaths.add(pathLegs);
+        // if the last leg on the path can connect to the sink node, store the current path
+        if(leg.getArrPort().equals(tail.getSinkPort())) {
+            LocalDateTime newArrTime = leg.getArrTime().plusMinutes(delayTimeInMin);
+            if(!newArrTime.isAfter(endTime))
+                storeCurrentPath();
         }
 
-        // add paths using paths from neighbors of the leg to sink.
-        if(adjacencyList.containsKey(leg.getId())) {
-            for(Leg neighborLeg : adjacencyList.get(leg.getId())) {
-                if (!pathsFromLegToSink.containsKey(neighborLeg.getId()))
-                    addPathsFromLeg(neighborLeg);
+        // dive to current node's neighbors
+        if(adjacencyList.containsKey(legIndex)) {
+            ArrayList<Integer> neighbors = adjacencyList.get(legIndex);
+            // the object returned by getArrTime() is immutable.
+            // So, the leg's original arrival time won't get affected here.
+            LocalDateTime arrivalTime = leg.getArrTime().plusMinutes(delayTimeInMin);
 
-                ArrayList<ArrayList<Leg>> neighborPaths = pathsFromLegToSink.get(neighborLeg.getId());
-                for(ArrayList<Leg> neighborPath : neighborPaths) {
-                    ArrayList<Leg> pathFromLeg = new ArrayList<>();
-                    pathFromLeg.add(leg);
-                    pathFromLeg.addAll(neighborPath);
-                    legsOnPaths.add(pathFromLeg);
-                }
+            for(Integer neighborIndex: neighbors) {
+                if (onPath[neighborIndex])
+                    continue;
+
+                Leg neighborLeg = legs.get(neighborIndex);
+                LocalDateTime depTimeOnPath = arrivalTime.plusMinutes(leg.getTurnTimeInMin());
+                Integer neighborDelayTime = depTimeOnPath.isAfter(neighborLeg.getDepTime())
+                        ? (int) Duration.between(neighborLeg.getDepTime(), depTimeOnPath).toMinutes()
+                        : 0;
+
+                if(neighborDelayTime <= maxLegDelayInMin)
+                    depthFirstSearch(neighborIndex, neighborDelayTime);
             }
         }
 
-        pathsFromLegToSink.put(leg.getId(), legsOnPaths);
+        currentPath.remove(currentPath.size() - 1);
+        delayTimes.remove(delayTimes.size() - 1);
+        onPath[legIndex] = false;
     }
 
-    private boolean canConnectToSource(Leg leg) {
-        return tail.getSourcePort().equals(leg.getDepPort())
-                && (startTime.isBefore(leg.getDepTime()) || startTime.equals(leg.getDepTime()));
-    }
-
-    private boolean canConnectToSink(Leg leg) {
-        return tail.getSinkPort().equals(leg.getArrPort())
-                && (endTime.isAfter(leg.getArrTime()) || endTime.equals(leg.getArrTime()));
+    private void storeCurrentPath() {
+        Path path = new Path(tail);
+        for(int i = 0; i < currentPath.size(); ++i) {
+            Leg leg = legs.get(currentPath.get(i));
+            path.addLeg(leg, delayTimes.get(i));
+        }
+        paths.add(path);
     }
 }

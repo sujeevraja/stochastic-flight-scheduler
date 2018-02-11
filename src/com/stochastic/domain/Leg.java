@@ -1,5 +1,6 @@
 package com.stochastic.domain;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 public class Leg {
@@ -12,19 +13,23 @@ public class Leg {
     private Integer arrPort;
     private Integer turnTimeInMin;
     private Integer origTailId;
+    private Integer blockTimeInMin;
     private LocalDateTime depTime;
     private LocalDateTime arrTime;
+    private LocalDateTime latestDepTime; // based on maximum allowed delay
 
     public Leg(Integer id, Integer depPort, Integer arrPort, Integer turnTimeInMin, Integer origTailId,
-               LocalDateTime depTime, LocalDateTime arrTime) {
+               LocalDateTime depTime, LocalDateTime arrTime, LocalDateTime latestDepTime) {
         this.id = id;
         this.index = null;
         this.depPort = depPort;
         this.arrPort = arrPort;
         this.turnTimeInMin = turnTimeInMin;
         this.origTailId = origTailId;
+        this.blockTimeInMin = (int) Duration.between(depTime, arrTime).toMinutes();
         this.depTime = depTime;
         this.arrTime = arrTime;
+        this.latestDepTime = latestDepTime;
     }
 
     public Integer getId() {
@@ -63,13 +68,21 @@ public class Leg {
         return arrTime;
     }
 
+    public Integer getBlockTimeInMin() {
+        return blockTimeInMin;
+    }
+
     public void setTurnTimeInMin(Integer turnTimeInMin) {
         this.turnTimeInMin = turnTimeInMin;
+    }
+
+    public LocalDateTime getLatestDepTime() {
+        return latestDepTime;
     }
 
     @Override
     public final String toString() {
         return ("Leg(id=" + id + ",depPort=" + depPort + ",depTime=" + depTime + ",arrPort=" + arrPort + ",arrTime="
-                + arrTime + "origTail=" + origTailId);
+                + arrTime + ",origTail=" + origTailId + ")");
     }
 }

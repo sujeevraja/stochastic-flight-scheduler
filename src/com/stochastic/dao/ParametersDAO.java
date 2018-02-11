@@ -21,6 +21,7 @@ public class ParametersDAO {
     private final static Logger logger = LogManager.getLogger(ParametersDAO.class);
     private LocalDateTime windowStart;
     private LocalDateTime windowEnd;
+    private Integer maxFlightDelayInMin;
 
     public ParametersDAO(String filePath) throws OptException {
         try {
@@ -37,6 +38,9 @@ public class ParametersDAO {
 
             String we = doc.getElementsByTagName("windowEnd").item(0).getTextContent();
             windowEnd = LocalDateTime.parse(we, format);
+
+            String fltDelay = doc.getElementsByTagName("maxFlightDelayInMin").item(0).getTextContent();
+            maxFlightDelayInMin = Integer.parseInt(fltDelay);
         } catch (ParserConfigurationException pce) {
             logger.error(pce);
             throw new OptException("Unable to create DocumentBuilder to read Parameters.xml");
@@ -55,5 +59,9 @@ public class ParametersDAO {
 
     public LocalDateTime getWindowEnd() {
         return windowEnd;
+    }
+
+    public Integer getMaxFlightDelayInMin() {
+        return maxFlightDelayInMin;
     }
 }
