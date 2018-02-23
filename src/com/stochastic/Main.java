@@ -11,6 +11,7 @@ public class Main {
      * Only responsibility is to own main().
      */
     private final static Logger logger = LogManager.getLogger(Main.class);
+    public static int nSce = 10;
 
     public static void main(String[] args) {
         try {
@@ -18,7 +19,8 @@ public class Main {
             Controller controller = new Controller();
             controller.readData();
             controller.createTestDisruption();
-            controller.solveSecondStage();
+            controller.algorithmSteps();
+//            controller.solveSecondStage();
             logger.info("Completed optimization.");
         } catch (OptException oe) {
             logger.error(oe);

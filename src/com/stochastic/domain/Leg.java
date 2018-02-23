@@ -18,6 +18,10 @@ public class Leg {
     private LocalDateTime arrTime;
     private LocalDateTime latestDepTime; // based on maximum allowed delay
 
+    private int depTimeInMins;
+    private int arrTimeInMins;
+        
+    
     public Leg(Integer id, Integer depPort, Integer arrPort, Integer turnTimeInMin, Integer origTailId,
                LocalDateTime depTime, LocalDateTime arrTime, LocalDateTime latestDepTime) {
         this.id = id;
@@ -30,9 +34,36 @@ public class Leg {
         this.depTime = depTime;
         this.arrTime = arrTime;
         this.latestDepTime = latestDepTime;
-    }
+        
+        this.depTimeInMins = (depTime.getHour()*60) + (depTime.getMinute());
+        this.arrTimeInMins = (arrTime.getHour()*60) + (arrTime.getMinute());        
+    }   
+    
+    public void setDepTime(LocalDateTime depTime) {
+		this.depTime = depTime;
+	}
+    
+	public void setArrTime(LocalDateTime arrTime) {
+		this.arrTime = arrTime;
+	}	
+	
+	public int getDepTimeInMins() {
+		return depTimeInMins;
+	}
 
-    public Integer getId() {
+	public void setDepTimeInMins(int depTimeInMins) {
+		this.depTimeInMins = depTimeInMins;
+	}
+
+	public int getArrTimeInMins() {
+		return arrTimeInMins;
+	}
+
+	public void setArrTimeInMins(int arrTimeInMins) {
+		this.arrTimeInMins = arrTimeInMins;
+	}
+
+	public Integer getId() {
         return id;
     }
 

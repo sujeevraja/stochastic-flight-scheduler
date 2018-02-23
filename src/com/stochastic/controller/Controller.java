@@ -9,6 +9,7 @@ import com.stochastic.network.Network;
 import com.stochastic.network.Path;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.solver.SecondStageSolver;
+import com.stochastic.solver.Solver;
 import com.stochastic.utility.OptException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -69,6 +70,19 @@ public class Controller {
             }
         }
     }
+    
+    public final void algorithmSteps() throws OptException
+    {
+    	
+        Network network = new Network(dataRegistry.getTails(), dataRegistry.getLegs(), dataRegistry.getWindowStart(),
+                dataRegistry.getWindowEnd(), dataRegistry.getMaxLegDelayInMin());
+
+        ArrayList<Path> paths = network.enumerateAllPaths();
+    	
+    	Solver.SolverInit(paths, dataRegistry.getLegs(), dataRegistry.getTails(), dataRegistry.getDurations());
+    	Solver.algorithm();
+    }
+    
 
     public final void solveSecondStage() throws OptException {
         if(!disruptionExists()) {
@@ -110,7 +124,7 @@ public class Controller {
         }
     }
 
-    private void storeLegs(ArrayList<Leg> inputLegs) {
+    private void storeLegs(ArrayList<Leg> inputLegs) {    	
         final ArrayList<Integer> tailIds = dataRegistry.getEquipment().getTailIds();
         final LocalDateTime windowStart = dataRegistry.getWindowStart();
         final LocalDateTime windowEnd = dataRegistry.getWindowEnd();
