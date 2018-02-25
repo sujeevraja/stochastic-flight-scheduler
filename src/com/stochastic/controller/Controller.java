@@ -41,6 +41,7 @@ public class Controller {
     public final void readData() throws OptException {
         logger.info("Started reading data...");
         String scenarioPath = getScenarioPath();
+        dataRegistry.setNumScenarios(10);
 
         // Read parameters
         ParametersDAO parametersDAO = new ParametersDAO(scenarioPath + "\\Parameters.xml");
@@ -71,15 +72,14 @@ public class Controller {
         }
     }
     
-    public final void algorithmSteps() throws OptException
-    {
-    	
+    public final void algorithmSteps() throws OptException {
         Network network = new Network(dataRegistry.getTails(), dataRegistry.getLegs(), dataRegistry.getWindowStart(),
                 dataRegistry.getWindowEnd(), dataRegistry.getMaxLegDelayInMin());
 
         ArrayList<Path> paths = network.enumerateAllPaths();
     	
-    	Solver.SolverInit(paths, dataRegistry.getLegs(), dataRegistry.getTails(), dataRegistry.getDurations());
+    	Solver.SolverInit(paths, dataRegistry.getLegs(), dataRegistry.getTails(), dataRegistry.getDurations(),
+                dataRegistry.getNumScenarios());
     	Solver.algorithm();
     }
     

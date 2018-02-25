@@ -20,7 +20,8 @@ public class DataRegistry {
     private Equipment equipment;
     private ArrayList<Leg> legs;
     private ArrayList<Tail> tails;
-    private ArrayList<Integer> durations;    
+    private ArrayList<Integer> durations;
+    private Integer numScenarios;
     
     public DataRegistry() {
         windowStart = null;
@@ -28,9 +29,9 @@ public class DataRegistry {
         equipment = null;
         legs = new ArrayList<>();
         tails = new ArrayList<>();
-        durations = new ArrayList<Integer>();
-        Collections.addAll(durations, new Integer(0), new Integer(5),new Integer(10),new Integer(15));
-    }    
+        durations = new ArrayList<>();
+        Collections.addAll(durations, 0, 5, 10, 5);
+    }
     
     public ArrayList<Integer> getDurations() {
 		return durations;
@@ -86,5 +87,13 @@ public class DataRegistry {
 
     public ArrayList<Tail> getTails() {
         return tails;
+    }
+
+    public void setNumScenarios(Integer numScenarios) {
+        this.numScenarios = numScenarios;
+    }
+
+    public Integer getNumScenarios() {
+        return numScenarios;
     }
 }

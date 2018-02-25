@@ -3,10 +3,7 @@ package com.stochastic.solver;
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
 import com.stochastic.network.Path;
-import com.stochastic.utility.CostUtility;
 import com.stochastic.utility.OptException;
-import ilog.concert.*;
-import ilog.cplex.IloCplex;
 import java.util.ArrayList;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -21,74 +18,65 @@ public class Solver {
     private static ArrayList<Path> paths;
     private static ArrayList<Leg> legs;
     private static ArrayList<Tail> tails;
-    private static ArrayList<Integer> durations;  
+    private static ArrayList<Integer> durations;
+    private static Integer numScenarios;
     
 	public static double lb = 0;
-	public static double ub = 0;    
+	public static double ub = 0;
     
-    public static void SolverInit(ArrayList<Path> paths, ArrayList<Leg> legs, ArrayList<Tail> tails, ArrayList<Integer> durations) {
+    public static void SolverInit(ArrayList<Path> paths, ArrayList<Leg> legs, ArrayList<Tail> tails,
+                                  ArrayList<Integer> durations, Integer numScenarios) {
     	Solver.paths = paths;
     	Solver.legs = legs;
     	Solver.tails = tails;
     	Solver.durations = durations;
+    	Solver.numScenarios = numScenarios;
     }    
     
-    public static void algorithm() throws OptException
-    {
-//	    try 
-//	    {   
-	    	MasterSolver.MasterSolverInit(paths, legs, tails, durations);
-	    	MasterSolver.constructFirstStage();
-	    	MasterSolver.writeLPFile("ma", 0);
-			MasterSolver.solve();
-			MasterSolver.addColumn();
-			MasterSolver.writeLPFile("ma1", 0);
-			
-			double lBound = 0;
-			double uBound = Double.MAX_VALUE;
-			int iter = 0;
-	 	    lBound = MasterSolver.getObjValue();	 	    
-	 	   
-	 	    System.out.println(); 	    
-	 	    System.out.println("Algorithm Starts: ");
-	 	    
-	 	    //labelling algorithm duration - lgnormal (parameters, set of legs) -> scenarios -> set of paths
-	 	    
-			do
-			{ 
-				// starts here
-				SubSolverWrapper.SubSolverWrapperInit(paths, legs, tails, durations, MasterSolver.getxValues());
-				new SubSolverWrapper().buildSubModel();				
+    public static void algorithm() throws OptException {
+        MasterSolver.MasterSolverInit(paths, legs, tails, durations);
+        MasterSolver.constructFirstStage();
+        MasterSolver.writeLPFile("ma", 0);
+        MasterSolver.solve();
+        MasterSolver.addColumn();
+        MasterSolver.writeLPFile("ma1", 0);
 
-				MasterSolver.constructBendersCut(SubSolverWrapper.getAlphaValue(), SubSolverWrapper.getBetaValue());
+        double lBound = 0;
+        double uBound = Double.MAX_VALUE;
+        int iter = 0;
+        lBound = MasterSolver.getObjValue();
 
-				MasterSolver.writeLPFile("",iter);	 	    
-				MasterSolver.solve();
-				MasterSolver.writeLPFile("ma1", iter);
-				
-		 	    lBound = MasterSolver.getObjValue();
+        System.out.println();
+        System.out.println("Algorithm Starts: ");
 
-		 	    if(SubSolverWrapper.getuBound() < uBound)
-		 	    	uBound = SubSolverWrapper.getuBound();
+        //labelling algorithm duration - lgnormal (parameters, set of legs) -> scenarios -> set of paths
 
-		 	    iter++;
-		 	    
-				System.out.println("LB: " + lBound + " UB: " + uBound + " Iter: " + iter);
-				// ends here
+        do {
+            // starts here
+            SubSolverWrapper.SubSolverWrapperInit(paths, legs, tails, durations, MasterSolver.getxValues(),
+                    numScenarios);
+            new SubSolverWrapper().buildSubModel();
 
-			}while(uBound - lBound > 0.001); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
+            MasterSolver.constructBendersCut(SubSolverWrapper.getAlphaValue(), SubSolverWrapper.getBetaValue());
 
-	 	    System.out.println("Algorithm Ends: ");		
-			System.out.println();   
-			
-			lb = lBound;
-			ub = uBound;	    	
-	    	
-//	   } 
-//	   catch (IloException e) {
-//	    		logger.error(e);
-//	        	throw new OptException("CPLEX error solving algorithm");
-//	   }        
+            MasterSolver.writeLPFile("",iter);
+            MasterSolver.solve();
+            MasterSolver.writeLPFile("ma1", iter);
+
+            lBound = MasterSolver.getObjValue();
+
+            if(SubSolverWrapper.getuBound() < uBound)
+                uBound = SubSolverWrapper.getuBound();
+
+            iter++;
+
+            System.out.println("LB: " + lBound + " UB: " + uBound + " Iter: " + iter);
+            // ends here
+        } while(uBound - lBound > 0.001); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
+
+        logger.info("Algorithm ends.");
+
+        lb = lBound;
+        ub = uBound;
     }
-
 }

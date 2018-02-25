@@ -4,12 +4,10 @@ import com.stochastic.Main;
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
 import com.stochastic.network.Path;
-import com.stochastic.utility.CostUtility;
 import com.stochastic.utility.OptException;
 import ilog.concert.*;
-import ilog.cplex.IloCplex;
+
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -23,19 +21,22 @@ public class SubSolverWrapper {
      */
     private final static Logger logger = LogManager.getLogger(SubSolverWrapper.class);   
 	private static double alphaValue;
-	private static double[][]  betaValue;
-	private static int         nThreads = 2;	
+	private static double[][] betaValue;
+	private static int numThreads = 2;
 	
     private static ArrayList<Path> paths;
     private static ArrayList<Leg> legs;
     private static ArrayList<Tail> tails;
-    private static ArrayList<Integer> durations;  
+    private static ArrayList<Integer> durations;
+    private static Integer numScenarios;
 	
 	private static double[][]  xValues; 	
 	private static double uBound;
 	private static double prb;
 	
-    public static void SubSolverWrapperInit(ArrayList<Path> paths, ArrayList<Leg> legs, ArrayList<Tail> tails, ArrayList<Integer> durations, double[][] xVal) throws OptException 
+    public static void SubSolverWrapperInit(ArrayList<Path> paths, ArrayList<Leg> legs, ArrayList<Tail> tails,
+											ArrayList<Integer> durations, double[][] xVal,
+											Integer numScenarios) throws OptException
     {
         try 
         {   	
@@ -44,6 +45,7 @@ public class SubSolverWrapper {
         	SubSolverWrapper.tails = tails;
         	SubSolverWrapper.durations = durations;
         	SubSolverWrapper.xValues = xVal;
+        	SubSolverWrapper.numScenarios = numScenarios;
         	
         	alphaValue = 0;
         	uBound     = 0;
@@ -65,9 +67,8 @@ public class SubSolverWrapper {
 				alphaValue = (duals[j]*-legs.get(j).getDepTimeInMins()*prb);
 			
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
-			System.exit(0);
+			System.exit(1);
 		}
 	}
 
@@ -84,9 +85,9 @@ public class SubSolverWrapper {
     {
        try
        {
-            ExecutorService exSrv = Executors.newFixedThreadPool(nThreads);
+            ExecutorService exSrv = Executors.newFixedThreadPool(numThreads);
            
-            for(int i=0; i< Main.nSce; i++)
+            for(int i=0; i< numScenarios; i++)
             {
                 Thread.currentThread().sleep(5000);
 
