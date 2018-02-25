@@ -89,7 +89,7 @@ public class SubSolverWrapper {
            
             for(int i=0; i< numScenarios; i++)
             {
-                Thread.currentThread().sleep(5000);
+                Thread.currentThread().sleep(500);
 
                 BuildSubModelThr buildSDThrObj = new BuildSubModelThr();
                 buildSDThrObj.setScerNo(i);
@@ -100,7 +100,7 @@ public class SubSolverWrapper {
             try
             {
                 while (!exSrv.isTerminated()) {
-                    Thread.currentThread().sleep(1000);
+                    Thread.currentThread().sleep(100);
                 }
             }
             catch (InterruptedException inEx)

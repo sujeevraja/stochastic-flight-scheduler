@@ -21,11 +21,11 @@ public class Solver {
     private static ArrayList<Integer> durations;
     private static Integer numScenarios;
     
-	public static double lb = 0;
-	public static double ub = 0;
+	private static double lb = 0;
+	private static double ub = 0;
     
-    public static void SolverInit(ArrayList<Path> paths, ArrayList<Leg> legs, ArrayList<Tail> tails,
-                                  ArrayList<Integer> durations, Integer numScenarios) {
+    public static void init(ArrayList<Path> paths, ArrayList<Leg> legs, ArrayList<Tail> tails,
+                            ArrayList<Integer> durations, Integer numScenarios) {
     	Solver.paths = paths;
     	Solver.legs = legs;
     	Solver.tails = tails;

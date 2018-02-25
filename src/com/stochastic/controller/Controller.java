@@ -59,6 +59,13 @@ public class Controller {
                 dataRegistry.getMaxLegDelayInMin()).getLegs();
         storeLegs(legs);
         logger.info("Collected leg and tail data from Schedule.xml.");
+
+        StringBuilder tailsStr = new StringBuilder();
+        for(Tail tail : dataRegistry.getTails()) {
+            tailsStr.append(tail.getId());
+        }
+        logger.debug("Loaded tails: " + tailsStr.toString());
+
         logger.info("Completed reading data.");
     }
 
@@ -72,13 +79,13 @@ public class Controller {
         }
     }
     
-    public final void algorithmSteps() throws OptException {
+    public final void solve() throws OptException {
         Network network = new Network(dataRegistry.getTails(), dataRegistry.getLegs(), dataRegistry.getWindowStart(),
                 dataRegistry.getWindowEnd(), dataRegistry.getMaxLegDelayInMin());
 
         ArrayList<Path> paths = network.enumerateAllPaths();
     	
-    	Solver.SolverInit(paths, dataRegistry.getLegs(), dataRegistry.getTails(), dataRegistry.getDurations(),
+    	Solver.init(paths, dataRegistry.getLegs(), dataRegistry.getTails(), dataRegistry.getDurations(),
                 dataRegistry.getNumScenarios());
     	Solver.algorithm();
     }
@@ -172,7 +179,7 @@ public class Controller {
         dataRegistry.setTails(tails);
     }
 
-    boolean disruptionExists() {
+    private boolean disruptionExists() {
         for(Tail tail : dataRegistry.getTails()) {
             ArrayList<Leg> tailLegs = tail.getOrigSchedule();
             final Integer numLegs = tailLegs.size();

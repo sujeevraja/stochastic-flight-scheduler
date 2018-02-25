@@ -19,8 +19,8 @@ public class Main {
             Controller controller = new Controller();
             controller.readData();
             controller.createTestDisruption();
-            controller.algorithmSteps();
-//            controller.solveSecondStage();
+            controller.solve();
+            // controller.solveSecondStage();
             logger.info("Completed optimization.");
         } catch (OptException oe) {
             logger.error(oe);
