@@ -68,6 +68,7 @@ public class ScheduleDAO {
         Integer arrPort = Utility.getInt(legElem, "arrPort");
         Integer turnTime = Utility.getInt(legElem, "turnTime");
         Integer tail = Utility.getInt(legElem, "tail");
+        Integer fltNum = Utility.getInt(legElem, "fltNum");
 
         String depTimeStr = legElem.getElementsByTagName("depTime").item(0).getTextContent();
         LocalDateTime depTime = LocalDateTime.parse(depTimeStr, format);
@@ -76,6 +77,6 @@ public class ScheduleDAO {
         String arrTimeStr = legElem.getElementsByTagName("arrTime").item(0).getTextContent();
         LocalDateTime arrTime = LocalDateTime.parse(arrTimeStr, format);
 
-        return new Leg(id, depPort, arrPort, turnTime, tail, depTime, arrTime, latestDepTime);
+        return new Leg(id, fltNum, depPort, arrPort, turnTime, tail, depTime, arrTime, latestDepTime);
     }
 }

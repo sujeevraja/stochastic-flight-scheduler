@@ -30,7 +30,6 @@ public class DataRegistry {
         legs = new ArrayList<>();
         tails = new ArrayList<>();
         durations = new ArrayList<>();
-        Collections.addAll(durations, 0, 5, 10, 5);
     }
     
     public ArrayList<Integer> getDurations() {
@@ -40,6 +39,10 @@ public class DataRegistry {
 	public void setDurations(ArrayList<Integer> durations) {
 		this.durations = durations;
 	}
+
+	public Integer getNumDurations() {
+        return durations.size();
+    }
 
 	public ArrayList<Leg> getLegs() {
         return legs;

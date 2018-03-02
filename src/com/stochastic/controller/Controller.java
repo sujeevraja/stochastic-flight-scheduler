@@ -1,5 +1,6 @@
 package com.stochastic.controller;
 
+import com.stochastic.delay.FirstFlightDelayGenerator;
 import com.stochastic.domain.Leg;
 import com.stochastic.dao.EquipmentsDAO;
 import com.stochastic.dao.ParametersDAO;
@@ -8,8 +9,8 @@ import com.stochastic.domain.Tail;
 import com.stochastic.network.Network;
 import com.stochastic.network.Path;
 import com.stochastic.registry.DataRegistry;
-import com.stochastic.solver.SecondStageSolver;
-import com.stochastic.solver.Solver;
+import com.stochastic.solver.MasterSolver;
+import com.stochastic.solver.SubSolverWrapper;
 import com.stochastic.utility.OptException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -43,6 +44,9 @@ public class Controller {
         String scenarioPath = getScenarioPath();
         dataRegistry.setNumScenarios(10);
 
+        ArrayList<Integer> durations = new ArrayList<>(Arrays.asList(5, 10, 15));
+        dataRegistry.setDurations(durations);
+
         // Read parameters
         ParametersDAO parametersDAO = new ParametersDAO(scenarioPath + "\\Parameters.xml");
         dataRegistry.setWindowStart(parametersDAO.getWindowStart());
@@ -65,7 +69,6 @@ public class Controller {
             tailsStr.append(tail.getId());
         }
         logger.debug("Loaded tails: " + tailsStr.toString());
-
         logger.info("Completed reading data.");
     }
 
@@ -78,20 +81,63 @@ public class Controller {
             }
         }
     }
-    
-    public final void solve() throws OptException {
-        Network network = new Network(dataRegistry.getTails(), dataRegistry.getLegs(), dataRegistry.getWindowStart(),
-                dataRegistry.getWindowEnd(), dataRegistry.getMaxLegDelayInMin());
 
-        ArrayList<Path> paths = network.enumerateAllPaths();
-    	
-    	Solver.init(paths, dataRegistry.getLegs(), dataRegistry.getTails(), dataRegistry.getDurations(),
-                dataRegistry.getNumScenarios());
-    	Solver.algorithm();
+    public final void solve() throws OptException {
+        ArrayList<Leg> legs = dataRegistry.getLegs();
+        ArrayList<Tail> tails = dataRegistry.getTails();
+        ArrayList<Integer> durations = dataRegistry.getDurations();
+
+        MasterSolver.MasterSolverInit(legs, tails, durations);
+        MasterSolver.constructFirstStage();
+        MasterSolver.writeLPFile("ma", 0);
+        MasterSolver.solve();
+        MasterSolver.addColumn();
+        MasterSolver.writeLPFile("ma1", 0);
+
+        double lBound;
+        double uBound = Double.MAX_VALUE;
+        // double lb = 0;
+        // double ub = 0;
+        int iter = 0;
+
+        logger.info("Algorithm starts.");
+
+        do {
+            // starts here
+            SubSolverWrapper.SubSolverWrapperInit(dataRegistry, MasterSolver.getxValues());
+            new SubSolverWrapper().buildSubModel();
+
+            MasterSolver.constructBendersCut(SubSolverWrapper.getAlpha(), SubSolverWrapper.getBeta());
+
+            MasterSolver.writeLPFile("",iter);
+            MasterSolver.solve();
+            MasterSolver.writeLPFile("ma1", iter);
+
+            lBound = MasterSolver.getObjValue();
+
+            if(SubSolverWrapper.getuBound() < uBound)
+                uBound = SubSolverWrapper.getuBound();
+
+            iter++;
+
+            logger.info("LB: " + lBound + " UB: " + uBound + " Iter: " + iter);
+            // ends here
+        } while(uBound - lBound > 0.001); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
+
+        logger.info("Algorithm ends.");
+
+        // lb = lBound;
+        // ub = uBound;
     }
     
-
     public final void solveSecondStage() throws OptException {
+        HashMap<Integer, Integer> delayMap = (new FirstFlightDelayGenerator(dataRegistry.getTails())).generateDelays();
+
+        Network network = new Network(dataRegistry.getTails(), dataRegistry.getLegs(), delayMap, dataRegistry.getWindowStart(),
+                dataRegistry.getWindowEnd(), dataRegistry.getMaxLegDelayInMin());
+        ArrayList<Path> paths = network.enumerateAllPaths();
+
+        /*
         if(!disruptionExists()) {
             logger.warn("Calling second-stage solver without any disruptions.");
             logger.warn("Solver not called.");
@@ -107,6 +153,7 @@ public class Controller {
 
         SecondStageSolver sss = new SecondStageSolver(paths, legs, tails);
         sss.solveWithCPLEX();
+        */
     }
 
     private String getScenarioPath() throws OptException {

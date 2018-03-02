@@ -2,7 +2,6 @@ package com.stochastic.solver;
 
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
-import com.stochastic.network.Path;
 import com.stochastic.utility.OptException;
 import java.util.ArrayList;
 import org.apache.logging.log4j.Logger;
@@ -15,7 +14,6 @@ public class Solver {
      */
     private final static Logger logger = LogManager.getLogger(Solver.class);
     private final static double eps = 1.0e-5;
-    private static ArrayList<Path> paths;
     private static ArrayList<Leg> legs;
     private static ArrayList<Tail> tails;
     private static ArrayList<Integer> durations;
@@ -24,9 +22,8 @@ public class Solver {
 	private static double lb = 0;
 	private static double ub = 0;
     
-    public static void init(ArrayList<Path> paths, ArrayList<Leg> legs, ArrayList<Tail> tails,
+    public static void init(ArrayList<Leg> legs, ArrayList<Tail> tails,
                             ArrayList<Integer> durations, Integer numScenarios) {
-    	Solver.paths = paths;
     	Solver.legs = legs;
     	Solver.tails = tails;
     	Solver.durations = durations;
@@ -34,7 +31,7 @@ public class Solver {
     }    
     
     public static void algorithm() throws OptException {
-        MasterSolver.MasterSolverInit(paths, legs, tails, durations);
+        MasterSolver.MasterSolverInit(legs, tails, durations);
         MasterSolver.constructFirstStage();
         MasterSolver.writeLPFile("ma", 0);
         MasterSolver.solve();
@@ -52,12 +49,12 @@ public class Solver {
         //labelling algorithm duration - lgnormal (parameters, set of legs) -> scenarios -> set of paths
 
         do {
+            /*
             // starts here
-            SubSolverWrapper.SubSolverWrapperInit(paths, legs, tails, durations, MasterSolver.getxValues(),
-                    numScenarios);
+            SubSolverWrapper.SubSolverWrapperInit(dataRegistry, MasterSolver.getxValues());
             new SubSolverWrapper().buildSubModel();
 
-            MasterSolver.constructBendersCut(SubSolverWrapper.getAlphaValue(), SubSolverWrapper.getBetaValue());
+            MasterSolver.constructBendersCut(SubSolverWrapper.getAlpha(), SubSolverWrapper.getBeta());
 
             MasterSolver.writeLPFile("",iter);
             MasterSolver.solve();
@@ -71,6 +68,7 @@ public class Solver {
             iter++;
 
             System.out.println("LB: " + lBound + " UB: " + uBound + " Iter: " + iter);
+            */
             // ends here
         } while(uBound - lBound > 0.001); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
 
