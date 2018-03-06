@@ -99,4 +99,8 @@ public class DataRegistry {
     public Integer getNumScenarios() {
         return numScenarios;
     }
+
+    public Integer getNumLegs() {
+        return legs.size();
+    }
 }

@@ -18,13 +18,16 @@ public class Path {
     private ArrayList<Integer> delayTimesInMin;
     private ArrayList<Integer> departureTimesInMin;    
     private double cost;
-    private int id;
+    private static int indexCount = 0;
+    private int index;
 
     Path(Tail tail) {
         this.tail = tail;
         legs = new ArrayList<>();
         delayTimesInMin = new ArrayList<>();
         cost = 0.0;
+        index = indexCount;
+        indexCount++;
     }
 
     void addLeg(Leg leg, Integer delayTimeInMin) {
@@ -49,20 +52,8 @@ public class Path {
         return cost;
     }    
 
-    public int getId() {
-		return id;
-	}
-
-	public void setId(int id) {
-		this.id = id;
-	}		
-	
-	public ArrayList<Integer> getDepartureTimesInMin() {
-		return departureTimesInMin;
-	}
-
-	public void setDepartureTimesInMin(ArrayList<Integer> departureTimesInMin) {
-		this.departureTimesInMin = departureTimesInMin;
+    public int getIndex() {
+		return index;
 	}
 
 	public ArrayList<Integer> getDelayTimesInMin() {

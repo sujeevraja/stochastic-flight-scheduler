@@ -10,6 +10,7 @@ import com.stochastic.network.Network;
 import com.stochastic.network.Path;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.solver.MasterSolver;
+import com.stochastic.solver.SubSolver;
 import com.stochastic.solver.SubSolverWrapper;
 import com.stochastic.utility.OptException;
 import org.w3c.dom.Document;
@@ -129,13 +130,16 @@ public class Controller {
         // lb = lBound;
         // ub = uBound;
     }
-    
-    public final void solveSecondStage() throws OptException {
-        HashMap<Integer, Integer> delayMap = (new FirstFlightDelayGenerator(dataRegistry.getTails())).generateDelays();
 
-        Network network = new Network(dataRegistry.getTails(), dataRegistry.getLegs(), delayMap, dataRegistry.getWindowStart(),
-                dataRegistry.getWindowEnd(), dataRegistry.getMaxLegDelayInMin());
-        ArrayList<Path> paths = network.enumerateAllPaths();
+    public final void solveSecondStage() throws OptException {
+        double[][] xValues = new double[dataRegistry.getNumDurations()][dataRegistry.getNumLegs()];
+        for(int i = 0; i < dataRegistry.getNumDurations();  ++i)
+            for(int j = 0; j < dataRegistry.getNumLegs(); ++j)
+                xValues[i][j] = 0.0;
+
+        SubSolver s = new SubSolver();
+        s.constructSecondStage(xValues, dataRegistry);
+        s.solve();
 
         /*
         if(!disruptionExists()) {

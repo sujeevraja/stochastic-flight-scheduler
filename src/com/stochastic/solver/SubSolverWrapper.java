@@ -1,8 +1,6 @@
 package com.stochastic.solver;
 
-import com.stochastic.Main;
 import com.stochastic.domain.Leg;
-import com.stochastic.domain.Tail;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.utility.OptException;
 
