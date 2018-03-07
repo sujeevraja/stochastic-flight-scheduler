@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 import com.stochastic.domain.Tail;
 import org.apache.logging.log4j.Logger;
@@ -22,15 +23,17 @@ public class Network {
     private final static Logger logger = LogManager.getLogger(Network.class);
     private ArrayList<Tail> tails;
     private ArrayList<Leg> legs;
+    private HashMap<Integer, Integer> legDelayMap;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-    private Integer maxLegDelayInMin;
+    private int maxLegDelayInMin;
     private HashMap<Integer, ArrayList<Integer>> adjacencyList; // keys and values are indices of leg list.
 
-    public Network(ArrayList<Tail> tails, ArrayList<Leg> legs, LocalDateTime startTime, LocalDateTime endTime,
-                   Integer maxLegDelayInMin) {
+    public Network(ArrayList<Tail> tails, ArrayList<Leg> legs, HashMap<Integer, Integer> legDelayMap,
+                   LocalDateTime startTime, LocalDateTime endTime, int maxLegDelayInMin) {
         this.tails = tails;
         this.legs = legs;
+        this.legDelayMap = legDelayMap;
         this.startTime = startTime;
         this.endTime = endTime;
         this.maxLegDelayInMin = maxLegDelayInMin;
@@ -45,7 +48,8 @@ public class Network {
     public ArrayList<Path> enumerateAllPaths() {
         ArrayList<Path> paths = new ArrayList<>();
         for(Tail tail : tails) {
-            PathEnumerator pe = new PathEnumerator(tail, legs, adjacencyList, startTime, endTime, maxLegDelayInMin);
+            PathEnumerator pe = new PathEnumerator(tail, legs, legDelayMap, adjacencyList, startTime, endTime,
+                    maxLegDelayInMin);
             ArrayList<Path> tailPaths = pe.generatePaths();
             logger.info("Number of paths for tail " + tail.getId() + ": " + tailPaths.size());
             paths.addAll(tailPaths);
@@ -55,11 +59,7 @@ public class Network {
     }
 
     private void buildAdjacencyList() {
-        // Builds adjacency list only for leg nodes as soure/sink nodes need tail info.
-        // Assumes that:
-        // - first node of nodes is sourceNode
-        // - last node of nodes is sinkNodes
-        // - the middle nodes have the same ordering as the legs list.
+        // Builds leg adjacency list by evaluating connections including delays.
         adjacencyList = new HashMap<>();
         final Integer numLegs = legs.size();
         for(int i = 0; i < numLegs - 1; ++i) {
@@ -77,9 +77,17 @@ public class Network {
     }
 
     private boolean canConnect(Leg currLeg, Leg nextLeg) {
-        return currLeg.getArrPort().equals(nextLeg.getDepPort())
-                && (Duration.between(currLeg.getArrTime(), nextLeg.getLatestDepTime()).toMinutes()
-                    >= currLeg.getTurnTimeInMin());
+        if(!currLeg.getArrPort().equals(nextLeg.getDepPort()))
+            return false;
+
+        final LocalDateTime earliestArrTime = currLeg.getArrTime().plusMinutes(
+                legDelayMap.getOrDefault(currLeg.getIndex(), 0));
+        final LocalDateTime latestDepTime = nextLeg.getDepTime()
+                .plusMinutes(legDelayMap.getOrDefault(nextLeg.getIndex(), 0))
+                .plusMinutes(maxLegDelayInMin);
+
+        int maxTurnTime = (int) Duration.between(earliestArrTime, latestDepTime).toMinutes();
+        return maxTurnTime >= currLeg.getTurnTimeInMin();
     }
 
     private void addNeighbor(Integer legIndex, Integer neighborIndex) {

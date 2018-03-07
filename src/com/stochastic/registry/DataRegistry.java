@@ -6,6 +6,7 @@ import com.stochastic.domain.Tail;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 
 public class DataRegistry {
@@ -19,15 +20,31 @@ public class DataRegistry {
     private Equipment equipment;
     private ArrayList<Leg> legs;
     private ArrayList<Tail> tails;
+    private ArrayList<Integer> durations;
+    private Integer numScenarios;
+    
     public DataRegistry() {
         windowStart = null;
         windowEnd = null;
         equipment = null;
         legs = new ArrayList<>();
         tails = new ArrayList<>();
+        durations = new ArrayList<>();
+    }
+    
+    public ArrayList<Integer> getDurations() {
+		return durations;
+	}
+
+	public void setDurations(ArrayList<Integer> durations) {
+		this.durations = durations;
+	}
+
+	public Integer getNumDurations() {
+        return durations.size();
     }
 
-    public ArrayList<Leg> getLegs() {
+	public ArrayList<Leg> getLegs() {
         return legs;
     }
 
@@ -73,5 +90,17 @@ public class DataRegistry {
 
     public ArrayList<Tail> getTails() {
         return tails;
+    }
+
+    public void setNumScenarios(Integer numScenarios) {
+        this.numScenarios = numScenarios;
+    }
+
+    public Integer getNumScenarios() {
+        return numScenarios;
+    }
+
+    public Integer getNumLegs() {
+        return legs.size();
     }
 }

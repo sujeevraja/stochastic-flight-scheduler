@@ -8,19 +8,26 @@ public class Leg {
      * Class used to represent leg data
      */
     private Integer id;
+    private Integer fltNum;
     private Integer index; // position of object in an ArrayList that will store all legs.
     private Integer depPort;
     private Integer arrPort;
-    private Integer turnTimeInMin;
+    private int turnTimeInMin;
     private Integer origTailId;
-    private Integer blockTimeInMin;
+    private int blockTimeInMin;
     private LocalDateTime depTime;
     private LocalDateTime arrTime;
     private LocalDateTime latestDepTime; // based on maximum allowed delay
 
-    public Leg(Integer id, Integer depPort, Integer arrPort, Integer turnTimeInMin, Integer origTailId,
-               LocalDateTime depTime, LocalDateTime arrTime, LocalDateTime latestDepTime) {
+    // original departure and arrival times.
+    private int depTimeInMin;
+    private int arrTimeInMin;
+
+    public Leg(Integer id, Integer fltNum, Integer depPort, Integer arrPort, int turnTimeInMin,
+               Integer origTailId, LocalDateTime depTime, LocalDateTime arrTime,
+               LocalDateTime latestDepTime) {
         this.id = id;
+        this.fltNum = fltNum;
         this.index = null;
         this.depPort = depPort;
         this.arrPort = arrPort;
@@ -30,9 +37,40 @@ public class Leg {
         this.depTime = depTime;
         this.arrTime = arrTime;
         this.latestDepTime = latestDepTime;
+
+        this.depTimeInMin = (depTime.getHour()*60) + (depTime.getMinute()); // relative to startTime.
+        this.arrTimeInMin = (arrTime.getHour()*60) + (arrTime.getMinute()); // relative to startTime.
     }
 
-    public Integer getId() {
+    public Integer getFltNum() {
+        return fltNum;
+    }
+
+    public void setDepTime(LocalDateTime depTime) {
+		this.depTime = depTime;
+	}
+    
+	public void setArrTime(LocalDateTime arrTime) {
+		this.arrTime = arrTime;
+	}	
+
+	public int getDepTimeInMin() {
+		return depTimeInMin;
+	}
+
+	public void setDepTimeInMin(int depTimeInMin) {
+		this.depTimeInMin = depTimeInMin;
+	}
+
+	public int getArrTimeInMin() {
+		return arrTimeInMin;
+	}
+
+	public void setArrTimeInMin(int arrTimeInMin) {
+		this.arrTimeInMin = arrTimeInMin;
+	}
+
+	public Integer getId() {
         return id;
     }
 
@@ -52,7 +90,7 @@ public class Leg {
         return arrPort;
     }
 
-    public Integer getTurnTimeInMin() {
+    public int getTurnTimeInMin() {
         return turnTimeInMin;
     }
 
@@ -68,11 +106,11 @@ public class Leg {
         return arrTime;
     }
 
-    public Integer getBlockTimeInMin() {
+    public int getBlockTimeInMin() {
         return blockTimeInMin;
     }
 
-    public void setTurnTimeInMin(Integer turnTimeInMin) {
+    public void setTurnTimeInMin(int turnTimeInMin) {
         this.turnTimeInMin = turnTimeInMin;
     }
 
@@ -82,7 +120,7 @@ public class Leg {
 
     @Override
     public final String toString() {
-        return ("Leg(id=" + id + ",depPort=" + depPort + ",depTime=" + depTime + ",arrPort=" + arrPort + ",arrTime="
-                + arrTime + ",origTail=" + origTailId + ")");
+        return ("Leg(id=" + id + ",fltNum=" + fltNum + ",depPort=" + depPort + ",depTime=" + depTime + ",arrPort="
+                + arrPort + ",arrTime=" + arrTime + ",origTail=" + origTailId + ")");
     }
 }
