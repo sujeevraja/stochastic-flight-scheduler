@@ -22,7 +22,7 @@ public class FirstFlightDelayGenerator implements DelayGenerator {
         for(Tail tail : tails) {
             if(tail.getId() == 10001) {
                 Leg leg = tail.getOrigSchedule().get(0);
-                legDelayMap.put(leg.getIndex(), 15);
+                legDelayMap.put(leg.getIndex(), 30);
             }
         }
 

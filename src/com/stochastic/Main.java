@@ -11,7 +11,6 @@ public class Main {
      * Only responsibility is to own main().
      */
     private final static Logger logger = LogManager.getLogger(Main.class);
-    public static int nSce = 10;
 
     public static void main(String[] args) {
         try {

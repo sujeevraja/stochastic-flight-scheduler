@@ -187,6 +187,7 @@ public class SubSolver {
 //			Master.mastCplex.addMaximize();
             subCplex.solve();
             objValue = subCplex.getObjValue();
+            logger.debug("Objective value: " + objValue);
             yValues = new double[paths.size()];
             yValues = subCplex.getValues(y);
             duals = subCplex.getDuals(R);
