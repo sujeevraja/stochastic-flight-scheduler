@@ -47,7 +47,7 @@ public class Controller {
     public final void readData() throws OptException {
         logger.info("Started reading data...");
         String scenarioPath = getScenarioPath();
-        dataRegistry.setNumScenarios(10);
+        dataRegistry.setNumScenarios(1);
 
         ArrayList<Integer> durations = new ArrayList<>(Arrays.asList(5, 10, 15, 20, 25));
         dataRegistry.setDurations(durations);
@@ -92,10 +92,11 @@ public class Controller {
         ArrayList<Tail> tails = dataRegistry.getTails();
         ArrayList<Integer> durations = dataRegistry.getDurations();
 
+        int iter = -1;        
         MasterSolver.MasterSolverInit(legs, tails, durations);
         MasterSolver.constructFirstStage();
         MasterSolver.writeLPFile("ma", 0);
-        MasterSolver.solve();
+        MasterSolver.solve(iter);
         MasterSolver.addColumn();
         MasterSolver.writeLPFile("ma1", 0);
 
@@ -103,7 +104,7 @@ public class Controller {
         double uBound = Double.MAX_VALUE;
         // double lb = 0;
         // double ub = 0;
-        int iter = 0;
+        iter = 0;
 
         logger.info("Algorithm starts.");
 
@@ -121,8 +122,8 @@ public class Controller {
             MasterSolver.constructBendersCut(SubSolverWrapper.getAlpha(), SubSolverWrapper.getBeta());
 
             MasterSolver.writeLPFile("",iter);
-            MasterSolver.solve();
-            MasterSolver.writeLPFile("ma1", iter);
+            MasterSolver.solve(iter);
+ //           MasterSolver.writeLPFile("ma1", iter);
 
             lBound = MasterSolver.getObjValue();
 
@@ -131,7 +132,7 @@ public class Controller {
 
             iter++;
 
-            logger.info("LB: " + lBound + " UB: " + uBound + " Iter: " + iter);
+            logger.info("--------------LB: " + lBound + " UB: " + uBound + " Iter: " + iter);
             // ends here
         } while(uBound - lBound > 0.001); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
 
@@ -192,9 +193,10 @@ public class Controller {
         DelayGenerator dgen = new TestDelayGenerator(dataRegistry.getTails());
         HashMap<Integer, Integer> randomDelays = dgen.generateDelays();
 
-        SubSolver s = new SubSolver(randomDelays);
+        SubSolver s = new SubSolver(randomDelays, 1.0);
         s.constructSecondStage(xValues, dataRegistry);
         s.solve();
+ 
 
         /*
         if(!disruptionExists()) {
@@ -309,4 +311,14 @@ public class Controller {
         }
         return false;
     }
+
+	public DataRegistry getDataRegistry() {
+		return dataRegistry;
+	}
+
+	public void setDataRegistry(DataRegistry dataRegistry) {
+		this.dataRegistry = dataRegistry;
+	}  
+    
+    
 }

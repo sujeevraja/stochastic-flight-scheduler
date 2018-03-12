@@ -1,9 +1,12 @@
 package com.stochastic;
 
 import com.stochastic.controller.Controller;
+import com.stochastic.solver.DepSolver;
 import com.stochastic.utility.OptException;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
+
+import java.util.ArrayList;
 
 public class Main {
     /**
@@ -15,11 +18,15 @@ public class Main {
         try {
             logger.info("Started optimization...");
             Controller controller = new Controller();
-            controller.readData();
+            controller.readData();            
+            controller.solve(); //BD
 
+            DepSolver ds = new DepSolver();
+            ds.constructSecondStage(controller.getDataRegistry());
+            ds.solve();
             // controller.createTestDisruption();
-            controller.solve();
-            // controller.solveSecondStage();
+            // controller.solve();
+//          controller.solveSecondStage();
             logger.info("Completed optimization.");
         } catch (OptException oe) {
             logger.error(oe);

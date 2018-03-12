@@ -69,7 +69,7 @@ public class EquipmentsDAO {
             // if(tailId == 10001)
             //    tails.add(tailId);
 
-            if(tailId == 10001 || tailId == 10010)
+            if(tailId == 10001 || tailId == 10010 || tailId == 10005 || tailId == 10009 || tailId == 10025)
                 tails.add(tailId);
 
             // read in a small subset of data for testing purposes.

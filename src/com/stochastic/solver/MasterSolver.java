@@ -36,6 +36,7 @@ public class MasterSolver {
     private static int[][] indices;
     private static double[][] values;
     private static double[][] xValues;
+    private static double     theta;
 
 //    private static IloNumVar neta; // = cplex.numVar(-Double.POSITIVE_INFINITY, 0, "neta");    
 
@@ -75,14 +76,19 @@ public class MasterSolver {
 //        masterCplex.addColumn(thetaVar);
     }
 
-    public static void solve() {
+    public static void solve(int iter) {
         try {
 //			Master.mastCplex.addMaximize();
             masterCplex.solve();
             objValue = masterCplex.getObjValue();
+            
+            System.out.println(" Master- Ojective: " + objValue);
             xValues = new double[durations.size()][legs.size()];
             for (int i = 0; i < durations.size(); i++)
                 xValues[i] = MasterSolver.masterCplex.getValues(X[i]);
+            
+            if(iter > -1)
+            	theta =  MasterSolver.masterCplex.getValue(thetaVar);
 
 //			MasterSolver.xValues =  Master.mastCplex.getValues(Master.mastLp, 0, Master.mastCplex.getNcols(), IloCplex.IncumbentId);
         } catch (IloException e) {
@@ -90,6 +96,11 @@ public class MasterSolver {
             e.printStackTrace();
             System.out.println("Error: MasterSolve");
         }
+    }
+    
+    public static double getFSObjValue()
+    {
+    	return objValue - theta;
     }
 
     public static void writeLPFile(String fName, int iter) {
@@ -125,7 +136,7 @@ public class MasterSolver {
 
             for (int i = 0; i < durations.size(); i++)
                 for (int j = 0; j < legs.size(); j++)
-                    cons.addTerm(X[i][j], 1);
+                    cons.addTerm(X[i][j], durations.get(i));
 
             cons.addTerm(thetaVar, 0);
             obj = masterCplex.addMinimize(cons);

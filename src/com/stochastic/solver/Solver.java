@@ -34,7 +34,7 @@ public class Solver {
         MasterSolver.MasterSolverInit(legs, tails, durations);
         MasterSolver.constructFirstStage();
         MasterSolver.writeLPFile("ma", 0);
-        MasterSolver.solve();
+        MasterSolver.solve(-1);
         MasterSolver.addColumn();
         MasterSolver.writeLPFile("ma1", 0);
 
