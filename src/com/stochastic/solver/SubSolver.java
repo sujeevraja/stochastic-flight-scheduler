@@ -1,7 +1,7 @@
 package com.stochastic.solver;
 
 import com.stochastic.delay.DelayGenerator;
-import com.stochastic.delay.FirstFlightDelayGenerator;
+import com.stochastic.delay.TestDelayGenerator;
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
 import com.stochastic.network.Network;
@@ -147,7 +147,7 @@ public class SubSolver {
     private HashMap<Integer, Integer> getLegDelays(ArrayList<Tail> tails, ArrayList<Leg> legs,
                                                    ArrayList<Integer> durations, double[][] xValues) {
         // Generate random delays using a delay generator.
-        DelayGenerator dgen = new FirstFlightDelayGenerator(tails);
+        DelayGenerator dgen = new TestDelayGenerator(tails);
         HashMap<Integer, Integer> randomDelays = dgen.generateDelays();
 
         // Collect planned delays from first stage solution.

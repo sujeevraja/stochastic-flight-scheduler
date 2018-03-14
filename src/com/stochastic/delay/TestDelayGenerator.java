@@ -6,13 +6,13 @@ import com.stochastic.domain.Tail;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class FirstFlightDelayGenerator implements DelayGenerator {
+public class TestDelayGenerator implements DelayGenerator {
     /**
      * Class that generates random delays for the first flight of each tail.
      */
     private ArrayList<Tail> tails;
 
-    public FirstFlightDelayGenerator(ArrayList<Tail> tails) {
+    public TestDelayGenerator(ArrayList<Tail> tails) {
         this.tails = tails;
     }
 
