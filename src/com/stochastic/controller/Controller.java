@@ -10,6 +10,7 @@ import com.stochastic.solver.MasterSolver;
 import com.stochastic.solver.SubSolver;
 import com.stochastic.solver.SubSolverWrapper;
 import com.stochastic.utility.OptException;
+import org.apache.commons.math3.distribution.LogNormalDistribution;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
@@ -18,6 +19,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.IOException;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -32,6 +35,8 @@ public class Controller {
      */
     private final static Logger logger = LogManager.getLogger(Controller.class);
     private DataRegistry dataRegistry;
+    private ArrayList<Integer> scenarioDelays;
+    private ArrayList<Double> scenarioProbabilities;
 
     public Controller() {
         dataRegistry = new DataRegistry();
@@ -42,7 +47,7 @@ public class Controller {
         String scenarioPath = getScenarioPath();
         dataRegistry.setNumScenarios(10);
 
-        ArrayList<Integer> durations = new ArrayList<>(Arrays.asList(5, 10, 15));
+        ArrayList<Integer> durations = new ArrayList<>(Arrays.asList(5, 10, 15, 20, 25));
         dataRegistry.setDurations(durations);
 
         // Read parameters
@@ -100,6 +105,11 @@ public class Controller {
 
         logger.info("Algorithm starts.");
 
+        // generate random delays for 2nd stage scenarios.
+        double scale = 2.5;
+        double shape = 0.25;
+        generateScenarioDelays(scale, shape);
+
         do {
             // starts here
             SubSolverWrapper.SubSolverWrapperInit(dataRegistry, MasterSolver.getxValues());
@@ -126,6 +136,48 @@ public class Controller {
 
         // lb = lBound;
         // ub = uBound;
+    }
+
+    private void generateScenarioDelays(double scale, double shape) {
+        // Generates random delays that will be applied to the first flight of each tail's original schedule.
+        // Also generates delay probabilities using frequency values.
+        // This function changes the number of scenarios as well if delay times repeat.
+
+        int numSamples = dataRegistry.getNumScenarios();
+        LogNormalDistribution logNormal = new LogNormalDistribution(scale, shape);
+
+        int[] delayTimes = new int[numSamples];
+        for (int i = 0; i < numSamples; ++i)
+            delayTimes[i] = (int) Math.round(logNormal.sample());
+
+        Arrays.sort(delayTimes);
+        scenarioDelays = new ArrayList<>();
+        scenarioProbabilities = new ArrayList<>();
+
+        DecimalFormat df = new DecimalFormat("##.##");
+        df.setRoundingMode(RoundingMode.HALF_UP);
+
+        final double baseProbability = 1.0 / numSamples;
+        int numCopies = 1;
+
+        scenarioDelays.add(delayTimes[0]);
+        int prevDelayTime = delayTimes[0];
+        for(int i = 1; i < numSamples; ++i) {
+            int delayTime = delayTimes[i];
+
+            if(delayTime != prevDelayTime) {
+                final double prob = Double.parseDouble(df.format(numCopies * baseProbability));
+                scenarioProbabilities.add(prob); // add probabilities for previous time.
+                scenarioDelays.add(delayTime); // add new delay time.
+                numCopies = 1;
+            } else
+                numCopies++;
+
+            prevDelayTime = delayTime;
+        }
+        scenarioProbabilities.add(numCopies * baseProbability);
+        dataRegistry.setNumScenarios(scenarioDelays.size());
+        logger.info("updated number of scenarios: " + scenarioDelays.size());
     }
 
     public final void solveSecondStage() throws OptException {
