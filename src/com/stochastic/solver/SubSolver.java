@@ -1,7 +1,7 @@
 package com.stochastic.solver;
 
 import com.stochastic.delay.DelayGenerator;
-import com.stochastic.delay.FirstFlightDelayGenerator;
+import com.stochastic.delay.TestDelayGenerator;
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
 import com.stochastic.network.Network;
@@ -23,6 +23,7 @@ public class SubSolver {
      * set of paths.
      */
     private final Logger logger = LogManager.getLogger(SubSolver.class);
+    private HashMap<Integer, Integer> randomDelays; // random delays of 2nd stage scenario
     private final double eps = 1.0e-5;
     private ArrayList<Path> paths; // subproblem columns
 
@@ -40,7 +41,9 @@ public class SubSolver {
     private double[] yValues;
 
     // private static IloNumVar neta; // = cplex.numVar(-Double.POSITIVE_INFINITY, 0, "neta");
-    public SubSolver() {}
+    public SubSolver(HashMap<Integer, Integer> randomDelays) {
+        this.randomDelays = randomDelays;
+    }
 
     public void constructSecondStage(double[][] xValues, DataRegistry dataRegistry) throws OptException {
         try {
@@ -146,10 +149,6 @@ public class SubSolver {
 
     private HashMap<Integer, Integer> getLegDelays(ArrayList<Tail> tails, ArrayList<Leg> legs,
                                                    ArrayList<Integer> durations, double[][] xValues) {
-        // Generate random delays using a delay generator.
-        DelayGenerator dgen = new FirstFlightDelayGenerator(tails);
-        HashMap<Integer, Integer> randomDelays = dgen.generateDelays();
-
         // Collect planned delays from first stage solution.
         HashMap<Integer, Integer> plannedDelays = new HashMap<>();
         for(int i = 0; i < durations.size(); ++i) {
@@ -159,7 +158,7 @@ public class SubSolver {
             }
         }
 
-        // Combine the delay maps into a single one.
+        // Combine planned and delay maps into a single one.
         HashMap<Integer, Integer> combinedDelayMap = new HashMap<>();
         for(Leg leg : legs) {
             int delayTime = 0;
