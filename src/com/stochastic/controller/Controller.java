@@ -1,5 +1,7 @@
 package com.stochastic.controller;
 
+import com.stochastic.delay.DelayGenerator;
+import com.stochastic.delay.TestDelayGenerator;
 import com.stochastic.domain.Leg;
 import com.stochastic.dao.EquipmentsDAO;
 import com.stochastic.dao.ParametersDAO;
@@ -113,7 +115,8 @@ public class Controller {
         do {
             // starts here
             SubSolverWrapper.SubSolverWrapperInit(dataRegistry, MasterSolver.getxValues());
-            new SubSolverWrapper().buildSubModel();
+            new SubSolverWrapper().solveSequential(scenarioDelays, scenarioProbabilities);
+            // new SubSolverWrapper().solveParallel(scenarioDelays, scenarioProbabilities);
 
             MasterSolver.constructBendersCut(SubSolverWrapper.getAlpha(), SubSolverWrapper.getBeta());
 
@@ -186,7 +189,10 @@ public class Controller {
             for(int j = 0; j < dataRegistry.getNumLegs(); ++j)
                 xValues[i][j] = 0.0;
 
-        SubSolver s = new SubSolver();
+        DelayGenerator dgen = new TestDelayGenerator(dataRegistry.getTails());
+        HashMap<Integer, Integer> randomDelays = dgen.generateDelays();
+
+        SubSolver s = new SubSolver(randomDelays);
         s.constructSecondStage(xValues, dataRegistry);
         s.solve();
 

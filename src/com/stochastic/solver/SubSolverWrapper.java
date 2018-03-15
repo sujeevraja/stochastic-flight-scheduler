@@ -1,10 +1,13 @@
 package com.stochastic.solver;
 
+import com.stochastic.delay.DelayGenerator;
+import com.stochastic.delay.FirstFlightDelayGenerator;
 import com.stochastic.domain.Leg;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.utility.OptException;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -23,7 +26,6 @@ public class SubSolverWrapper {
 
     private static double[][] xValues;
     private static double uBound;
-    private static double probability;
 
     public static void SubSolverWrapperInit(DataRegistry dataRegistry, double[][] xValues) throws OptException {
         try {
@@ -33,8 +35,6 @@ public class SubSolverWrapper {
             alpha = 0;
             uBound = 0;
             beta = new double[dataRegistry.getDurations().size()][dataRegistry.getLegs().size()];
-            probability = 1.0 / dataRegistry.getNumScenarios();
-
         } catch (Exception e) {
             logger.error(e.getStackTrace());
             throw new OptException("error at SubSolverWrapperInit");
@@ -56,15 +56,31 @@ public class SubSolverWrapper {
                 beta[i][j] = duals[j] * xValues[i][j] * prb;
     }
 
-    public void buildSubModel() throws OptException {
+    public void solveSequential(ArrayList<Integer> scenarioDelays, ArrayList<Double> probabilities) {
+        final int numScenarios = dataRegistry.getNumScenarios();
+        for (int i = 0; i < numScenarios; i++) {
+            DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getTails(), scenarioDelays.get(i));
+            HashMap<Integer, Integer> legDelays = dgen.generateDelays();
+
+            SubSolverRunnable subSolverRunnable = new SubSolverRunnable(i, legDelays, probabilities.get(i));
+            subSolverRunnable.run();
+            logger.info("Solved scenario " + i);
+        }
+    }
+
+    public void solveParallel(ArrayList<Integer> scenarioDelays, ArrayList<Double> probabilities) throws OptException {
         try {
             ExecutorService exSrv = Executors.newFixedThreadPool(numThreads);
 
             for (int i = 0; i < dataRegistry.getNumScenarios(); i++) {
                 Thread.sleep(500);
-                SubSolverRunnable subSolverRunnable = new SubSolverRunnable();
-                subSolverRunnable.setScerNo(i);
+
+                DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getTails(), scenarioDelays.get(i));
+                HashMap<Integer, Integer> legDelays = dgen.generateDelays();
+
+                SubSolverRunnable subSolverRunnable = new SubSolverRunnable(i, legDelays, probabilities.get(i));
                 exSrv.execute(subSolverRunnable); // this calls run() method below
+                subSolverRunnable.run();
             }
 
             exSrv.shutdown();
@@ -77,16 +93,21 @@ public class SubSolverWrapper {
     }
 
     class SubSolverRunnable implements Runnable {
-        private int scerNo;
-        void setScerNo(int scerNo) {
-            this.scerNo = scerNo;
+        private int scenarioNum;
+        private HashMap<Integer, Integer> randomDelays;
+        private double probability;
+
+        SubSolverRunnable(int scenarioNum, HashMap<Integer, Integer> randomDelays, double probability) {
+            this.scenarioNum = scenarioNum;
+            this.randomDelays = randomDelays;
+            this.probability = probability;
         }
 
         //exSrv.execute(buildSDThrObj) calls brings you here
         public void run() {
             try {
                 // beta x + theta >= alpha - Benders cut
-                SubSolver s = new SubSolver();
+                SubSolver s = new SubSolver(randomDelays);
                 s.constructSecondStage(xValues, dataRegistry);
                 s.solve();
                 uBound += (probability * s.getObjValue());
@@ -94,7 +115,7 @@ public class SubSolverWrapper {
                 calculateBeta(s.getDuals(), probability);
                 s.end();
             } catch (OptException oe) {
-                logger.error("submodel run for scenario " + scerNo + " failed.");
+                logger.error("submodel run for scenario " + scenarioNum + " failed.");
                 logger.error(oe);
                 System.exit(17);
             }
