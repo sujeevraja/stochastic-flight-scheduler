@@ -22,11 +22,15 @@ public class Main {
             controller.solve(); //BD
 
             DepSolver ds = new DepSolver();
-            ds.constructSecondStage(controller.getDataRegistry());
+            ds.constructModel(controller.getDataRegistry());
             ds.solve();
             // controller.createTestDisruption();
             // controller.solve();
 //          controller.solveSecondStage();
+            
+            // post processing x,y 
+            // det, tws,
+            
             logger.info("Completed optimization.");
         } catch (OptException oe) {
             logger.error(oe);

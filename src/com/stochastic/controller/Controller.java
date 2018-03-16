@@ -7,6 +7,7 @@ import com.stochastic.dao.EquipmentsDAO;
 import com.stochastic.dao.ParametersDAO;
 import com.stochastic.dao.ScheduleDAO;
 import com.stochastic.domain.Tail;
+import com.stochastic.network.Path;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.solver.MasterSolver;
 import com.stochastic.solver.SubSolver;
@@ -40,11 +41,13 @@ public class Controller {
     private ArrayList<Integer> scenarioDelays;
     private ArrayList<Double> scenarioProbabilities;
 
+    public static int[][] sceVal;    
+    
     public Controller() {
         dataRegistry = new DataRegistry();
-    }
+    }	
 
-    public final void readData() throws OptException {
+	public final void readData() throws OptException {
         logger.info("Started reading data...");
         String scenarioPath = getScenarioPath();
         dataRegistry.setNumScenarios(1);
@@ -112,6 +115,13 @@ public class Controller {
         double scale = 2.5;
         double shape = 0.25;
         generateScenarioDelays(scale, shape);
+        
+        sceVal = new int[3][5];
+        Random rand = new Random();
+        
+        for(int i=0; i<3;i++)
+            for(int j=0; j<5;j++)            	
+            	sceVal[i][j] = rand.nextInt(40 - 20 + 1) + 20; // (max - min + 1) + min;  (i+20) + j      
 
         do {
             // starts here
@@ -184,6 +194,7 @@ public class Controller {
         logger.info("updated number of scenarios: " + scenarioDelays.size());
     }
 
+    /*
     public final void solveSecondStage() throws OptException {
         double[][] xValues = new double[dataRegistry.getNumDurations()][dataRegistry.getNumLegs()];
         for(int i = 0; i < dataRegistry.getNumDurations();  ++i)
@@ -193,7 +204,7 @@ public class Controller {
         DelayGenerator dgen = new TestDelayGenerator(dataRegistry.getTails());
         HashMap<Integer, Integer> randomDelays = dgen.generateDelays();
 
-        SubSolver s = new SubSolver(randomDelays, 1.0);
+        SubSolver s = new SubSolver(randomDelays, 1.0, 1);
         s.constructSecondStage(xValues, dataRegistry);
         s.solve();
  
@@ -215,7 +226,8 @@ public class Controller {
         SecondStageSolver sss = new SecondStageSolver(paths, legs, tails);
         sss.solveWithCPLEX();
         */
-    }
+//    }
+
 
     private String getScenarioPath() throws OptException {
         try {

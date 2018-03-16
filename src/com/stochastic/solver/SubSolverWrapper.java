@@ -27,6 +27,7 @@ public class SubSolverWrapper {
 
     private static double[][] xValues;
     private static double uBound;
+        
 
     public static void SubSolverWrapperInit(DataRegistry dataRegistry, double[][] xValues) throws OptException {
         try {
@@ -42,48 +43,68 @@ public class SubSolverWrapper {
         }
     }
 
-    private synchronized static void calculateAlpha(double[] duals1, double[] duals2, double[] duals3, double[] duals4, double prb) {
+    private synchronized static void calculateAlpha(double[] duals1, double[] duals2, double[] duals3, double[] duals4) {
         ArrayList<Leg> legs = dataRegistry.getLegs();
+        
+        System.out.println(" st-alpha: " + alpha);
         
         for (int j = 0; j < legs.size(); j++)
         {
-            System.out.println(" j: " + j + " duals1[j]: " + duals1[j]);
-            alpha += (duals1[j]*prb);            
+            System.out.println(" j: " + j + " duals1[j]: " + duals1[j]); // + " prb: " + prb);
+            alpha += (duals1[j]); //*prb);            
         }
 
         for (int j = 0; j < dataRegistry.getTails().size(); j++)
         {
-            System.out.println(" j: " + j + " duals2[j]: " + duals2[j]);        	
-            alpha += (duals2[j]*prb);        	
+            System.out.println(" j: " + j + " duals2[j]: " + duals2[j]); // + " prb: " + prb);        	
+            alpha += (duals2[j]); //*prb);        	
         }
 
         for (int j = 0; j < legs.size(); j++)
         {
-            System.out.println(" j: " + j + " duals3[j]: " + duals3[j]);        	
-            alpha += (duals3[j]*prb*14);        	
+            System.out.println(" j: " + j + " duals3[j]: " + duals3[j]); // + " prb: " + prb);        	
+            alpha += (duals3[j]*14); //prb*14);        	
         }
         
         for (int j = 0; j < duals4.length; j++)
         {
-            System.out.println(" j: " + j + " duals4[j]: " + duals4[j]);        	
-            alpha += (duals4[j]*prb);       	
+            System.out.println(" j: " + j + " duals4[j]: " + duals4[j]); // + " prb: " + prb);        	
+            alpha += (duals4[j]); //*prb);       	
         }
+        
+        System.out.println(" en-alpha: " + alpha);        
     }
 
-    private synchronized static void calculateBeta(double[] duals, double prb) {
+    private synchronized static void calculateBeta(double[] duals) {
         ArrayList<Integer> durations = dataRegistry.getDurations();
         ArrayList<Leg> legs = dataRegistry.getLegs();
 
         for (int i = 0; i < durations.size(); i++)
             for (int j = 0; j < legs.size(); j++)
             {
-                beta[i][j] += duals[j] * -durations.get(i) * prb;
+                beta[i][j] += duals[j] * -durations.get(i); // * prb;
                 System.out.println(" i: " + i + " j: " + j + " b: " + beta[i][j]
-                		+ " d: " + duals[j] + " d: " +  durations.get(i) + " prb: " + prb);
+                		+ " d: " + duals[j] + " d: " +  durations.get(i) + " prb: "); // + prb);
             }
 
     }
 
+    public void solveSequential(ArrayList<Integer> scenarioDelays, ArrayList<Double> probabilities) {
+        final int numScenarios = 5;
+        for (int i = 0; i < numScenarios; i++) {
+
+//        	DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getTails(), scenarioDelays.get(i));
+//          HashMap<Integer, Integer> legDelays = dgen.generateDelays();
+            
+            HashMap<Integer, Integer> legDelays = new HashMap<Integer, Integer>();            
+
+            SubSolverRunnable subSolverRunnable = new SubSolverRunnable(i, legDelays, 0.2);
+            subSolverRunnable.run();
+            logger.info("Solved scenario " + i + " numScenarios: " + numScenarios);
+        }
+    }
+
+/*    
     public void solveSequential(ArrayList<Integer> scenarioDelays, ArrayList<Double> probabilities) {
         final int numScenarios = dataRegistry.getNumScenarios();
         for (int i = 0; i < numScenarios; i++) {
@@ -95,7 +116,7 @@ public class SubSolverWrapper {
             logger.info("Solved scenario " + i + " numScenarios: " + numScenarios + " probabilities.get(i): " + probabilities.get(i));
         }
     }
-
+*/
     public void solveParallel(ArrayList<Integer> scenarioDelays, ArrayList<Double> probabilities) throws OptException {
         try {
             ExecutorService exSrv = Executors.newFixedThreadPool(numThreads);
@@ -135,14 +156,13 @@ public class SubSolverWrapper {
         public void run() {
             try {
                 // beta x + theta >= alpha - Benders cut
-                SubSolver s = new SubSolver(randomDelays, probability);
+                SubSolver s = new SubSolver(randomDelays, probability, scenarioNum);
                 s.constructSecondStage(xValues, dataRegistry);
                 s.solve();
                 s.writeLPFile("SS", iter, this.scenarioNum);
-                uBound += (probability * s.getObjValue());
-                calculateAlpha(s.getDuals1(), s.getDuals2(), s.getDuals3(), s.getDuals4(),
-                					probability);
-                calculateBeta(s.getDuals3(), probability);
+                uBound += (s.getObjValue());
+                calculateAlpha(s.getDuals1(), s.getDuals2(), s.getDuals3(), s.getDuals4());
+                calculateBeta(s.getDuals3());
                 s.end();
             } catch (OptException oe) {
                 logger.error("submodel run for scenario " + scenarioNum + " failed.");

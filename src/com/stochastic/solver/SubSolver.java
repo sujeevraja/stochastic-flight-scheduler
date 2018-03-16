@@ -1,5 +1,6 @@
 package com.stochastic.solver;
 
+import com.stochastic.controller.Controller;
 import com.stochastic.delay.DelayGenerator;
 import com.stochastic.delay.TestDelayGenerator;
 import com.stochastic.domain.Leg;
@@ -54,11 +55,14 @@ public class SubSolver {
     private boolean[] legPresence;
     private boolean[] tailPresence;
     
+    private int sceNo;
+    
     
     // private static IloNumVar neta; // = cplex.numVar(-Double.POSITIVE_INFINITY, 0, "neta");
-    public SubSolver(HashMap<Integer, Integer> randomDelays, double probability) {
+    public SubSolver(HashMap<Integer, Integer> randomDelays, double probability, int sNo) {
         this.randomDelays = randomDelays;
         this.probability = probability;
+        this.sceNo       = sNo;
     }
 
     public void constructSecondStage(double[][] xValues, DataRegistry dataRegistry) throws OptException {
@@ -148,6 +152,8 @@ public class SubSolver {
                     Leg pathLeg = pathLegs.get(j);
                     legCoverExprs[pathLeg.getIndex()].addTerm(y[i], 1.0);
                     legPresence[pathLeg.getIndex()] = true;
+                    
+//                    delayExprs[pathLeg.getIndex()].addTerm(y[i], Controller.sceVal[i][sceNo]);                    
                     
                     final Integer delayTime = delayTimes.get(j);
                     if (delayTime > 0)
