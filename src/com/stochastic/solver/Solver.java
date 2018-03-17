@@ -19,8 +19,8 @@ public class Solver {
     private static ArrayList<Integer> durations;
     private static Integer numScenarios;
     
-	private static double lb = 0;
-	private static double ub = 0;
+	// private static double lb = 0;
+	// private static double ub = 0;
     
     public static void init(ArrayList<Leg> legs, ArrayList<Tail> tails,
                             ArrayList<Integer> durations, Integer numScenarios) {
@@ -31,20 +31,21 @@ public class Solver {
     }    
     
     public static void algorithm() throws OptException {
+        /*
         MasterSolver.MasterSolverInit(legs, tails, durations);
         MasterSolver.constructFirstStage();
-        MasterSolver.writeLPFile("ma", 0);
-        MasterSolver.solve();
-        MasterSolver.addColumn();
-        MasterSolver.writeLPFile("ma1", 0);
+        // MasterSolver.writeLPFile("ma", 0);
+        MasterSolver.solve(-1);
+        // MasterSolver.addColumn();
+        // MasterSolver.writeLPFile("ma1", 0);
+        */
 
         double lBound = 0;
         double uBound = Double.MAX_VALUE;
         int iter = 0;
         lBound = MasterSolver.getObjValue();
 
-        System.out.println();
-        System.out.println("Algorithm Starts: ");
+        logger.info("Algorithm starts: ");
 
         //labelling algorithm duration - lgnormal (parameters, set of legs) -> scenarios -> set of paths
 
@@ -67,14 +68,13 @@ public class Solver {
 
             iter++;
 
-            System.out.println("LB: " + lBound + " UB: " + uBound + " Iter: " + iter);
             */
             // ends here
         } while(uBound - lBound > 0.001); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
 
         logger.info("Algorithm ends.");
 
-        lb = lBound;
-        ub = uBound;
+        // lb = lBound;
+        // ub = uBound;
     }
 }

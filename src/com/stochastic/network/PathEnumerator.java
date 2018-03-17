@@ -2,6 +2,7 @@ package com.stochastic.network;
 
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
+import com.stochastic.registry.DataRegistry;
 
 import java.lang.Math;
 import java.time.Duration;
@@ -30,8 +31,12 @@ public class PathEnumerator {
     // This time has 2 lower bounds: the planned reschedule time from first stage, and the random delay generated
     // for the second stage scenario.
     private ArrayList<Integer> delayTimes;
+       
+    public PathEnumerator() {
+		super();
+	}
 
-    PathEnumerator(Tail tail, ArrayList<Leg> legs, HashMap<Integer, Integer> legDelayMap,
+	PathEnumerator(Tail tail, ArrayList<Leg> legs, HashMap<Integer, Integer> legDelayMap,
                    HashMap<Integer, ArrayList<Integer>> adjacencyList, LocalDateTime startTime, LocalDateTime endTime,
                    int maxLegDelayInMin)  {
         this.tail = tail;
@@ -53,10 +58,6 @@ public class PathEnumerator {
     public ArrayList<Path> generatePaths() {
         for(int i = 0; i < legs.size(); ++i) {
             Leg leg = legs.get(i);
-
-            if(leg.getFltNum() == 234) {
-                int a = 1;
-            }
 
             if(!tail.getSourcePort().equals(leg.getDepPort()))
                 continue;
@@ -149,4 +150,43 @@ public class PathEnumerator {
 
         return leg.getArrTime().plusMinutes(legDelayMap.get(leg.getIndex()));
     }
+    
+    public ArrayList<Path> addPaths(DataRegistry dataRegistry)
+    {
+    	ArrayList<Path> paths = new ArrayList<Path>();
+    	
+        ArrayList<Tail> tails = dataRegistry.getTails();
+        ArrayList<Leg> legs = dataRegistry.getLegs();
+    	
+        // p1 - t1, l1,l2,l3
+        Path p = new Path(tails.get(0));
+        p.addLeg(legs.get(0), 0);
+        p.addLeg(legs.get(1), 0);
+        p.addLeg(legs.get(2), 0);
+        paths.add(p);
+        
+        // p2 - t1, l1,l2        
+        p = new Path(tails.get(0));
+        p.addLeg(legs.get(0), 0);
+        p.addLeg(legs.get(1), 0);
+        paths.add(p);
+
+        // p3 - t2, l4,l5,l6,l7,l8        
+        p = new Path(tails.get(1));
+        p.addLeg(legs.get(3), 0);
+        p.addLeg(legs.get(4), 0);
+        p.addLeg(legs.get(5), 0);        
+        p.addLeg(legs.get(6), 0);
+        p.addLeg(legs.get(7), 0);
+        paths.add(p);
+        
+//        p = new Path(tails.get(1));
+//        p.addLeg(legs.get(6), 0);
+//        p.addLeg(legs.get(7), 0);        
+//        paths.add(p);
+        
+        return paths;
+        
+    }
+    
 }

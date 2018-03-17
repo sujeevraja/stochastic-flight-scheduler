@@ -21,7 +21,7 @@ public class Path {
     private static int indexCount = 0;
     private int index;
 
-    Path(Tail tail) {
+	Path(Tail tail) {
         this.tail = tail;
         legs = new ArrayList<>();
         delayTimesInMin = new ArrayList<>();

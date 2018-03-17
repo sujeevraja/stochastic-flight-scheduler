@@ -1,7 +1,5 @@
 package com.stochastic.controller;
 
-import com.stochastic.delay.DelayGenerator;
-import com.stochastic.delay.TestDelayGenerator;
 import com.stochastic.domain.Leg;
 import com.stochastic.dao.EquipmentsDAO;
 import com.stochastic.dao.ParametersDAO;
@@ -9,7 +7,6 @@ import com.stochastic.dao.ScheduleDAO;
 import com.stochastic.domain.Tail;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.solver.MasterSolver;
-import com.stochastic.solver.SubSolver;
 import com.stochastic.solver.SubSolverWrapper;
 import com.stochastic.utility.OptException;
 import org.apache.commons.math3.distribution.LogNormalDistribution;
@@ -40,11 +37,13 @@ public class Controller {
     private ArrayList<Integer> scenarioDelays;
     private ArrayList<Double> scenarioProbabilities;
 
+    public static int[][] sceVal;    
+    
     public Controller() {
         dataRegistry = new DataRegistry();
-    }
+    }	
 
-    public final void readData() throws OptException {
+	public final void readData() throws OptException {
         logger.info("Started reading data...");
         String scenarioPath = getScenarioPath();
         dataRegistry.setNumScenarios(10);
@@ -72,8 +71,9 @@ public class Controller {
         StringBuilder tailsStr = new StringBuilder();
         for(Tail tail : dataRegistry.getTails()) {
             tailsStr.append(tail.getId());
+            tailsStr.append(" ");
         }
-        logger.debug("Loaded tails: " + tailsStr.toString());
+        logger.debug("loaded tails: " + tailsStr.toString());
         logger.info("Completed reading data.");
     }
 
@@ -92,18 +92,15 @@ public class Controller {
         ArrayList<Tail> tails = dataRegistry.getTails();
         ArrayList<Integer> durations = dataRegistry.getDurations();
 
-        MasterSolver.MasterSolverInit(legs, tails, durations);
+        int iter = -1;        
+        MasterSolver.MasterSolverInit(legs, tails, durations, dataRegistry.getWindowStart());
         MasterSolver.constructFirstStage();
-        MasterSolver.writeLPFile("ma", 0);
-        MasterSolver.solve();
-        MasterSolver.addColumn();
-        MasterSolver.writeLPFile("ma1", 0);
+        MasterSolver.writeLPFile("master_initial.lp");
+        MasterSolver.solve(iter);
 
         double lBound;
         double uBound = Double.MAX_VALUE;
-        // double lb = 0;
-        // double ub = 0;
-        int iter = 0;
+        iter = 0;
 
         logger.info("Algorithm starts.");
 
@@ -111,6 +108,15 @@ public class Controller {
         double scale = 2.5;
         double shape = 0.25;
         generateScenarioDelays(scale, shape);
+
+        // generateTestDelays();
+
+        // sceVal = new int[3][5];
+        // Random rand = new Random();
+        
+        // for(int i=0; i<3;i++)
+        //    for(int j=0; j<5;j++)
+        //    	sceVal[i][j] = rand.nextInt(40 - 20 + 1) + 20; // (max - min + 1) + min;  (i+20) + j
 
         do {
             // starts here
@@ -120,9 +126,8 @@ public class Controller {
 
             MasterSolver.constructBendersCut(SubSolverWrapper.getAlpha(), SubSolverWrapper.getBeta());
 
-            MasterSolver.writeLPFile("",iter);
-            MasterSolver.solve();
-            MasterSolver.writeLPFile("ma1", iter);
+            MasterSolver.writeLPFile("master_" + iter + ".lp");
+            MasterSolver.solve(iter);
 
             lBound = MasterSolver.getObjValue();
 
@@ -131,14 +136,23 @@ public class Controller {
 
             iter++;
 
-            logger.info("LB: " + lBound + " UB: " + uBound + " Iter: " + iter);
+            logger.info("--------------LB: " + lBound + " UB: " + uBound + " Iter: " + iter);
             // ends here
         } while(uBound - lBound > 0.001); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
 
         logger.info("Algorithm ends.");
+    }
 
-        // lb = lBound;
-        // ub = uBound;
+    private void generateTestDelays() {
+        scenarioDelays = new ArrayList<>(Collections.singletonList(45));
+        scenarioProbabilities = new ArrayList<>(Collections.singletonList(1.0));
+        dataRegistry.setNumScenarios(1);
+
+        // scenarioDelays = new ArrayList<>(Arrays.asList(30, 40));
+        // scenarioProbabilities = new ArrayList<>(Arrays.asList(0.75, 0.25));
+        // dataRegistry.setNumScenarios(2);
+
+        dataRegistry.setMaxLegDelayInMin(Collections.max(scenarioDelays));
     }
 
     private void generateScenarioDelays(double scale, double shape) {
@@ -180,9 +194,29 @@ public class Controller {
         }
         scenarioProbabilities.add(numCopies * baseProbability);
         dataRegistry.setNumScenarios(scenarioDelays.size());
+        int minMaxDelay = Collections.max(scenarioDelays);
+        if(minMaxDelay > dataRegistry.getMaxLegDelayInMin())
+            dataRegistry.setMaxLegDelayInMin(minMaxDelay);
+
+        logger.info("updated max 2nd stage delay: " + dataRegistry.getMaxLegDelayInMin());
         logger.info("updated number of scenarios: " + scenarioDelays.size());
+
+        StringBuilder delayStr = new StringBuilder();
+        StringBuilder probStr = new StringBuilder();
+        delayStr.append("scenario delays: ");
+        probStr.append("scenario probabilities: ");
+        for(int i = 0; i < scenarioDelays.size(); ++i) {
+            delayStr.append(scenarioDelays.get(i));
+            delayStr.append(" ");
+            probStr.append(scenarioProbabilities.get(i));
+            probStr.append(" ");
+        }
+
+        logger.info(delayStr);
+        logger.info(probStr);
     }
 
+    /*
     public final void solveSecondStage() throws OptException {
         double[][] xValues = new double[dataRegistry.getNumDurations()][dataRegistry.getNumLegs()];
         for(int i = 0; i < dataRegistry.getNumDurations();  ++i)
@@ -192,9 +226,10 @@ public class Controller {
         DelayGenerator dgen = new TestDelayGenerator(dataRegistry.getTails());
         HashMap<Integer, Integer> randomDelays = dgen.generateDelays();
 
-        SubSolver s = new SubSolver(randomDelays);
+        SubSolver s = new SubSolver(randomDelays, 1.0, 1);
         s.constructSecondStage(xValues, dataRegistry);
         s.solve();
+ 
 
         /*
         if(!disruptionExists()) {
@@ -213,7 +248,8 @@ public class Controller {
         SecondStageSolver sss = new SecondStageSolver(paths, legs, tails);
         sss.solveWithCPLEX();
         */
-    }
+//    }
+
 
     private String getScenarioPath() throws OptException {
         try {
@@ -309,4 +345,14 @@ public class Controller {
         }
         return false;
     }
+
+	public DataRegistry getDataRegistry() {
+		return dataRegistry;
+	}
+
+	public void setDataRegistry(DataRegistry dataRegistry) {
+		this.dataRegistry = dataRegistry;
+	}  
+    
+    
 }
