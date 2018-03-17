@@ -3,6 +3,8 @@
 # lib/*
 # !lib/.gitkeep
 out/
+pucks.xml
+*.log
 
 # Idea ignores
 .idea/

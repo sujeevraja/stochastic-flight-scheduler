@@ -80,11 +80,11 @@ public class SubSolver {
             // Later, the full enumeration algorithm in enumerateAllPaths() will be replaced a labeling algorithm.
             paths = network.enumerateAllPaths();            
             
-//            PathEnumerator pe = new PathEnumerator(); 
-//            paths = pe.addPaths(dataRegistry);
+            // PathEnumerator pe = new PathEnumerator();
+            // paths = pe.addPaths(dataRegistry);
             
-    		System.out.println("Tail: " + tails.size() + " legs: " + legs.size() + " durations: " + durations.size());    		
-//            printAllPaths();
+    		// logger.debug("Tail: " + tails.size() + " legs: " + legs.size() + " durations: " + durations.size());
+            // printAllPaths();
             
             // Create containers to build CPLEX model.
             subCplex = new IloCplex();
@@ -153,16 +153,15 @@ public class SubSolver {
                     legCoverExprs[pathLeg.getIndex()].addTerm(y[i], 1.0);
                     legPresence[pathLeg.getIndex()] = true;
                     
-//                    delayExprs[pathLeg.getIndex()].addTerm(y[i], Controller.sceVal[i][sceNo]);                    
+                    // delayExprs[pathLeg.getIndex()].addTerm(y[i], Controller.sceVal[i][sceNo]);
                     
                     final Integer delayTime = delayTimes.get(j);
-                    if (delayTime > 0)
-                    {
+                    if (delayTime > 0) {
                         delayExprs[pathLeg.getIndex()].addTerm(y[i], delayTime);
-                    	System.out.println(" Sub-Leg: " + pathLeg.getId() + " delayTime: " + delayTime);                    	
+                    	// logger.debug(" Sub-Leg: " + pathLeg.getId() + " delayTime: " + delayTime);
                     }
                     
-//                    delayExprs[pathLeg.getIndex()].addTerm(y[i], 20);//delayTime);                    
+                    // delayExprs[pathLeg.getIndex()].addTerm(y[i], 20);//delayTime);
                 }
             }
 
@@ -182,7 +181,7 @@ public class SubSolver {
             for (int i = 0; i < paths.size(); ++i) 
                 R4[i] = subCplex.addLe(y[i], 1, "yBound_" + i);
             
-            subCplex.exportModel("sub.lp");
+            // subCplex.exportModel("sub.lp");
 
             // Clear all constraint expressions to avoid memory leaks.
             for (int i = 0; i < numLegs; ++i) {
@@ -231,7 +230,7 @@ public class SubSolver {
         return combinedDelayMap;
     }
 
-    public void solve() {
+    public void solve() throws OptException {
         try {
 //			Master.mastCplex.addMaximize();
         	
@@ -241,7 +240,7 @@ public class SubSolver {
         	
             subCplex.solve();
             objValue = subCplex.getObjValue();
-            logger.debug("Sub-----Objective value: " + objValue);
+            logger.debug("subproblem objective value: " + objValue);
             yValues = new double[paths.size()];
             yValues = subCplex.getValues(y);
 
@@ -258,20 +257,17 @@ public class SubSolver {
             duals4 = subCplex.getDuals(R4);
             
         } catch (IloException e) {
-            e.printStackTrace();
-            System.out.println("Error: SubSolve");
+            logger.error(e);
+            throw new OptException("error solving subproblem");
         }
     }
 
-    public void writeLPFile(String fName, int iter, int sceNo)
-    {
-        try
-        {
+    public void writeLPFile(String fName, int iter, int sceNo) throws OptException {
+        try {
             subCplex.exportModel(fName + "sub_" + iter + "_" + sceNo + ".lp");
         } catch (IloException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            System.out.println("Error: GetLPFile-Sub");
+            logger.error(e);
+            throw new OptException("error writing lp file for subproblem");
         }
     }
 

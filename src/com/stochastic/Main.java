@@ -21,12 +21,12 @@ public class Main {
             controller.readData();            
             controller.solve(); //BD
 
-            DepSolver ds = new DepSolver();
-            ds.constructModel(controller.getDataRegistry());
-            ds.solve();
+            // DepSolver ds = new DepSolver();
+            // ds.constructModel(controller.getDataRegistry());
+            // ds.solve();
             // controller.createTestDisruption();
             // controller.solve();
-//          controller.solveSecondStage();
+            // controller.solveSecondStage();
             
             // post processing x,y 
             // det, tws,

@@ -55,34 +55,13 @@ public class MasterSolver {
         }
     }
 
-    public static void addColumn() throws OptException {
+    public static void solve(int iter) throws OptException {
         try {
-            masterCplex.setLinearCoef(obj, thetaVar, 1);
-        	
-        	/*
-        	IloLinearNumExpr objExpr =  (IloLinearNumExpr) masterCplex.getObjective().getExpr();	
-	        thetaVar = masterCplex.numVar(-Double.MAX_VALUE, Double.MAX_VALUE,"theta");
-	        objExpr.addTerm(thetaVar, 1);
-
-	        masterCplex.addMinimize(objExpr);
-	        masterCplex.add(thetaVar);
-	        */
-
-        } catch (IloException e) {
-            logger.error(e);
-            throw new OptException("CPLEX error while adding benders variable");
-        }
-
-//        masterCplex.addColumn(thetaVar);
-    }
-
-    public static void solve(int iter) {
-        try {
-//			Master.mastCplex.addMaximize();
+            // Master.mastCplex.addMaximize();
             masterCplex.solve();
             objValue = masterCplex.getObjValue();
-            
-            System.out.println(" Master- Ojective: " + objValue);
+
+            logger.debug("master objective: " + objValue);
             xValues = new double[durations.size()][legs.size()];
             for (int i = 0; i < durations.size(); i++)
                 xValues[i] = MasterSolver.masterCplex.getValues(X[i]);
@@ -90,11 +69,10 @@ public class MasterSolver {
             if(iter > -1)
             	theta =  MasterSolver.masterCplex.getValue(thetaVar);
 
-//			MasterSolver.xValues =  Master.mastCplex.getValues(Master.mastLp, 0, Master.mastCplex.getNcols(), IloCplex.IncumbentId);
+            // MasterSolver.xValues =  Master.mastCplex.getValues(Master.mastLp, 0, Master.mastCplex.getNcols(), IloCplex.IncumbentId);
         } catch (IloException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            System.out.println("Error: MasterSolve");
+            logger.error(e);
+            throw new OptException("error solving master problem");
         }
     }
     
@@ -103,12 +81,12 @@ public class MasterSolver {
     	return objValue - theta;
     }
 
-    public static void writeLPFile(String fName, int iter) {
+    public static void writeLPFile(String fName) throws OptException {
         try {
-            masterCplex.exportModel(fName + "mast" + iter + ".lp");
+            masterCplex.exportModel(fName);
         } catch (IloException e) {
-            e.printStackTrace();
-            System.out.println("Error: GetLPFile");
+            logger.error(e);
+            throw new OptException("error writing LP file");
         }
     }
 
@@ -134,11 +112,15 @@ public class MasterSolver {
 
             cons = masterCplex.linearNumExpr();
 
+            // multiplied delay times by 0.5 as it should be cheaper to reschedule flights in the first stage
+            // rather than delaying them in the second stage. Otherwise, there is no difference between planning
+            // (first stage) and recourse (second stage).
             for (int i = 0; i < durations.size(); i++)
                 for (int j = 0; j < legs.size(); j++)
-                    cons.addTerm(X[i][j], durations.get(i));
+                    cons.addTerm(X[i][j], 0.5 * durations.get(i));
 
-            cons.addTerm(thetaVar, 0);
+            // cons.addTerm(thetaVar, 0);
+            cons.addTerm(thetaVar, 1);
             obj = masterCplex.addMinimize(cons);
 
         } catch (IloException e) {

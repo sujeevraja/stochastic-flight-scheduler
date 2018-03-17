@@ -1,16 +1,12 @@
 package com.stochastic.controller;
 
-import com.stochastic.delay.DelayGenerator;
-import com.stochastic.delay.TestDelayGenerator;
 import com.stochastic.domain.Leg;
 import com.stochastic.dao.EquipmentsDAO;
 import com.stochastic.dao.ParametersDAO;
 import com.stochastic.dao.ScheduleDAO;
 import com.stochastic.domain.Tail;
-import com.stochastic.network.Path;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.solver.MasterSolver;
-import com.stochastic.solver.SubSolver;
 import com.stochastic.solver.SubSolverWrapper;
 import com.stochastic.utility.OptException;
 import org.apache.commons.math3.distribution.LogNormalDistribution;
@@ -75,8 +71,9 @@ public class Controller {
         StringBuilder tailsStr = new StringBuilder();
         for(Tail tail : dataRegistry.getTails()) {
             tailsStr.append(tail.getId());
+            tailsStr.append(" ");
         }
-        logger.debug("Loaded tails: " + tailsStr.toString());
+        logger.debug("loaded tails: " + tailsStr.toString());
         logger.info("Completed reading data.");
     }
 
@@ -98,10 +95,8 @@ public class Controller {
         int iter = -1;        
         MasterSolver.MasterSolverInit(legs, tails, durations);
         MasterSolver.constructFirstStage();
-        MasterSolver.writeLPFile("ma", 0);
+        MasterSolver.writeLPFile("master_initial.lp");
         MasterSolver.solve(iter);
-        MasterSolver.addColumn();
-        MasterSolver.writeLPFile("ma1", 0);
 
         double lBound;
         double uBound = Double.MAX_VALUE;
@@ -112,28 +107,29 @@ public class Controller {
         logger.info("Algorithm starts.");
 
         // generate random delays for 2nd stage scenarios.
-        double scale = 2.5;
-        double shape = 0.25;
-        generateScenarioDelays(scale, shape);
+        // double scale = 2.5;
+        // double shape = 0.25;
+        // generateScenarioDelays(scale, shape);
+
+        generateTestDelays();
+
+        // sceVal = new int[3][5];
+        // Random rand = new Random();
         
-        sceVal = new int[3][5];
-        Random rand = new Random();
-        
-        for(int i=0; i<3;i++)
-            for(int j=0; j<5;j++)            	
-            	sceVal[i][j] = rand.nextInt(40 - 20 + 1) + 20; // (max - min + 1) + min;  (i+20) + j      
+        // for(int i=0; i<3;i++)
+        //    for(int j=0; j<5;j++)
+        //    	sceVal[i][j] = rand.nextInt(40 - 20 + 1) + 20; // (max - min + 1) + min;  (i+20) + j
 
         do {
             // starts here
             SubSolverWrapper.SubSolverWrapperInit(dataRegistry, MasterSolver.getxValues());
-            new SubSolverWrapper().solveSequential(scenarioDelays, scenarioProbabilities);
-            // new SubSolverWrapper().solveParallel(scenarioDelays, scenarioProbabilities);
+            // new SubSolverWrapper().solveSequential(scenarioDelays, scenarioProbabilities);
+            new SubSolverWrapper().solveParallel(scenarioDelays, scenarioProbabilities);
 
             MasterSolver.constructBendersCut(SubSolverWrapper.getAlpha(), SubSolverWrapper.getBeta());
 
-            MasterSolver.writeLPFile("",iter);
+            MasterSolver.writeLPFile("master_" + iter + ".lp");
             MasterSolver.solve(iter);
- //           MasterSolver.writeLPFile("ma1", iter);
 
             lBound = MasterSolver.getObjValue();
 
@@ -150,6 +146,18 @@ public class Controller {
 
         // lb = lBound;
         // ub = uBound;
+    }
+
+    private void generateTestDelays() {
+        scenarioDelays = new ArrayList<>(Collections.singletonList(45));
+        scenarioProbabilities = new ArrayList<>(Collections.singletonList(1.0));
+        dataRegistry.setNumScenarios(1);
+
+        // scenarioDelays = new ArrayList<>(Arrays.asList(30, 40));
+        // scenarioProbabilities = new ArrayList<>(Arrays.asList(0.75, 0.25));
+        // dataRegistry.setNumScenarios(2);
+
+        dataRegistry.setMaxLegDelayInMin(Collections.max(scenarioDelays));
     }
 
     private void generateScenarioDelays(double scale, double shape) {

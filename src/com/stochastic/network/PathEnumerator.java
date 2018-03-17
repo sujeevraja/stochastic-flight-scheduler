@@ -59,10 +59,6 @@ public class PathEnumerator {
         for(int i = 0; i < legs.size(); ++i) {
             Leg leg = legs.get(i);
 
-            if(leg.getFltNum() == 234) {
-                int a = 1;
-            }
-
             if(!tail.getSourcePort().equals(leg.getDepPort()))
                 continue;
 

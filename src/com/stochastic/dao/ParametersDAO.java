@@ -26,7 +26,7 @@ public class ParametersDAO {
     public ParametersDAO(String filePath) throws OptException {
         try {
             File xmlFile = new File(filePath);
-            System.out.println(" filePath: " + filePath);
+            logger.info(" filePath: " + filePath);
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
             Document doc = dBuilder.parse(xmlFile);
