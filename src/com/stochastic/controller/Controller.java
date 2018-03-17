@@ -5,7 +5,6 @@ import com.stochastic.dao.EquipmentsDAO;
 import com.stochastic.dao.ParametersDAO;
 import com.stochastic.dao.ScheduleDAO;
 import com.stochastic.domain.Tail;
-import com.stochastic.network.Path;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.solver.MasterSolver;
 import com.stochastic.solver.SubSolverWrapper;
@@ -21,7 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -39,7 +37,7 @@ public class Controller {
     private ArrayList<Double> scenarioProbabilities;
     
     // parameters for expExcess
-    public static boolean expExcess = true;
+    public static boolean expExcess = false;
     public static double rho = 0.5;    
     public static double excessTgt = 40;
     
@@ -52,9 +50,9 @@ public class Controller {
 	public final void readData() throws OptException {
         logger.info("Started reading data...");
         String scenarioPath = getScenarioPath();
-        dataRegistry.setNumScenarios(1);
+        dataRegistry.setNumScenarios(10);
 
-        ArrayList<Integer> durations = new ArrayList<>(Arrays.asList(5, 10, 15, 20, 25));
+        ArrayList<Integer> durations = new ArrayList<>(Arrays.asList(5, 10, 15, 20, 25, 30));
         dataRegistry.setDurations(durations);
 
         // Read parameters
@@ -97,31 +95,32 @@ public class Controller {
 
         double lBound;
         double uBound = Double.MAX_VALUE;
-        iter = 0;
 
         logger.info("Algorithm starts.");
 
         // generate random delays for 2nd stage scenarios.
         // double scale = 2.5;
         // double shape = 0.25;
-        // generateScenarioDelays(scale, shape);
-        
+        double scale = 3.5;
+        double shape = 0.25;
+        generateScenarioDelays(scale, shape);
+
         // generateTestDelays();
 
-        sceVal = new int[3][5];
-        Random rand = new Random();
-        
-        for(int i=0; i<3;i++)
-           for(int j=0; j<5;j++)
-            	sceVal[i][j] = (i+20) + j; //rand.nextInt(40 - 20 + 1) + 20; // (max - min + 1) + min;  (i+20) + j      
+        // sceVal = new int[3][5];
+        // Random rand = new Random();
+        // for(int i=0; i<3;i++)
+        //    for(int j=0; j<5;j++)
+        //    	sceVal[i][j] = (i+20) + j; //rand.nextInt(40 - 20 + 1) + 20; // (max - min + 1) + min;  (i+20) + j
 
         do {
             SubSolverWrapper.SubSolverWrapperInit(dataRegistry, MasterSolver.getxValues());
             new SubSolverWrapper().solveSequential(scenarioDelays, scenarioProbabilities);
-            // new SubSolverWrapper().solveParallel1(scenarioDelays, scenarioProbabilities);
+            // new SubSolverWrapper().solveParallel(scenarioDelays, scenarioProbabilities);
 
             MasterSolver.constructBendersCut(SubSolverWrapper.getAlpha(), SubSolverWrapper.getBeta());
 
+            iter++;
             MasterSolver.writeLPFile("master_" + iter + ".lp");
             MasterSolver.solve(iter);
 
@@ -129,8 +128,6 @@ public class Controller {
 
             if(SubSolverWrapper.getuBound() < uBound)
                 uBound = SubSolverWrapper.getuBound();
-
-            iter++;
 
             logger.info("--------------LB: " + lBound + " UB: " + uBound + " Iter: " + iter);
         } while(uBound - lBound > 0.001); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
