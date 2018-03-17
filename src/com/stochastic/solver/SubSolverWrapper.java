@@ -94,7 +94,6 @@ public class SubSolverWrapper {
                 if(Controller.expExcess)                
                 	beta[i][j] += dualRisk*durations.get(i); // * prb;                
             }
-
     }
 
     public void solveSequential(ArrayList<Integer> scenarioDelays, ArrayList<Double> probabilities) {
@@ -104,7 +103,7 @@ public class SubSolverWrapper {
 //        	DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getTails(), scenarioDelays.get(i));
 //          HashMap<Integer, Integer> legDelays = dgen.generateDelays();
             
-            HashMap<Integer, Integer> legDelays = new HashMap<Integer, Integer>();            
+            HashMap<Integer, Integer> legDelays = new HashMap<>();
 
             SubSolverRunnable subSolverRunnable = new SubSolverRunnable(i, legDelays, 0.2);
             subSolverRunnable.run();
@@ -112,23 +111,6 @@ public class SubSolverWrapper {
         }
     }
 
-/*    
-    public void solveSequential(ArrayList<Integer> scenarioDelays, ArrayList<Double> probabilities) {
-        // final int numScenarios = 5;
-        final int numScenarios = dataRegistry.getNumScenarios();
-        for (int i = 0; i < numScenarios; i++) {
-        	DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getTails(), scenarioDelays.get(i));
-            HashMap<Integer, Integer> legDelays = dgen.generateDelays();
-            
-            // HashMap<Integer, Integer> legDelays = new HashMap<>();
-
-            SubSolverRunnable subSolverRunnable = new SubSolverRunnable(i, legDelays, probabilities.get(i));
-            subSolverRunnable.run();
-            logger.info("Solved scenario " + i + " numScenarios: " + numScenarios + " probabilities.get(i): " + probabilities.get(i));
-        }
-    }
-*/
-    
     public void solveParallel1(ArrayList<Integer> scenarioDelays, ArrayList<Double> probabilities) throws OptException {
         try {
             ExecutorService exSrv = Executors.newFixedThreadPool(5);

@@ -83,16 +83,6 @@ public class Controller {
         logger.info("Completed reading data.");
     }
 
-    public final void createTestDisruption() {
-        for(Tail tail : dataRegistry.getTails()) {
-            if(tail.getId() == 10001) {
-                Leg firstLeg = tail.getOrigSchedule().get(0);
-                firstLeg.setTurnTimeInMin(60);
-                return;
-            }
-        }
-    }
-
     public final void solve() throws OptException {
         ArrayList<Leg> legs = dataRegistry.getLegs();
         ArrayList<Tail> tails = dataRegistry.getTails();
@@ -223,41 +213,6 @@ public class Controller {
         logger.info(probStr);
     }
 
-    /*
-    public final void solveSecondStage() throws OptException {
-        double[][] xValues = new double[dataRegistry.getNumDurations()][dataRegistry.getNumLegs()];
-        for(int i = 0; i < dataRegistry.getNumDurations();  ++i)
-            for(int j = 0; j < dataRegistry.getNumLegs(); ++j)
-                xValues[i][j] = 0.0;
-
-        DelayGenerator dgen = new TestDelayGenerator(dataRegistry.getTails());
-        HashMap<Integer, Integer> randomDelays = dgen.generateDelays();
-
-        SubSolver s = new SubSolver(randomDelays, 1.0, 1);
-        s.constructSecondStage(xValues, dataRegistry);
-        s.solve();
- 
-
-        /*
-        if(!disruptionExists()) {
-            logger.warn("Calling second-stage solver without any disruptions.");
-            logger.warn("Solver not called.");
-            return;
-        }
-
-        ArrayList<Tail> tails = dataRegistry.getTails();
-        ArrayList<Leg> legs = dataRegistry.getLegs();
-
-        Network network = new Network(tails, legs, dataRegistry.getWindowStart(),
-                dataRegistry.getWindowEnd(), dataRegistry.getMaxLegDelayInMin());
-        ArrayList<Path> paths = network.enumerateAllPaths();
-
-        SecondStageSolver sss = new SecondStageSolver(paths, legs, tails);
-        sss.solveWithCPLEX();
-        */
-//    }
-
-
     private String getScenarioPath() throws OptException {
         try {
             File xmlFile = new File("config.xml");
@@ -327,39 +282,4 @@ public class Controller {
 
         dataRegistry.setTails(tails);
     }
-
-    private boolean disruptionExists() {
-        for(Tail tail : dataRegistry.getTails()) {
-            ArrayList<Leg> tailLegs = tail.getOrigSchedule();
-            final Integer numLegs = tailLegs.size();
-            if(numLegs <= 1)
-                continue;
-
-            for(int i = 0; i < numLegs - 1; ++i) {
-                Leg currLeg = tailLegs.get(i);
-                Leg nextLeg = tailLegs.get(i+1);
-
-                final Integer turnTime = ((int) Duration.between(currLeg.getArrTime(),
-                        nextLeg.getDepTime()).toMinutes());
-
-                if(turnTime < currLeg.getTurnTimeInMin()) {
-                    logger.info("turn time violated for legs " + currLeg.getId() + " and " + nextLeg.getId()
-                            + " on tail " + tail.getId());
-                    logger.info("expected turn time: " + currLeg.getTurnTimeInMin() + " actual: " + turnTime);
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-	public DataRegistry getDataRegistry() {
-		return dataRegistry;
-	}
-
-	public void setDataRegistry(DataRegistry dataRegistry) {
-		this.dataRegistry = dataRegistry;
-	}  
-    
-    
 }

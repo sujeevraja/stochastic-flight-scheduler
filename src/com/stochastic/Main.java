@@ -24,10 +24,7 @@ public class Main {
             // DepSolver ds = new DepSolver();
             // ds.constructModel(controller.getDataRegistry());
             // ds.solve();
-            // controller.createTestDisruption();
-            // controller.solve();
-//          controller.solveSecondStage();
-            
+
             // post processing x,y 
             // det, tws,
             
