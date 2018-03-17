@@ -1,5 +1,5 @@
 <parameters>
-<windowStart>2017-11-15T05:00:00.000Z</windowStart>
+<windowStart>2017-11-15T04:00:00.000Z</windowStart>
 <windowEnd>2017-11-15T22:00:00.000Z</windowEnd>
 <maxFlightDelayInMin>45</maxFlightDelayInMin>
 </parameters>
