@@ -33,15 +33,17 @@ public class SubSolver {
     // cplex variables
     private IloNumVar[] y; // y[i] = 1 if path i is selected, 0 else.
     private IloNumVar[] d; // d[i] >= 0 is the total delay of leg i.
+    private IloNumVar   v; // d[i] >= 0 is the total delay of leg i.    
     private IloCplex subCplex;
 
     private double objValue;
 
-    private double[] duals1;
-    private double[] duals2;
-    private double[] duals3;
-    private double[] duals4;
-
+    private double[] dualsLeg;
+    private double[] dualsTail;
+    private double[] dualsDelay;
+    private double[] dualsBnd;
+    private double   dualsRisk;
+    
     private int[][] indices;
     private double[][] values;
     private double[] yValues;
@@ -51,7 +53,8 @@ public class SubSolver {
     private IloRange[] R2;
     private IloRange[] R3;
     private IloRange[] R4;
-    
+    private IloRange R5;
+
     private boolean[] legPresence;
     private boolean[] tailPresence;
     
@@ -78,14 +81,14 @@ public class SubSolver {
                     dataRegistry.getWindowEnd(), dataRegistry.getMaxLegDelayInMin());
 
             // Later, the full enumeration algorithm in enumerateAllPaths() will be replaced a labeling algorithm.
-            paths = network.enumerateAllPaths();            
+            paths = network.enumerateAllPaths();
             
             // PathEnumerator pe = new PathEnumerator();
             // paths = pe.addPaths(dataRegistry);
             
     		// logger.debug("Tail: " + tails.size() + " legs: " + legs.size() + " durations: " + durations.size());
             // printAllPaths();
-            
+
             // Create containers to build CPLEX model.
             subCplex = new IloCplex();
             final Integer numLegs = legs.size();
@@ -99,11 +102,11 @@ public class SubSolver {
             R2 = new IloRange[tails.size()]; // tail coverage
             R3 = new IloRange[legs.size()]; // delay constraints
             R4 = new IloRange[paths.size()]; // delay constraints
-            duals1 =  new double[legs.size()];
-            duals2 =  new double[tails.size()];
-            duals3 =  new double[legs.size()];
-            duals4 =  new double[paths.size()];
-            
+            dualsLeg =  new double[legs.size()];
+            dualsTail =  new double[tails.size()];
+            dualsDelay =  new double[legs.size()];
+            dualsBnd =  new double[paths.size()];
+
             IloLinearNumExpr[] legCoverExprs = new IloLinearNumExpr[numLegs];
             IloLinearNumExpr[] tailCoverExprs = new IloLinearNumExpr[numTails];           
             legPresence = new boolean[numLegs];
@@ -123,7 +126,7 @@ public class SubSolver {
 
                 delayRHS[i] = 14.0; // OTP time limit
 
-                objExpr.addTerm(d[i], probability);
+                objExpr.addTerm(d[i], probability*1.5);
                 legCoverExprs[i] = subCplex.linearNumExpr();
                 delayExprs[i] = subCplex.linearNumExpr();
                 delayExprs[i].addTerm(d[i], -1.0);
@@ -134,6 +137,14 @@ public class SubSolver {
                         break;
                     }
             }
+            
+            if(Controller.expExcess)
+            {
+                v = subCplex.numVar(0, Double.MAX_VALUE, "v");            	
+            	objExpr.addTerm(v, probability*Controller.rho);            	
+            }
+
+            	
             subCplex.addMinimize(objExpr);
             objExpr.clear();
 
@@ -152,15 +163,16 @@ public class SubSolver {
                     Leg pathLeg = pathLegs.get(j);
                     legCoverExprs[pathLeg.getIndex()].addTerm(y[i], 1.0);
                     legPresence[pathLeg.getIndex()] = true;
-                    
-                    // delayExprs[pathLeg.getIndex()].addTerm(y[i], Controller.sceVal[i][sceNo]);
-                    
-                    final Integer delayTime = delayTimes.get(j);
-                    if (delayTime > 0) {
-                        delayExprs[pathLeg.getIndex()].addTerm(y[i], delayTime);
-                    	// logger.debug(" Sub-Leg: " + pathLeg.getId() + " delayTime: " + delayTime);
-                    }
-                    
+
+
+                    delayExprs[pathLeg.getIndex()].addTerm(y[i], Controller.sceVal[i][sceNo]);
+
+                    // final Integer delayTime = delayTimes.get(j);
+                    // if (delayTime > 0) {
+                    //     delayExprs[pathLeg.getIndex()].addTerm(y[i], delayTime);
+                    //     // logger.debug(" Sub-Leg: " + pathLeg.getId() + " delayTime: " + delayTime);
+                    // }
+
                     // delayExprs[pathLeg.getIndex()].addTerm(y[i], 20);//delayTime);
                 }
             }
@@ -181,6 +193,26 @@ public class SubSolver {
             for (int i = 0; i < paths.size(); ++i) 
                 R4[i] = subCplex.addLe(y[i], 1, "yBound_" + i);
             
+            if(Controller.expExcess)
+            {
+                v = subCplex.numVar(0, Double.MAX_VALUE, "v");
+                
+                double xVal = 0;
+                for (int i = 0; i < legs.size(); i++)
+                	for (int j = 0; j < durations.size(); j++)
+                		xVal += (xValues[j][i]*durations.get(j));          
+                
+                IloLinearNumExpr riskExpr = subCplex.linearNumExpr();
+                
+                for (int i = 0; i < numLegs; i++)
+                    riskExpr.addTerm(d[i], 1.5);
+                
+                riskExpr.addTerm(v, -1);                
+                
+            	R5 = subCplex.addLe(riskExpr, Controller.excessTgt-xVal,"risk");                
+                
+            }
+            
             // subCplex.exportModel("sub.lp");
 
             // Clear all constraint expressions to avoid memory leaks.
@@ -188,6 +220,7 @@ public class SubSolver {
                 legCoverExprs[i].clear();
                 delayExprs[i].clear();
             }
+
             for (int i = 0; i < numTails; ++i)
                 tailCoverExprs[i].clear();
         } catch (IloException e) {
@@ -244,21 +277,26 @@ public class SubSolver {
             yValues = new double[paths.size()];
             yValues = subCplex.getValues(y);
 
-            for(int i=0; i<R1.length; i++)  
-            	if(legPresence[i])
-            		duals1[i] = subCplex.getDual(R1[i]);
+            for(int i=0; i<R1.length; i++)
+                if(legPresence[i])
+                    dualsLeg[i] = subCplex.getDual(R1[i]);
 
-            for(int i=0; i<R2.length; i++)  
-            	if(tailPresence[i])
-            		duals2[i] = subCplex.getDual(R2[i]);
-            
+            for(int i=0; i<R2.length; i++)
+                if(tailPresence[i])
+                    dualsTail[i] = subCplex.getDual(R2[i]);
+
 //            duals2 = subCplex.getDuals(R2);
-            duals3 = subCplex.getDuals(R3);
-            duals4 = subCplex.getDuals(R4);
-            
+            dualsDelay = subCplex.getDuals(R3);
+            dualsBnd   = subCplex.getDuals(R4);
+
+            if(Controller.expExcess)
+                dualsRisk  = subCplex.getDual(R5);
+
+//            add duals and djust the cuts ////
+
         } catch (IloException e) {
-            logger.error(e);
-            throw new OptException("error solving subproblem");
+            e.printStackTrace();
+            System.out.println("Error: SubSolve");
         }
     }
 
@@ -277,43 +315,52 @@ public class SubSolver {
         R1 = null;
         R2 = null;
         R3 = null;
-
-        duals1 = null;
-        duals2 = null;
-        duals3 = null;
+        R4 = null;
+        R5 = null;
+        dualsLeg = null;
+        dualsTail = null;
+        dualsDelay = null;
         subCplex.end();
     }
 
-	public double[] getDuals1() {
-		return duals1;
+	public double[] getDualsLeg() {
+		return dualsLeg;
 	}
 
 	public void setDuals1(double[] duals1) {
-		this.duals1 = duals1;
+		this.dualsLeg = duals1;
 	}
 
-	public double[] getDuals2() {
-		return duals2;
+	public double[] getDualsTail() {
+		return dualsTail;
 	}
 
 	public void setDuals2(double[] duals2) {
-		this.duals2 = duals2;
+		this.dualsTail = duals2;
 	}
 
-	public double[] getDuals3() {
-		return duals3;
+	public double[] getDualsDelay() {
+		return dualsDelay;
 	}
 
 	public void setDuals3(double[] duals3) {
-		this.duals3 = duals3;
+		this.dualsDelay = duals3;
 	}
 	
-    public double[] getDuals4() {
-		return duals4;
+    public double[] getDualsBnd() {
+		return dualsBnd;
 	}
 
 	public void setDuals4(double[] duals4) {
-		this.duals4 = duals4;
+		this.dualsBnd = duals4;
+	}	
+
+	public double getDualsRisk() {
+		return dualsRisk;
+	}
+
+	public void setDualsRisk(double dualsRisk) {
+		this.dualsRisk = dualsRisk;
 	}
 
 	public double getObjValue() {

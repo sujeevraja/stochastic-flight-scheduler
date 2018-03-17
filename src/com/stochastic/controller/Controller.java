@@ -5,6 +5,7 @@ import com.stochastic.dao.EquipmentsDAO;
 import com.stochastic.dao.ParametersDAO;
 import com.stochastic.dao.ScheduleDAO;
 import com.stochastic.domain.Tail;
+import com.stochastic.network.Path;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.solver.MasterSolver;
 import com.stochastic.solver.SubSolverWrapper;
@@ -36,7 +37,12 @@ public class Controller {
     private DataRegistry dataRegistry;
     private ArrayList<Integer> scenarioDelays;
     private ArrayList<Double> scenarioProbabilities;
-
+    
+    // parameters for expExcess
+    public static boolean expExcess = true;
+    public static double rho = 0.5;    
+    public static double excessTgt = 40;
+    
     public static int[][] sceVal;    
     
     public Controller() {
@@ -46,7 +52,7 @@ public class Controller {
 	public final void readData() throws OptException {
         logger.info("Started reading data...");
         String scenarioPath = getScenarioPath();
-        dataRegistry.setNumScenarios(10);
+        dataRegistry.setNumScenarios(1);
 
         ArrayList<Integer> durations = new ArrayList<>(Arrays.asList(5, 10, 15, 20, 25));
         dataRegistry.setDurations(durations);
@@ -108,6 +114,13 @@ public class Controller {
         double scale = 2.5;
         double shape = 0.25;
         generateScenarioDelays(scale, shape);
+        
+        sceVal = new int[3][5];
+        Random rand = new Random();
+        
+        for(int i=0; i<3;i++)
+            for(int j=0; j<5;j++)            	
+            	sceVal[i][j] = (i+20) + j; //rand.nextInt(40 - 20 + 1) + 20; // (max - min + 1) + min;  (i+20) + j      
 
         // generateTestDelays();
 
@@ -122,12 +135,13 @@ public class Controller {
             // starts here
             SubSolverWrapper.SubSolverWrapperInit(dataRegistry, MasterSolver.getxValues());
             new SubSolverWrapper().solveSequential(scenarioDelays, scenarioProbabilities);
-            // new SubSolverWrapper().solveParallel(scenarioDelays, scenarioProbabilities);
+//             new SubSolverWrapper().solveParallel1(scenarioDelays, scenarioProbabilities);
 
             MasterSolver.constructBendersCut(SubSolverWrapper.getAlpha(), SubSolverWrapper.getBeta());
 
             MasterSolver.writeLPFile("master_" + iter + ".lp");
             MasterSolver.solve(iter);
+ //           MasterSolver.writeLPFile("ma1", iter);
 
             lBound = MasterSolver.getObjValue();
 
@@ -140,6 +154,8 @@ public class Controller {
             // ends here
         } while(uBound - lBound > 0.001); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
 
+        MasterSolver.printSolution();
+        
         logger.info("Algorithm ends.");
     }
 

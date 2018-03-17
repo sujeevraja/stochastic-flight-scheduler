@@ -36,6 +36,8 @@ public class DepSolver {
     private IloIntVar[][] x;    
     private IloNumVar[][] y; // y[i] = 1 if path i is selected, 0 else.
     private IloNumVar[][] d; // d[i] >= 0 is the total delay of leg i.
+    private IloNumVar[]   v; // d[i] >= 0 is the total delay of leg i.    
+    
     private IloCplex subCplex;
 
     private double objValue;
@@ -47,10 +49,10 @@ public class DepSolver {
     {
     	for(Path p: paths)
     	{
-    		logger.debug("Tail: " + p.getTail().getId());
+    		System.out.println("Tail: " + p.getTail().getId());
     		
         	for(Leg l: p.getLegs())    		
-        		logger.debug("Leg: " + l.getId());
+        		System.out.println("Leg: " + l.getId());        		
     	}
     }
 
@@ -68,13 +70,13 @@ public class DepSolver {
                     dataRegistry.getWindowEnd(), dataRegistry.getMaxLegDelayInMin());
 
             // Later, the full enumeration algorithm in enumerateAllPaths() will be replaced a labeling algorithm.
-             paths = network.enumerateAllPaths();
+//             paths = network.enumerateAllPaths();
             //
             
-//            PathEnumerator pe = new PathEnumerator(); 
-//            paths = pe.addPaths(dataRegistry);            
+            PathEnumerator pe = new PathEnumerator(); 
+            paths = pe.addPaths(dataRegistry);            
             	
-    		logger.debug("Tail: " + tails.size() + " legs: " + legs.size() + " durations: " + durations.size());
+    		System.out.println("Tail: " + tails.size() + " legs: " + legs.size() + " durations: " + durations.size());    		
             printAllPaths();
             
             // Create containers to build CPLEX model.
@@ -88,7 +90,7 @@ public class DepSolver {
 
             for (int i = 0; i < legs.size(); i++)            
             	for (int j = 0; j < durations.size(); j++)
-                    x[i][j] = subCplex.boolVar("X_" + i + "_" + legs.get(i).getId()); // boolVarArray(Data.nD + Data.nT);
+                    x[i][j] = subCplex.boolVar("X_" + legs.get(i).getId() +"_" + j); // boolVarArray(Data.nD + Data.nT);
 
             IloRange r;
             IloLinearNumExpr cons;
@@ -104,6 +106,7 @@ public class DepSolver {
             
             y = new IloNumVar[paths.size()][5];
             d = new IloNumVar[numLegs][5];
+            v = new IloNumVar[5];            
 
             IloLinearNumExpr[][] legCoverExprs = new IloLinearNumExpr[numLegs][5];
             IloLinearNumExpr[][] tailCoverExprs = new IloLinearNumExpr[numTails][5];
@@ -126,7 +129,7 @@ public class DepSolver {
 	
 	                delayRHS[i][j] = 14.0; // OTP time limit
 	
-	                objExpr.addTerm(d[i][j], 0.20);
+	                objExpr.addTerm(d[i][j], 0.20*1.5);
 	                legCoverExprs[i][j] = subCplex.linearNumExpr();
 	                delayExprs[i][j] = subCplex.linearNumExpr();
 	                delayExprs[i][j].addTerm(d[i][j], -1.0);
@@ -135,6 +138,31 @@ public class DepSolver {
 	                    delayExprs[i][j].addTerm(x[i][j1], -durations.get(j1));                
 	            }            
 
+            if(Controller.expExcess)
+            {
+                for (int j = 0; j < 5; j++)
+	                v[j] = subCplex.numVar(0, Double.MAX_VALUE, "v_" + j);
+                
+                for (int j = 0; j < 5; j++)                
+                	objExpr.addTerm(v[j], Controller.rho*0.20);
+                
+                for (int s = 0; s < 5; s++)
+                {
+                    IloLinearNumExpr riskExpr = subCplex.linearNumExpr();
+
+                    for (int i = 0; i < legs.size(); i++)
+                    	for (int j = 0; j < durations.size(); j++)
+                    		riskExpr.addTerm(x[i][j], durations.get(j));          
+	                
+    	            for (int i = 0; i < numLegs; i++)                     
+    	            	riskExpr.addTerm(d[i][s], 1.5);
+    	            
+	            	riskExpr.addTerm(v[s], -1);    	            
+    	            
+	            	subCplex.addLe(riskExpr, Controller.excessTgt, "risk_" + s);          	
+                }                
+            }
+            
             // first-stage obj function
             for (int i = 0; i < legs.size(); i++)
             	for (int j = 0; j < durations.size(); j++)
@@ -161,14 +189,15 @@ public class DepSolver {
                     legCoverExprs[pathLeg.getIndex()][j].addTerm(y[i][j], 1.0);
                     legPresence[pathLeg.getIndex()][j] = true;
 
-//                    delayExprs[pathLeg.getIndex()][j].addTerm(y[i][j], Controller.sceVal[i][j]);
-                    
+                    delayExprs[pathLeg.getIndex()][j].addTerm(y[i][j], Controller.sceVal[i][j]);
+/*                    
                     final Integer delayTime = delayTimes.get(j);
-                    if (delayTime > 0) {
+                    if (delayTime > 0)
+                    {
                         delayExprs[pathLeg.getIndex()][j].addTerm(y[i][j], delayTime);
-                        logger.debug(" DEP-Leg: " + pathLeg.getId() + " delayTime: " + delayTime);
+                        System.out.println(" DEP-Leg: " + pathLeg.getId() + " delayTime: " + delayTime);                        
                     }
-
+*/
 //                        delayExprs[pathLeg.getIndex()].addTerm(y[i], 20);//delayTime);                   
                     
                 }                
@@ -249,7 +278,7 @@ public class DepSolver {
     }
 
 
-    public void solve() throws OptException {
+    public void solve() {
         try {
 //			Master.mastCplex.addMaximize();
             subCplex.solve();
@@ -260,6 +289,7 @@ public class DepSolver {
             double[][] dValues =  new double[legs.size()][5]; // d[i] >= 0 is the total delay of leg i.
             double[][] xValues = new double[legs.size()][durations.size()];
             double[][] yValues = new double[paths.size()][5];
+            double[]   vValues = new double[5];
             
             for (int j = 0; j < paths.size(); j++)            
             	yValues[j] = subCplex.getValues(y[j]);
@@ -273,39 +303,56 @@ public class DepSolver {
             for(int i=0; i< legs.size(); i++)
                 for(int j=0; j< durations.size(); j++)            	
                 	if(xValues[i][j] > 0)
-                		logger.debug(" i: " + i + " j: " + j + " xValues[i][j]: " + xValues[i][j] + " , " + durations.get(j));
+                		System.out.println(" i: " + i + " j: " + j + " : " + x[i][j].getName() + " : " + xValues[i][j] + " , " + durations.get(j));
             
             for(int p=0; p< paths.size(); p++)
             	for (int j = 0; j < 5; j++)            	
             	if(yValues[p][j] > 0)            	
-            		logger.debug(" p: " + p + " yValues[p]: " + yValues[p][j]);
+            		System.out.println(" p: " + p + " : " + j + " : " +  y[p][j].getName() + " : " + yValues[p][j]);
 
             for(int p=0; p< legs.size(); p++)
             	for (int j = 0; j < 5; j++)            	
             		if(dValues[p][j] > 0)            	
-            			logger.debug(" l: " + p + " dValues[p]: " + dValues[p][j]);
+                		System.out.println(" p: " + p + " : " + j + " : " +  d[p][j].getName() + " : " + dValues[p][j]);  
+            
+        	for (int j = 0; j < 5; j++)
+        	{
+        		double oValue = 0;
+        		System.out.println(" Sub-Problem: " + j);
+        		
+                for(int p=0; p< legs.size(); p++)
+                	oValue  += (dValues[p][j]*0.20*1.5);
+
+               	oValue  += (vValues[j]*Controller.rho*0.20);
+                
+        		System.out.println(" Obj-Value: " + " : " + j + " : " +  oValue);               
+        	}
             
 //            duals1 = subCplex.getDuals(R1);
 //            duals2 = subCplex.getDuals(R2);
 //            duals3 = subCplex.getDuals(R3);
         } catch (IloException e) {
-            logger.error(e);
-            throw new OptException("error solving DEP");
+            e.printStackTrace();
+            System.out.println("Error: SubSolve");
         }
     }
 
-    public void writeLPFile(String fName, int iter) throws OptException {
-        try {
+    public void writeLPFile(String fName, int iter)
+    {
+        try
+        {
             subCplex.exportModel(fName + "sub" + iter + ".lp");
         } catch (IloException e) {
-            logger.error(e);
-            throw new OptException("error writing DEP LP file");
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            System.out.println("Error: GetLPFile-Sub");
         }
     }
 
     public void end() {
         y = null;
         d = null;
+        
         subCplex.end();
     }
 

@@ -1,5 +1,6 @@
 package com.stochastic.solver;
 
+import com.stochastic.controller.Controller;
 import com.stochastic.delay.DelayGenerator;
 import com.stochastic.delay.FirstFlightDelayGenerator;
 import com.stochastic.domain.Leg;
@@ -44,61 +45,74 @@ public class SubSolverWrapper {
         }
     }
 
-    private synchronized static void calculateAlpha(double[] duals1, double[] duals2, double[] duals3, double[] duals4) {
+    private synchronized static void calculateAlpha(double[] dualsLegs, double[] dualsTail, double[] dualsDelay, double[] dualsBnd, double dualRisk) {
         ArrayList<Leg> legs = dataRegistry.getLegs();
         
         logger.debug("initial alpha value: " + alpha);
         
         for (int j = 0; j < legs.size(); j++)
         {
-            if(Math.abs(duals1[j]) >= eps) {
-                logger.debug(" j: " + j + " duals1[j]: " + duals1[j]); // + " prb: " + prb);
-                alpha += (duals1[j]); //*prb);
-            }
+//            System.out.println(" j: " + j + " duals1[j]: " + duals1[j]); // + " prb: " + prb);
+            alpha += (dualsLegs[j]); //*prb);            
         }
 
         for (int j = 0; j < dataRegistry.getTails().size(); j++)
         {
-            if(Math.abs(duals2[j]) >= eps) {
-                logger.debug(" j: " + j + " duals2[j]: " + duals2[j]); // + " prb: " + prb);
-                alpha += (duals2[j]); //*prb);
-            }
+//            System.out.println(" j: " + j + " duals2[j]: " + duals2[j]); // + " prb: " + prb);        	
+            alpha += (dualsTail[j]); //*prb);        	
         }
 
         for (int j = 0; j < legs.size(); j++)
         {
-            if(Math.abs(duals3[j]) >= eps) {
-                logger.debug(" j: " + j + " duals3[j]: " + duals3[j]); // + " prb: " + prb);
-                alpha += (duals3[j] * 14); //prb*14);
-            }
+//            System.out.println(" j: " + j + " duals3[j]: " + duals3[j]); // + " prb: " + prb);        	
+            alpha += (dualsDelay[j]*14); //prb*14);        	
         }
         
-        for (int j = 0; j < duals4.length; j++)
+        for (int j = 0; j < dualsBnd.length; j++)
         {
-            if(Math.abs(duals4[j]) >= eps) {
-                logger.debug(" j: " + j + " duals4[j]: " + duals4[j]); // + " prb: " + prb);
-                alpha += (duals4[j]); //*prb);
-            }
+//            System.out.println(" j: " + j + " duals4[j]: " + duals4[j]); // + " prb: " + prb);        	
+            alpha += (dualsBnd[j]); //*prb);       	
         }
+
+        if(Controller.expExcess)
+        	alpha += (dualRisk*Controller.excessTgt); //*prb);        
         
-        logger.debug(" final alpha value: " + alpha);
+        System.out.println(" en-alpha: " + alpha);        
     }
 
-    private synchronized static void calculateBeta(double[] duals) {
+    private synchronized static void calculateBeta(double[] dualsDelay, double dualRisk) {
         ArrayList<Integer> durations = dataRegistry.getDurations();
         ArrayList<Leg> legs = dataRegistry.getLegs();
 
         for (int i = 0; i < durations.size(); i++)
-            for (int j = 0; j < legs.size(); j++) {
-                if(Math.abs(duals[j]) >= eps) {
-                    beta[i][j] += duals[j] * -durations.get(i); // * prb;
-                    logger.debug(" i: " + i + " j: " + j + " b: " + beta[i][j]
-                            + " d: " + duals[j] + " d: " + durations.get(i)); // + prb);
-                }
+            for (int j = 0; j < legs.size(); j++)
+            {
+                beta[i][j] += dualsDelay[j] * -durations.get(i); // * prb;
+                System.out.println(" i: " + i + " j: " + j + " b: " + beta[i][j]
+                		+ " d: " + dualsDelay[j] + " d: " +  durations.get(i) + " prb: "); // + prb);
+                
+                if(Controller.expExcess)                
+                	beta[i][j] += dualRisk*durations.get(i); // * prb;                
             }
 
     }
 
+    public void solveSequential(ArrayList<Integer> scenarioDelays, ArrayList<Double> probabilities) {
+        final int numScenarios = 5;
+        for (int i = 0; i < numScenarios; i++) {
+
+//        	DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getTails(), scenarioDelays.get(i));
+//          HashMap<Integer, Integer> legDelays = dgen.generateDelays();
+            
+            HashMap<Integer, Integer> legDelays = new HashMap<Integer, Integer>();            
+
+            SubSolverRunnable subSolverRunnable = new SubSolverRunnable(i, legDelays, 0.2);
+            subSolverRunnable.run();
+            logger.info("Solved scenario " + i + " numScenarios: " + numScenarios);
+        }
+    }
+
+/*    
     public void solveSequential(ArrayList<Integer> scenarioDelays, ArrayList<Double> probabilities) {
         // final int numScenarios = 5;
         final int numScenarios = dataRegistry.getNumScenarios();
@@ -110,10 +124,38 @@ public class SubSolverWrapper {
 
             SubSolverRunnable subSolverRunnable = new SubSolverRunnable(i, legDelays, probabilities.get(i));
             subSolverRunnable.run();
-            logger.info("Solved scenario " + i);
+            logger.info("Solved scenario " + i + " numScenarios: " + numScenarios + " probabilities.get(i): " + probabilities.get(i));
         }
     }
+*/
+    
+    public void solveParallel1(ArrayList<Integer> scenarioDelays, ArrayList<Double> probabilities) throws OptException {
+        try {
+            ExecutorService exSrv = Executors.newFixedThreadPool(5);
+            
+            for (int i = 0; i < 5; i++) {
+                Thread.sleep(500);
 
+//                DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getTails(), scenarioDelays.get(i));
+//                HashMap<Integer, Integer> legDelays = dgen.generateDelays();
+                
+                HashMap<Integer, Integer> legDelays = new HashMap<Integer, Integer>();
+                
+                SubSolverRunnable subSolverRunnable = new SubSolverRunnable(i, legDelays, 0.2);
+                exSrv.execute(subSolverRunnable); // this calls run() method below
+//                subSolverRunnable.run();
+            }
+
+            exSrv.shutdown();
+            while (!exSrv.isTerminated())
+                Thread.sleep(100);
+        } catch (InterruptedException ie) {
+            logger.error(ie.getStackTrace());
+            throw new OptException("error at buildSubModel");
+        }
+    }
+    
+    
     public void solveParallel(ArrayList<Integer> scenarioDelays, ArrayList<Double> probabilities) throws OptException {
         try {
             ExecutorService exSrv = Executors.newFixedThreadPool(numThreads);
@@ -158,8 +200,8 @@ public class SubSolverWrapper {
                 s.solve();
                 s.writeLPFile("", iter, this.scenarioNum);
                 uBound += (s.getObjValue());
-                calculateAlpha(s.getDuals1(), s.getDuals2(), s.getDuals3(), s.getDuals4());
-                calculateBeta(s.getDuals3());
+                calculateAlpha(s.getDualsLeg(), s.getDualsTail(), s.getDualsDelay(), s.getDualsBnd(), s.getDualsRisk());
+                calculateBeta(s.getDualsDelay(), s.getDualsRisk());
                 s.end();
             } catch (OptException oe) {
                 logger.error("submodel run for scenario " + scenarioNum + " failed.");

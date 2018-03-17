@@ -65,6 +65,8 @@ public class MasterSolver {
             // Master.mastCplex.addMaximize();
             masterCplex.solve();
             objValue = masterCplex.getObjValue();
+            
+            System.out.println(" Master- Ojective: " + objValue);
 
             logger.debug("master objective: " + objValue);
             xValues = new double[durations.size()][legs.size()];
@@ -198,6 +200,27 @@ public class MasterSolver {
             throw new OptException("CPLEX error solving first stage MIP");
         }
     }
+    
+    
+    public static void printSolution() {
+        try {
+             // solution value           
+            for(int i=0; i< durations.size(); i++)
+            	for(int j=0; j< legs.size(); j++)            	
+                	if(xValues[i][j] > 0)
+                		System.out.println(" xValues: " + " i: " + i + " j: " + j + " : " + X[i][j].getName() + " : " + xValues[i][j] + " , " + durations.get(i));
+            
+       		System.out.println(" theta: " + theta);            			
+            
+//            duals1 = subCplex.getDuals(R1);
+//            duals2 = subCplex.getDuals(R2);
+//            duals3 = subCplex.getDuals(R3);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Error: SubSolve");
+        }
+    }
+    
 
     public static double getObjValue() {
         return objValue;
