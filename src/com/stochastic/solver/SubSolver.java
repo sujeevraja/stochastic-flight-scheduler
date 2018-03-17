@@ -81,10 +81,10 @@ public class SubSolver {
                     dataRegistry.getWindowEnd(), dataRegistry.getMaxLegDelayInMin());
 
             // Later, the full enumeration algorithm in enumerateAllPaths() will be replaced a labeling algorithm.
-            paths = network.enumerateAllPaths();
+            // paths = network.enumerateAllPaths();
             
-            // PathEnumerator pe = new PathEnumerator();
-            // paths = pe.addPaths(dataRegistry);
+            PathEnumerator pe = new PathEnumerator();
+            paths = pe.addPaths(dataRegistry);
             
     		// logger.debug("Tail: " + tails.size() + " legs: " + legs.size() + " durations: " + durations.size());
             // printAllPaths();
@@ -163,7 +163,6 @@ public class SubSolver {
                     Leg pathLeg = pathLegs.get(j);
                     legCoverExprs[pathLeg.getIndex()].addTerm(y[i], 1.0);
                     legPresence[pathLeg.getIndex()] = true;
-
 
                     delayExprs[pathLeg.getIndex()].addTerm(y[i], Controller.sceVal[i][sceNo]);
 

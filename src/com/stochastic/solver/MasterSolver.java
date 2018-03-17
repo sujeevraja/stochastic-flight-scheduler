@@ -60,13 +60,20 @@ public class MasterSolver {
         }
     }
 
+    public static void addColumn() throws OptException {
+        try {
+            masterCplex.setLinearCoef(obj, thetaVar, 1);
+        } catch (IloException e) {
+            logger.error(e);
+            throw new OptException("CPLEX error while adding benders variable");
+        }
+    }
+
     public static void solve(int iter) throws OptException {
         try {
             // Master.mastCplex.addMaximize();
             masterCplex.solve();
             objValue = masterCplex.getObjValue();
-            
-            System.out.println(" Master- Ojective: " + objValue);
 
             logger.debug("master objective: " + objValue);
             xValues = new double[durations.size()][legs.size()];
@@ -125,7 +132,7 @@ public class MasterSolver {
                 cons.addTerm(X[i][j], 0.5 * durations.get(i));
 
         // cons.addTerm(thetaVar, 0);
-        cons.addTerm(thetaVar, 1);
+        // cons.addTerm(thetaVar, 1);
         obj = masterCplex.addMinimize(cons);
     }
 
@@ -168,17 +175,6 @@ public class MasterSolver {
                 r.setName("connect_" + currLeg.getId() + "_" + nextLeg.getId());
             }
         }
-        /*
-        for (int i = 0; i < legs.size(); i++) {
-            IloLinearNumExpr cons = masterCplex.linearNumExpr();
-
-            for (int j = 0; j < durations.size(); j++)
-                cons.addTerm(X[j][i], 1);
-
-            IloRange r = masterCplex.addLe(cons, 1);
-            r.setName("duration_cover_" + legs.get(i).getId());
-        }
-        */
     }
 
     public static void constructBendersCut(double alphaValue, double[][] betaValue) throws OptException {
