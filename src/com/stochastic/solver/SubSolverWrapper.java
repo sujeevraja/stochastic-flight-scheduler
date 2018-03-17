@@ -156,7 +156,7 @@ public class SubSolverWrapper {
                 SubSolver s = new SubSolver(randomDelays, probability, scenarioNum);
                 s.constructSecondStage(xValues, dataRegistry);
                 s.solve();
-                s.writeLPFile("SS", iter, this.scenarioNum);
+                s.writeLPFile("", iter, this.scenarioNum);
                 uBound += (s.getObjValue());
                 calculateAlpha(s.getDuals1(), s.getDuals2(), s.getDuals3(), s.getDuals4());
                 calculateBeta(s.getDuals3());

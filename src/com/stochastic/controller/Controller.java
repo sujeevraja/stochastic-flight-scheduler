@@ -46,7 +46,7 @@ public class Controller {
 	public final void readData() throws OptException {
         logger.info("Started reading data...");
         String scenarioPath = getScenarioPath();
-        dataRegistry.setNumScenarios(1);
+        dataRegistry.setNumScenarios(10);
 
         ArrayList<Integer> durations = new ArrayList<>(Arrays.asList(5, 10, 15, 20, 25));
         dataRegistry.setDurations(durations);
@@ -93,25 +93,23 @@ public class Controller {
         ArrayList<Integer> durations = dataRegistry.getDurations();
 
         int iter = -1;        
-        MasterSolver.MasterSolverInit(legs, tails, durations);
+        MasterSolver.MasterSolverInit(legs, tails, durations, dataRegistry.getWindowStart());
         MasterSolver.constructFirstStage();
         MasterSolver.writeLPFile("master_initial.lp");
         MasterSolver.solve(iter);
 
         double lBound;
         double uBound = Double.MAX_VALUE;
-        // double lb = 0;
-        // double ub = 0;
         iter = 0;
 
         logger.info("Algorithm starts.");
 
         // generate random delays for 2nd stage scenarios.
-        // double scale = 2.5;
-        // double shape = 0.25;
-        // generateScenarioDelays(scale, shape);
+        double scale = 2.5;
+        double shape = 0.25;
+        generateScenarioDelays(scale, shape);
 
-        generateTestDelays();
+        // generateTestDelays();
 
         // sceVal = new int[3][5];
         // Random rand = new Random();
@@ -123,8 +121,8 @@ public class Controller {
         do {
             // starts here
             SubSolverWrapper.SubSolverWrapperInit(dataRegistry, MasterSolver.getxValues());
-            // new SubSolverWrapper().solveSequential(scenarioDelays, scenarioProbabilities);
-            new SubSolverWrapper().solveParallel(scenarioDelays, scenarioProbabilities);
+            new SubSolverWrapper().solveSequential(scenarioDelays, scenarioProbabilities);
+            // new SubSolverWrapper().solveParallel(scenarioDelays, scenarioProbabilities);
 
             MasterSolver.constructBendersCut(SubSolverWrapper.getAlpha(), SubSolverWrapper.getBeta());
 
@@ -143,9 +141,6 @@ public class Controller {
         } while(uBound - lBound > 0.001); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
 
         logger.info("Algorithm ends.");
-
-        // lb = lBound;
-        // ub = uBound;
     }
 
     private void generateTestDelays() {
@@ -199,7 +194,26 @@ public class Controller {
         }
         scenarioProbabilities.add(numCopies * baseProbability);
         dataRegistry.setNumScenarios(scenarioDelays.size());
+        int minMaxDelay = Collections.max(scenarioDelays);
+        if(minMaxDelay > dataRegistry.getMaxLegDelayInMin())
+            dataRegistry.setMaxLegDelayInMin(minMaxDelay);
+
+        logger.info("updated max 2nd stage delay: " + dataRegistry.getMaxLegDelayInMin());
         logger.info("updated number of scenarios: " + scenarioDelays.size());
+
+        StringBuilder delayStr = new StringBuilder();
+        StringBuilder probStr = new StringBuilder();
+        delayStr.append("scenario delays: ");
+        probStr.append("scenario probabilities: ");
+        for(int i = 0; i < scenarioDelays.size(); ++i) {
+            delayStr.append(scenarioDelays.get(i));
+            delayStr.append(" ");
+            probStr.append(scenarioProbabilities.get(i));
+            probStr.append(" ");
+        }
+
+        logger.info(delayStr);
+        logger.info(probStr);
     }
 
     /*

@@ -31,12 +31,14 @@ public class Solver {
     }    
     
     public static void algorithm() throws OptException {
+        /*
         MasterSolver.MasterSolverInit(legs, tails, durations);
         MasterSolver.constructFirstStage();
         // MasterSolver.writeLPFile("ma", 0);
         MasterSolver.solve(-1);
         // MasterSolver.addColumn();
         // MasterSolver.writeLPFile("ma1", 0);
+        */
 
         double lBound = 0;
         double uBound = Double.MAX_VALUE;
