@@ -194,7 +194,7 @@ public class SubSolver {
             
             if(Controller.expExcess)
             {
-                v = subCplex.numVar(0, Double.MAX_VALUE, "v");
+                // v = subCplex.numVar(0, Double.MAX_VALUE, "v");
                 
                 double xVal = 0;
                 for (int i = 0; i < legs.size(); i++)
