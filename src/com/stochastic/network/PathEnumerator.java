@@ -163,12 +163,14 @@ public class PathEnumerator {
         p.addLeg(legs.get(0), 0);
         p.addLeg(legs.get(1), 0);
         p.addLeg(legs.get(2), 0);
+        p.setIndex(1);
         paths.add(p);
         
         // p2 - t1, l1,l2        
         p = new Path(tails.get(0));
         p.addLeg(legs.get(0), 0);
         p.addLeg(legs.get(1), 0);
+        p.setIndex(2);        
         paths.add(p);
 
         // p3 - t2, l4,l5,l6,l7,l8        
@@ -178,6 +180,7 @@ public class PathEnumerator {
         p.addLeg(legs.get(5), 0);        
         p.addLeg(legs.get(6), 0);
         p.addLeg(legs.get(7), 0);
+        p.setIndex(3);        
         paths.add(p);
         
 //        p = new Path(tails.get(1));

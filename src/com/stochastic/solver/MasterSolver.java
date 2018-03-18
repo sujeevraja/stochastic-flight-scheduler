@@ -60,6 +60,15 @@ public class MasterSolver {
         }
     }
 
+    public static void addColumn() throws OptException {
+        try {
+            masterCplex.setLinearCoef(obj, thetaVar, 1);
+        } catch (IloException e) {
+            logger.error(e);
+            throw new OptException("CPLEX error while adding benders variable");
+        }
+    }
+
     public static void solve(int iter) throws OptException {
         try {
             // Master.mastCplex.addMaximize();
@@ -123,7 +132,7 @@ public class MasterSolver {
                 cons.addTerm(X[i][j], 0.5 * durations.get(i));
 
         // cons.addTerm(thetaVar, 0);
-        cons.addTerm(thetaVar, 1);
+        // cons.addTerm(thetaVar, 1);
         obj = masterCplex.addMinimize(cons);
     }
 
@@ -166,17 +175,6 @@ public class MasterSolver {
                 r.setName("connect_" + currLeg.getId() + "_" + nextLeg.getId());
             }
         }
-        /*
-        for (int i = 0; i < legs.size(); i++) {
-            IloLinearNumExpr cons = masterCplex.linearNumExpr();
-
-            for (int j = 0; j < durations.size(); j++)
-                cons.addTerm(X[j][i], 1);
-
-            IloRange r = masterCplex.addLe(cons, 1);
-            r.setName("duration_cover_" + legs.get(i).getId());
-        }
-        */
     }
 
     public static void constructBendersCut(double alphaValue, double[][] betaValue) throws OptException {
@@ -198,6 +196,27 @@ public class MasterSolver {
             throw new OptException("CPLEX error solving first stage MIP");
         }
     }
+    
+    
+    public static void printSolution() {
+        try {
+             // solution value           
+            for(int i=0; i< durations.size(); i++)
+            	for(int j=0; j< legs.size(); j++)            	
+                	if(xValues[i][j] > 0)
+                		System.out.println(" xValues: " + " i: " + i + " j: " + j + " : " + X[i][j].getName() + " : " + xValues[i][j] + " , " + durations.get(i));
+            
+       		System.out.println(" theta: " + theta);            			
+            
+//            duals1 = subCplex.getDuals(R1);
+//            duals2 = subCplex.getDuals(R2);
+//            duals3 = subCplex.getDuals(R3);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Error: SubSolve");
+        }
+    }
+    
 
     public static double getObjValue() {
         return objValue;
