@@ -43,18 +43,38 @@ public class Network {
         logger.info("Started building adjacency list...");
         buildAdjacencyList();
         logger.info("Completed building adjacency list.");
-    }
+    }    
+    
+    public HashMap<Integer, ArrayList<Integer>> getAdjacencyList() {
+		return adjacencyList;
+	}
+    
+	public void setAdjacencyList(HashMap<Integer, ArrayList<Integer>> adjacencyList) {
+		this.adjacencyList = adjacencyList;
+	}
 
-    public ArrayList<Path> enumerateAllPaths() {
+	public ArrayList<Path> enumerateAllPaths() {
         ArrayList<Path> paths = new ArrayList<>();
         for(Tail tail : tails) {
             PathEnumerator pe = new PathEnumerator(tail, legs, legDelayMap, adjacencyList, startTime, endTime,
                     maxLegDelayInMin);
             ArrayList<Path> tailPaths = pe.generatePaths();
             logger.info("Number of paths for tail " + tail.getId() + ": " + tailPaths.size());
+            
+            System.out.println();            
+            for(Path p: tailPaths)
+            {
+                for(Leg l: p.getLegs())            	
+                    System.out.print(l.getDepPort()+","+l.getDepTime().getHour() +":"+
+                    		l.getDepTime().getMinute() + ","+l.getArrPort()+","+l.getArrTime().getHour() + ":" +
+                    		l.getArrTime().getMinute() + " --> ");
+                
+                System.out.println();                
+            }
             paths.addAll(tailPaths);
         }
         logger.info("Total number of paths: " + paths.size());
+        Path.resetPathCounter();
         return paths;
     }
 

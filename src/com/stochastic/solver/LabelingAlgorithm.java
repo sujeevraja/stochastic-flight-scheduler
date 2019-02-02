@@ -1,0 +1,289 @@
+package com.stochastic.solver;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.commons.math3.util.Pair;
+
+import com.stochastic.domain.Leg;
+import com.stochastic.domain.Tail;
+import com.stochastic.network.Network;
+import com.stochastic.network.Path;
+import com.stochastic.registry.DataRegistry;
+
+public class LabelingAlgorithm {
+	
+	public class NodeInfo{
+		private double Pi;
+		private int    i;
+		private double sumDelayDual;
+		private double sumflightDual;		
+		
+		public NodeInfo(double pi, int i, double sumDelayDual, double sumflightDual) {
+			super();
+			Pi = pi;
+			this.i = i;
+			this.sumDelayDual = sumDelayDual;
+			this.sumflightDual = sumflightDual;
+		}
+
+		public double getPi() {
+			return Pi;
+		}
+		public void setPi(double pi) {
+			Pi = pi;
+		}
+		public int getI() {
+			return i;
+		}
+		public void setI(int i) {
+			this.i = i;
+		}
+		public double getSumDelayDual() {
+			return sumDelayDual;
+		}
+		public void setSumDelayDual(double sumDelayDual) {
+			this.sumDelayDual = sumDelayDual;
+		}
+		public double getSumflightDual() {
+			return sumflightDual;
+		}
+		public void setSumflightDual(double sumflightDual) {
+			this.sumflightDual = sumflightDual;
+		}
+	}
+
+	// there should not be any class variables as these methods are called by individual
+    private ArrayList<Path> paths; // subproblem columns
+    private double[] flightDual;
+    private double assignDual;
+    private double[] delayDual;
+    
+    private HashMap<Integer, ArrayList<NodeInfo>> I = new HashMap<Integer, ArrayList<NodeInfo>>();
+    private HashMap<Integer, Double> M = new HashMap<Integer, Double>();    
+//    private HashMap<Integer, ArrayList<NodeInfo>> M;
+    private HashMap<Integer, ArrayList<Integer>> adjacencyList = new HashMap<Integer, ArrayList<Integer>>(); // keys and values are indices of leg list.    
+        
+    
+    // labeling algorithm    
+    public ArrayList<Path> getPaths(DataRegistry dataRegistry, ArrayList<Tail> tails, HashMap<Integer, Integer> legDelayMap, Tail tail,
+    		double[] fDual, double aDual, double[] dDual, ArrayList<Path> existingPaths)
+    {
+    	flightDual = fDual;
+        assignDual = aDual;
+        delayDual  = dDual;
+    	
+    	ArrayList<Leg> legs = dataRegistry.getLegs();
+
+        Network network = new Network(tails, legs, legDelayMap, dataRegistry.getWindowStart(),
+                dataRegistry.getWindowEnd(), dataRegistry.getMaxLegDelayInMin());
+                
+        adjacencyList = network.getAdjacencyList();
+        
+        // initialize // add the index
+        int i=0;
+		ArrayList<Integer> stLegs =  new ArrayList<Integer>();
+
+        for(Leg l: legs)
+        {                  	
+           if(l.getArrTime().getHour() < 9) // anyflight before 9 in the morning
+        	stLegs.add(i);
+           
+           i++;
+        }
+
+		int chooseIndex = getStFlight(stLegs); // populate niList
+    	// find the legs which can start in the morning    	
+//    	chooseIndex = findStart();
+
+    	while(chooseIndex >= 0)
+    	{
+    		//chooseJindex
+			findNextLeg(chooseIndex, dataRegistry);
+        	chooseIndex = findStart();    		
+    	}
+    	
+//find the last leg
+		LocalDateTime temp = null;
+		int lastFlIndex = -1;
+		for (Map.Entry<Integer, ArrayList<NodeInfo>> entry : I.entrySet()) {
+
+			if(temp == null)
+			{
+				temp = legs.get(entry.getKey()).getArrTime();
+				lastFlIndex = entry.getKey();
+			}
+			else if(temp.isBefore(legs.get(entry.getKey()).getArrTime()))
+			{
+				temp = legs.get(entry.getKey()).getArrTime();
+				lastFlIndex = entry.getKey();
+			}
+		}
+
+		Path p = new Path(tail);
+		int beforeIndex = lastFlIndex;
+		while(beforeIndex >= 0)
+		{			
+//			System.out.println(" beforeIndex: " + beforeIndex );			
+//			for (Map.Entry<Integer, Integer> entry : legDelayMap.entrySet()) 
+//				System.out.println(" LegIndex: " + entry.getKey() + " value: " + entry.getValue());		
+			
+			p.addLeg(legs.get(beforeIndex), legDelayMap.get(beforeIndex));
+			int niIndex = findMinimum(beforeIndex);
+
+			if(niIndex >= 0)
+				beforeIndex = I.get(beforeIndex).get(niIndex).getI();
+		}
+
+		ArrayList<Path> paths = new ArrayList<Path>();		
+	
+		for(Path p1 : existingPaths)
+			if(areSamePaths(p, p1))
+				return new ArrayList<Path>();;
+				
+		paths.add(p);
+		return paths;
+    }   
+
+    
+    public boolean areSamePaths(Path p1, Path p2)
+    {
+    	
+    	if(p1.getLegs().size() != p2.getLegs().size())
+    		return false;
+    	
+    	int index = 0;
+    	for(Leg l : p1.getLegs())
+    	{
+    		if(l.getId() != p1.getLegs().get(index).getId())
+    			return false;
+    		
+    		index++;
+    	}
+    	
+    	return true;    	
+    }
+    
+
+    public void findNextLeg(int iIndex, DataRegistry dataRegistry)
+    {
+    	int index     = -1;
+    	int niIndex   = -1;
+    	double minRci = 100000;
+    	
+    	int minIndex = findMinimum(iIndex);    	
+    	ArrayList<Leg> legs = dataRegistry.getLegs();    	
+    	
+    	Leg lg = legs.get(iIndex);
+//    	System.out.println(" 00-1: " + lg.getId());
+    	
+    	if(!adjacencyList.containsKey(iIndex))
+    		return;
+    	
+    	for(Integer jIndex: adjacencyList.get(iIndex))
+    	{
+   	    	if(minRci > flightDual[jIndex] + delayDual[jIndex]) //flightDual[i] + delayDual[i])
+   	    	{
+	    		minRci = flightDual[jIndex] + delayDual[jIndex]; //flightDual[i] + delayDual[i];
+	    		index  = jIndex;
+   	    	} 		
+    	}    	
+
+//    	System.out.println(" index: " + index);
+//    	System.out.println(" 1: " + flightDual[index]);
+//    	System.out.println(" 2: " + delayDual[index] + "," + minIndex);
+//    	System.out.println(" 3: " + I.get(iIndex).get(minIndex).getSumflightDual());
+//    	System.out.println(" 4: " + flightDual[index]);
+//    	System.out.println(" 5: " + I.get(iIndex).get(minIndex).getSumDelayDual());
+//    	System.out.println(" 6: " + delayDual[index]);
+    	
+    	NodeInfo ni = new NodeInfo(flightDual[index] + delayDual[index],iIndex,I.get(iIndex).get(minIndex).getSumflightDual() +flightDual[index],
+    							I.get(iIndex).get(minIndex).getSumDelayDual() + delayDual[index]);    	
+    	
+    	ArrayList<NodeInfo> niList = new ArrayList<NodeInfo>();
+    	
+    	if(I.get(index) != null)
+    		niList = I.get(index); 
+   	
+    	niList.add(ni);    	
+    	I.put(index, niList);    	
+    }
+    
+    public int findMinimum(int iIndex)
+    {
+	    ArrayList<NodeInfo> niList = I.get(iIndex);
+	    
+	    int nIndex  = -1;
+	    int cnt = 0;
+	    double minRci = 100000;
+	    int i = 0;
+	    for(NodeInfo ni : niList)
+	    {    	    	
+	    	if(minRci > ni.getSumflightDual() + ni.getSumDelayDual()) //flightDual[i] + delayDual[i])
+	    	{
+	    		minRci = ni.getSumflightDual() + ni.getSumDelayDual(); //flightDual[i] + delayDual[i];
+	    		nIndex = i;
+	    	}
+	    	i++;
+	    }
+	    
+	    return nIndex;
+    }
+    
+    public int findStart()
+    {
+    	int iIndex = -1;
+    	double minRci = 100000;
+    	int nIndex = 0;
+    	
+    	for (Map.Entry<Integer, ArrayList<NodeInfo>> entry : I.entrySet()) {
+    		
+    	    int i = entry.getKey();
+    	    if(M.get(i) != null) // already evaluated
+    	    	continue;
+    	    
+    	    ArrayList<NodeInfo> niList = entry.getValue();
+    	    
+    	    nIndex  = 0;
+    	    int cnt = 0;
+    	    for(NodeInfo ni : niList)
+    	    {    	    	
+    	    	if(minRci > flightDual[i] + delayDual[i]) //ni.getSumflightDual() + ni.getSumDelayDual()) //flightDual[i] + delayDual[i])
+    	    	{
+    	    		minRci = flightDual[i] + delayDual[i]; //ni.getSumflightDual() + ni.getSumDelayDual(); //flightDual[i] + delayDual[i];
+    	    		iIndex = i;
+    	    	}
+    	    	
+    	    }   	    
+    	}
+
+    	M.put(iIndex, minRci);
+    	return iIndex;
+    }
+    
+    public int getStFlight(ArrayList<Integer> stLegsI)
+    {
+    	int index = -1;
+    	double minValue  = 10000;
+    	for(int i=0; i<stLegsI.size(); i++)
+    	{
+    		double netDual = flightDual[i] + assignDual + delayDual[i];
+    		
+    		if(netDual < minValue)
+    		{
+    			minValue = netDual;
+    			index = i;
+    		}
+    	}    	
+    	
+    	NodeInfo ni = new NodeInfo(-1,-1,flightDual[index],delayDual[index]);    	
+    	ArrayList<NodeInfo> niList = new ArrayList<NodeInfo>();
+    	niList.add(ni);
+    	
+    	I.put(index, niList);
+
+    	return index;
+    }
+}

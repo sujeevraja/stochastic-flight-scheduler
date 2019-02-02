@@ -3,6 +3,7 @@ package com.stochastic.registry;
 import com.stochastic.domain.Equipment;
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
+import com.stochastic.network.Path;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -21,7 +22,10 @@ public class DataRegistry {
     private ArrayList<Leg> legs;
     private ArrayList<Tail> tails;
     private ArrayList<Integer> durations;
+    private HashMap<Integer, Path> tailHashMap;    
     private Integer numScenarios;
+    private double scale;
+    private double shape;
     
     public DataRegistry() {
         windowStart = null;
@@ -30,9 +34,19 @@ public class DataRegistry {
         legs = new ArrayList<>();
         tails = new ArrayList<>();
         durations = new ArrayList<>();
-    }
+        scale = 2.5;
+        shape = 0.25;
+    }   
     
-    public ArrayList<Integer> getDurations() {
+    public HashMap<Integer, Path> getTailHashMap() {
+		return tailHashMap;
+	}
+
+	public void setTailHashMap(HashMap<Integer, Path> tailHashMap) {
+		this.tailHashMap = tailHashMap;
+	}
+
+	public ArrayList<Integer> getDurations() {
 		return durations;
 	}
 
@@ -92,6 +106,15 @@ public class DataRegistry {
         return tails;
     }
 
+    public Tail getTail(Integer id) {
+    	
+    	for(Tail t: tails)
+    		if(t.getId() == id)
+    			return t;
+    	
+        return null;
+    }   
+    
     public void setNumScenarios(Integer numScenarios) {
         this.numScenarios = numScenarios;
     }
@@ -100,7 +123,19 @@ public class DataRegistry {
         return numScenarios;
     }
 
-    public Integer getNumLegs() {
-        return legs.size();
+    public void setScale(double scale) {
+        this.scale = scale;
+    }
+
+    public double getScale() {
+        return scale;
+    }
+
+    public void setShape(double shape) {
+        this.shape = shape;
+    }
+
+    public double getShape() {
+        return shape;
     }
 }

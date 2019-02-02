@@ -21,7 +21,6 @@ public class MasterSolver {
      * Class that solves the entire 2-stage stochastic programming problem.
      */
     private final static Logger logger = LogManager.getLogger(MasterSolver.class);
-    private final static double eps = 1.0e-5;
     private static ArrayList<Leg> legs;
     private static ArrayList<Tail> tails;
     private static ArrayList<Integer> durations;
@@ -225,4 +224,18 @@ public class MasterSolver {
     public static double[][] getxValues() {
         return xValues;
     }
+    
+    public static void end()
+    {
+//        legs.clear();
+//        tails.clear();
+//        durations.clear();
+                // cplex variables
+        X        = null;
+        thetaVar = null;
+        obj      = null;        
+        mastLp   = null;        
+        masterCplex.end();    	
+    }
+    
 }

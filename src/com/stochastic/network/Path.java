@@ -16,22 +16,38 @@ public class Path {
     private Tail tail;
     private ArrayList<Leg> legs;
     private ArrayList<Integer> delayTimesInMin;
-    private ArrayList<Integer> departureTimesInMin;    
+    private ArrayList<Integer> departureTimesInMin;
     private double cost;
-    private static int indexCount = 0;
+    private static int pathCounter = 0;
     private int index;
+    
+    public static void displayPath(Path p)
+    {
+    	for(Leg l: p.legs)
+    		System.out.print(l.getId() + "->");
+    	
+		System.out.println("\n");    	
+    }
 
-	Path(Tail tail) {
+	public Path(Tail tail) {
         this.tail = tail;
         legs = new ArrayList<>();
         delayTimesInMin = new ArrayList<>();
         cost = 0.0;
-        index = indexCount;
-        indexCount++;
+        index = pathCounter;
+        pathCounter++;
     }
 
-    void addLeg(Leg leg, Integer delayTimeInMin) {
+    public static void resetPathCounter() {
+	    pathCounter = 0;
+    }
+
+    public void addLeg(Leg leg, Integer delayTimeInMin) {
         legs.add(leg);
+        
+        if(delayTimeInMin == null)
+        	delayTimeInMin = 0;
+        
         delayTimesInMin.add(delayTimeInMin);
         cost += CostUtility.getAssignCostForLegToTail(leg, tail, delayTimeInMin);
     }
@@ -75,4 +91,5 @@ public class Path {
             logger.info("delay time in minutes: " + delayTimesInMin.get(i));
         }
     }
+	
 }

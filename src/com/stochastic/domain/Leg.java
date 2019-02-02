@@ -19,10 +19,8 @@ public class Leg {
     private LocalDateTime arrTime;
     private LocalDateTime latestDepTime; // based on maximum allowed delay
 
-    // original departure and arrival times.
-    private int depTimeInMin;
-    private int arrTimeInMin;
-
+    // info for labeling algorithm       
+    
     public Leg(Integer id, Integer fltNum, Integer depPort, Integer arrPort, int turnTimeInMin,
                Integer origTailId, LocalDateTime depTime, LocalDateTime arrTime,
                LocalDateTime latestDepTime) {
@@ -37,38 +35,7 @@ public class Leg {
         this.depTime = depTime;
         this.arrTime = arrTime;
         this.latestDepTime = latestDepTime;
-
-        this.depTimeInMin = (depTime.getHour()*60) + (depTime.getMinute()); // relative to startTime.
-        this.arrTimeInMin = (arrTime.getHour()*60) + (arrTime.getMinute()); // relative to startTime.
     }
-
-    public Integer getFltNum() {
-        return fltNum;
-    }
-
-    public void setDepTime(LocalDateTime depTime) {
-		this.depTime = depTime;
-	}
-    
-	public void setArrTime(LocalDateTime arrTime) {
-		this.arrTime = arrTime;
-	}	
-
-	public int getDepTimeInMin() {
-		return depTimeInMin;
-	}
-
-	public void setDepTimeInMin(int depTimeInMin) {
-		this.depTimeInMin = depTimeInMin;
-	}
-
-	public int getArrTimeInMin() {
-		return arrTimeInMin;
-	}
-
-	public void setArrTimeInMin(int arrTimeInMin) {
-		this.arrTimeInMin = arrTimeInMin;
-	}
 
 	public Integer getId() {
         return id;
@@ -106,21 +73,16 @@ public class Leg {
         return arrTime;
     }
 
-    public int getBlockTimeInMin() {
-        return blockTimeInMin;
-    }
-
-    public void setTurnTimeInMin(int turnTimeInMin) {
-        this.turnTimeInMin = turnTimeInMin;
-    }
-
-    public LocalDateTime getLatestDepTime() {
-        return latestDepTime;
+    public void reschedule(int numMinutes) {
+        depTime = depTime.plusMinutes(numMinutes);
+        arrTime = arrTime.plusMinutes(numMinutes);
+//        arrTime = depTime.plusMinutes(numMinutes);
     }
 
     @Override
     public final String toString() {
-        return ("Leg(id=" + id + ",fltNum=" + fltNum + ",depPort=" + depPort + ",depTime=" + depTime + ",arrPort="
-                + arrPort + ",arrTime=" + arrTime + ",origTail=" + origTailId + ")");
+        return ("Leg(id=" + id + ",index=" + index + ",fltNum=" + fltNum + ",depPort=" + depPort +
+                ",depTime=" + depTime + ",arrPort=" + arrPort + ",arrTime=" + arrTime + ",origTail=" +
+                origTailId + ")");
     }
 }
