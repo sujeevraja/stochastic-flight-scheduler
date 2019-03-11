@@ -49,10 +49,10 @@ public class DepSolver {
     {
     	for(Path p: paths)
     	{
-    		System.out.println("Tail: " + p.getTail().getId());
+    		logger.debug("Tail: " + p.getTail().getId());
     		
         	for(Leg l: p.getLegs())    		
-        		System.out.println("Leg: " + l.getId());        		
+        		logger.debug("Leg: " + l.getId());
     	}
     }
 
@@ -76,7 +76,7 @@ public class DepSolver {
             PathEnumerator pe = new PathEnumerator(); 
             paths = pe.addPaths(dataRegistry);            
             	
-    		System.out.println("Tail: " + tails.size() + " legs: " + legs.size() + " durations: " + durations.size());    		
+    		logger.debug("Tail: " + tails.size() + " legs: " + legs.size() + " durations: " + durations.size());
             printAllPaths();
             
             // Create containers to build CPLEX model.
@@ -190,17 +190,7 @@ public class DepSolver {
                     legPresence[pathLeg.getIndex()][j] = true;
 
                     delayExprs[pathLeg.getIndex()][j].addTerm(y[i][j], Controller.sceVal[i][j]);
-/*                    
-                    final Integer delayTime = delayTimes.get(j);
-                    if (delayTime > 0)
-                    {
-                        delayExprs[pathLeg.getIndex()][j].addTerm(y[i][j], delayTime);
-                        System.out.println(" DEP-Leg: " + pathLeg.getId() + " delayTime: " + delayTime);                        
-                    }
-*/
-//                        delayExprs[pathLeg.getIndex()].addTerm(y[i], 20);//delayTime);                   
-                    
-                }                
+                }
             }
 
             // Add constraints to model.
@@ -303,37 +293,33 @@ public class DepSolver {
             for(int i=0; i< legs.size(); i++)
                 for(int j=0; j< durations.size(); j++)            	
                 	if(xValues[i][j] > 0)
-                		System.out.println(" i: " + i + " j: " + j + " : " + x[i][j].getName() + " : " + xValues[i][j] + " , " + durations.get(j));
+                		logger.debug(" i: " + i + " j: " + j + " : " + x[i][j].getName() + " : " + xValues[i][j] + " , " + durations.get(j));
             
             for(int p=0; p< paths.size(); p++)
             	for (int j = 0; j < 5; j++)            	
             	if(yValues[p][j] > 0)            	
-            		System.out.println(" p: " + p + " : " + j + " : " +  y[p][j].getName() + " : " + yValues[p][j]);
+            		logger.debug(" p: " + p + " : " + j + " : " +  y[p][j].getName() + " : " + yValues[p][j]);
 
             for(int p=0; p< legs.size(); p++)
             	for (int j = 0; j < 5; j++)            	
             		if(dValues[p][j] > 0)            	
-                		System.out.println(" p: " + p + " : " + j + " : " +  d[p][j].getName() + " : " + dValues[p][j]);  
+                		logger.debug(" p: " + p + " : " + j + " : " +  d[p][j].getName() + " : " + dValues[p][j]);
             
         	for (int j = 0; j < 5; j++)
         	{
         		double oValue = 0;
-        		System.out.println(" Sub-Problem: " + j);
+        		logger.info(" Sub-Problem: " + j);
         		
                 for(int p=0; p< legs.size(); p++)
                 	oValue  += (dValues[p][j]*0.20*1.5);
 
                	oValue  += (vValues[j]*Controller.rho*0.20);
                 
-        		System.out.println(" Obj-Value: " + " : " + j + " : " +  oValue);               
+        		logger.info(" Obj-Value: " + " : " + j + " : " +  oValue);
         	}
-            
-//            duals1 = subCplex.getDuals(R1);
-//            duals2 = subCplex.getDuals(R2);
-//            duals3 = subCplex.getDuals(R3);
         } catch (IloException e) {
             e.printStackTrace();
-            System.out.println("Error: SubSolve");
+            logger.error("Error: SubSolve");
         }
     }
 
@@ -345,7 +331,7 @@ public class DepSolver {
         } catch (IloException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
-            System.out.println("Error: GetLPFile-Sub");
+            logger.error("Error: GetLPFile-Sub");
         }
     }
 

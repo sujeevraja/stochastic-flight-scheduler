@@ -91,7 +91,7 @@ public class SolutionManager {
             determSolver.solve();
             deterministicObjs[i] = (int) Math.round(determSolver.getObjValue());
             
-            System.out.println(" xxx-i: " + i + " : " + deterministicObjs[i] + " rescheduleLegIndices: " + rescheduleLegIndices.size());
+            logger.debug(" xxx-i: " + i + " : " + deterministicObjs[i] + " rescheduleLegIndices: " + rescheduleLegIndices.size());
 
             // Update leg departure times based on reschedule solution of stochastic model.
             // Also reduce random delays by rescheduled times wherever possible.
@@ -202,7 +202,7 @@ public class SolutionManager {
                 double meanStochDelay = 0;
                 for(int i = 0; i < testDelays.size(); ++i) {
                     meanDetermDelay += deterministicObjs[i];
-                    System.out.println(" meanDetermDelay: " + meanDetermDelay + " i: " + i + " deterministicObjs[i]: " + 
+                    logger.debug(" meanDetermDelay: " + meanDetermDelay + " i: " + i + " deterministicObjs[i]: " +
                     		deterministicObjs[i]);                    
                     meanStochDelay += stochasticObjs[i];
                 }
@@ -210,7 +210,7 @@ public class SolutionManager {
                 meanDetermDelay /= testDelays.size();
                 meanStochDelay /= testDelays.size();
 
-                System.out.println(" meanDetermDelay: " + meanDetermDelay + " testDelays.size(): " + testDelays.size());
+                logger.debug(" meanDetermDelay: " + meanDetermDelay + " testDelays.size(): " + testDelays.size());
                 
                 writer.write("average excess delay without rescheduling (min): " + meanDetermDelay + "\n");
                 writer.write("average excess delay with rescheduling (min): " + meanStochDelay + "\n");

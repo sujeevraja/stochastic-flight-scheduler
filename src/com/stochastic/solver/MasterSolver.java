@@ -203,16 +203,12 @@ public class MasterSolver {
             for(int i=0; i< durations.size(); i++)
             	for(int j=0; j< legs.size(); j++)            	
                 	if(xValues[i][j] > 0)
-                		System.out.println(" xValues: " + " i: " + i + " j: " + j + " : " + X[i][j].getName() + " : " + xValues[i][j] + " , " + durations.get(i));
+                		logger.debug(" xValues: " + " i: " + i + " j: " + j + " : " + X[i][j].getName() + " : " + xValues[i][j] + " , " + durations.get(i));
             
-       		System.out.println(" theta: " + theta);            			
-            
-//            duals1 = subCplex.getDuals(R1);
-//            duals2 = subCplex.getDuals(R2);
-//            duals3 = subCplex.getDuals(R3);
+       		logger.debug(" theta: " + theta);
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("Error: SubSolve");
+            logger.error("Error: SubSolve");
         }
     }
     

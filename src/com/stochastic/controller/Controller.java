@@ -42,30 +42,34 @@ public class Controller {
     private ArrayList<Integer> scenarioDelays;
     private ArrayList<Double> scenarioProbabilities;
     private String instancePath;
-    
-    public static ArrayList<Double> delayResults = new ArrayList<Double>(); 
-    public static ArrayList<Double> bounds = new ArrayList<Double>();
-    
+    private static ArrayList<Double> bounds = new ArrayList<>();
+
+    public static ArrayList<Double> delayResults = new ArrayList<>();
+
     // parameters for expExcess
     public static boolean expExcess = false;
-    public static double rho = 0.9;    
+    public static double rho = 0.9;
     public static double excessTgt = 40;
-    
-    public static int[][] sceVal;    
-    
+
+    public static int[][] sceVal;
+
     public Controller() {
         dataRegistry = new DataRegistry();
     }
 
-	public final void readData(String instancePath) throws OptException {
-        logger.info("Started reading data...");
-//        instancePath = getScenarioPath();
-        dataRegistry.setNumScenarios(Main.numScenarios); 
+    public final void initHardCodedParameters(int numScenarios) {
+        logger.info("Started hard-coded parameter initialization...");
+        dataRegistry.setNumScenarios(numScenarios);
         dataRegistry.setScale(3.5);
         dataRegistry.setShape(0.25);
 
         ArrayList<Integer> durations = new ArrayList<>(Arrays.asList(5, 10, 15, 20, 25, 30));
         dataRegistry.setDurations(durations);
+    }
+
+    public final void readData(String instancePath) throws OptException {
+        logger.info("Started reading data...");
+        this.instancePath = instancePath;
 
         // Read parameters
         ParametersDAO parametersDAO = new ParametersDAO(instancePath + "\\Parameters.xml");
@@ -83,13 +87,6 @@ public class Controller {
                 dataRegistry.getMaxLegDelayInMin()).getLegs();
         storeLegs(legs);
         logger.info("Collected leg and tail data from Schedule.xml.");
-
-        StringBuilder tailsStr = new StringBuilder();
-        for(Tail tail : dataRegistry.getTails()) {
-            tailsStr.append(tail.getId());
-            tailsStr.append(" ");
-        }
-        logger.debug("loaded tails: " + tailsStr.toString());
         logger.info("Completed reading data.");
     }
 
@@ -98,10 +95,10 @@ public class Controller {
         ArrayList<Tail> tails = dataRegistry.getTails();
         ArrayList<Integer> durations = dataRegistry.getDurations();
 
-        int iter = -1;        
+        int iter = -1;
         MasterSolver.MasterSolverInit(legs, tails, durations, dataRegistry.getWindowStart());
         MasterSolver.constructFirstStage();
-        // MasterSolver.writeLPFile("master_initial.lp");
+        MasterSolver.writeLPFile("master_initial.lp");
         MasterSolver.solve(iter);
         MasterSolver.addColumn();
 
@@ -112,7 +109,7 @@ public class Controller {
 
         // generate random delays for 2nd stage scenarios.
         generateScenarioDelays(dataRegistry.getScale(), dataRegistry.getShape());
-//        generateTestDelays();
+        // generateTestDelays();
         logScenarioDelays();
 
         // sceVal = new int[3][5];
@@ -135,27 +132,27 @@ public class Controller {
             lBound = MasterSolver.getObjValue();
 
             logger.info("XXXX----------LB: " + lBound + " UB: " + uBound + " Iter: " + iter
-            		+ " SubSolverWrapper.getuBound(): " + SubSolverWrapper.getuBound());
-            
-            if(SubSolverWrapper.getuBound() < uBound)
+                    + " SubSolverWrapper.getuBound(): " + SubSolverWrapper.getuBound());
+
+            if (SubSolverWrapper.getuBound() < uBound)
                 uBound = SubSolverWrapper.getuBound();
 
             logger.info("--------------LB: " + lBound + " UB: " + uBound + " Iter: " + iter);
-        } while(uBound - lBound > 0.001); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
+        }
+        while (uBound - lBound > 0.001); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
 
         MasterSolver.printSolution();
         MasterSolver.end();
         bounds.add(lBound);
         bounds.add(uBound);
-        
-        if(lBound - uBound > 1)
-        {
-        	System.out.println("DATA PRINTED");
-        	SubSolverWrapper.ScenarioData.printData();
-        	
-        	System.out.println(" xxx: " +  sceVal[100][100]);
+
+        if (lBound - uBound > 1) {
+            logger.info("DATA PRINTED");
+            SubSolverWrapper.ScenarioData.printData();
+
+            logger.info(" xxx: " + sceVal[100][100]);
         }
-        
+
         logger.info("Algorithm ends.");
     }
 
@@ -163,11 +160,12 @@ public class Controller {
         // scenarioDelays = new ArrayList<>(Collections.singletonList(45));
         // scenarioProbabilities = new ArrayList<>(Collections.singletonList(1.0));
 
-//        scenarioDelays = new ArrayList<>(Arrays.asList(17, 21, 23, 26, 29, 30, 33, 37, 38));
-    	scenarioDelays = new ArrayList<>(Arrays.asList(19,21,23,24,25,26,29,30,35,36,38,43,45,46,51,62));    	
-//        scenarioProbabilities = new ArrayList<>(Arrays.asList(0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2));
-        scenarioProbabilities = new ArrayList<>(Arrays.asList(0.05,0.1,0.05,0.05,0.05,0.05,0.05,0.05,0.1,0.05,0.05,
-        		0.05, 0.1, 0.1, 0.05, 0.05));
+        // scenarioDelays = new ArrayList<>(Arrays.asList(17, 21, 23, 26, 29, 30, 33, 37, 38));
+        // scenarioProbabilities = new ArrayList<>(Arrays.asList(0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2));
+
+        scenarioDelays = new ArrayList<>(Arrays.asList(19, 21, 23, 24, 25, 26, 29, 30, 35, 36, 38, 43, 45, 46, 51, 62));
+        scenarioProbabilities = new ArrayList<>(Arrays.asList(0.05, 0.1, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.1, 0.05, 0.05,
+                0.05, 0.1, 0.1, 0.05, 0.05));
 
         dataRegistry.setNumScenarios(scenarioDelays.size());
         dataRegistry.setMaxLegDelayInMin(Collections.max(scenarioDelays));
@@ -197,10 +195,10 @@ public class Controller {
 
         scenarioDelays.add(delayTimes[0]);
         int prevDelayTime = delayTimes[0];
-        for(int i = 1; i < numSamples; ++i) {
+        for (int i = 1; i < numSamples; ++i) {
             int delayTime = delayTimes[i];
 
-            if(delayTime != prevDelayTime) {
+            if (delayTime != prevDelayTime) {
                 final double prob = Double.parseDouble(df.format(numCopies * baseProbability));
                 scenarioProbabilities.add(prob); // add probabilities for previous time.
                 scenarioDelays.add(delayTime); // add new delay time.
@@ -213,7 +211,7 @@ public class Controller {
         scenarioProbabilities.add(numCopies * baseProbability);
         dataRegistry.setNumScenarios(scenarioDelays.size());
         int minMaxDelay = Collections.max(scenarioDelays);
-        if(minMaxDelay > dataRegistry.getMaxLegDelayInMin())
+        if (minMaxDelay > dataRegistry.getMaxLegDelayInMin())
             dataRegistry.setMaxLegDelayInMin(minMaxDelay);
     }
 
@@ -225,7 +223,7 @@ public class Controller {
         StringBuilder probStr = new StringBuilder();
         delayStr.append("scenario delays: ");
         probStr.append("scenario probabilities: ");
-        for(int i = 0; i < scenarioDelays.size(); ++i) {
+        for (int i = 0; i < scenarioDelays.size(); ++i) {
             delayStr.append(scenarioDelays.get(i));
             delayStr.append(" ");
             probStr.append(scenarioProbabilities.get(i));
@@ -236,29 +234,7 @@ public class Controller {
         logger.info(probStr);
     }
 
-    private String getScenarioPath() throws OptException {
-        try {
-            File xmlFile = new File("config.xml");
-            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            Document doc = dBuilder.parse(xmlFile);
-            doc.getDocumentElement().normalize();
-
-            Node scenarioNode = doc.getElementsByTagName("scenarioPath").item(0);
-            return scenarioNode.getTextContent();
-        } catch (ParserConfigurationException pce) {
-            logger.error(pce);
-            throw new OptException("Unable to create DocumentBuilder to read config.xml");
-        } catch (IOException ioe) {
-            logger.error(ioe);
-            throw new OptException("Unable to read config.xml");
-        } catch (SAXException se) {
-            logger.error(se);
-            throw new OptException("Possibly ill-formed xml in config.xml");
-        }
-    }
-
-    private void storeLegs(ArrayList<Leg> inputLegs) {    	
+    private void storeLegs(ArrayList<Leg> inputLegs) {
         final ArrayList<Integer> tailIds = dataRegistry.getEquipment().getTailIds();
         final LocalDateTime windowStart = dataRegistry.getWindowStart();
         final LocalDateTime windowEnd = dataRegistry.getWindowEnd();
@@ -267,96 +243,71 @@ public class Controller {
 
         // Cleanup unnecessary legs.
         Integer index = 0;
-        for(Leg leg : inputLegs) {
-            if(leg.getArrTime().isBefore(windowStart)
+        for (Leg leg : inputLegs) {
+            if (leg.getArrTime().isBefore(windowStart)
                     || leg.getDepTime().isAfter(windowEnd))
                 continue;
 
             Integer tailId = leg.getOrigTailId();
-            if(!tailIds.contains(tailId))
+            if (!tailIds.contains(tailId))
                 continue;
 
             leg.setIndex(index);
             ++index;
             legs.add(leg);
 
-            if(tailHashMap.containsKey(tailId))
+            if (tailHashMap.containsKey(tailId))
                 tailHashMap.get(tailId).add(leg);
             else {
                 ArrayList<Leg> tailLegs = new ArrayList<>();
                 tailLegs.add(leg);
                 tailHashMap.put(tailId, tailLegs);
             }
-        }       
+        }
 
         dataRegistry.setLegs(legs);
+        logger.info("Number of legs: " + legs.size());
 
         // build tails from schedule
         ArrayList<Tail> tails = new ArrayList<>();
-        for(Map.Entry<Integer, ArrayList<Leg>> entry : tailHashMap.entrySet()) {
+        for (Map.Entry<Integer, ArrayList<Leg>> entry : tailHashMap.entrySet()) {
             ArrayList<Leg> tailLegs = entry.getValue();
             tailLegs.sort(Comparator.comparing(Leg::getDepTime));
             tails.add(new Tail(entry.getKey(), tailLegs));
         }
 
         tails.sort(Comparator.comparing(Tail::getId));
-        for(int i = 0; i < tails.size(); ++i)
+        for (int i = 0; i < tails.size(); ++i)
             tails.get(i).setIndex(i);
 
         dataRegistry.setTails(tails);
-        
+        logger.info("Number of tails: " + tails.size());
+
         HashMap<Integer, Path> tailPaths = new HashMap<Integer, Path>();
-        for(Map.Entry<Integer, ArrayList<Leg>> entry : tailHashMap.entrySet()) {
+        for (Map.Entry<Integer, ArrayList<Leg>> entry : tailHashMap.entrySet()) {
             ArrayList<Leg> tailLegs = entry.getValue();
             tailLegs.sort(Comparator.comparing(Leg::getDepTime));
 
             Path p = new Path(dataRegistry.getTail(entry.getKey()));
-            
-            for(Leg l:tailLegs)
-            	p.addLeg(l, 0);
-            
+
+            for (Leg l : tailLegs)
+                p.addLeg(l, 0);
+
             tailPaths.put(entry.getKey(), p);
-        }        
+        }
         dataRegistry.setTailHashMap(tailPaths);
     }
 
-    public void generateDelays()
-    {
-    	SolutionManager.generateDelaysForComparison(Main.numTestScenarios, dataRegistry);
+    public void generateDelays(int numTestScenarios) {
+        SolutionManager.generateDelaysForComparison(numTestScenarios, dataRegistry);
     }
-    
-    public void processSolution(boolean qualifySolution, double[][] xValues) throws OptException {
-        SolutionManager sm = new SolutionManager(instancePath, dataRegistry, scenarioDelays, scenarioProbabilities,	xValues);
-        if(qualifySolution)
-            sm.compareSolutions(Main.numTestScenarios); 
+
+    public void processSolution(boolean qualifySolution, double[][] xValues,
+                                int numTestScenarios) throws OptException {
+        SolutionManager sm = new SolutionManager(instancePath, dataRegistry, scenarioDelays, scenarioProbabilities,
+                xValues);
+        if (qualifySolution)
+            sm.compareSolutions(numTestScenarios);
         sm.writeOutput();
     }
-    
-    public void writeResults()
-    {    	
-		try 
-		{
-    	
-			BufferedWriter out = 
-				new BufferedWriter(new FileWriter("Output.txt", true)); //new BufferedWriter(new FileWriter("Output.txt"));    	
-    
-			out.write(Main.path + "," + dataRegistry.getLegs().size() + "," + dataRegistry.getTails().size() + "," + Main.numScenarios + 
-					"," + Main.numTestScenarios + "," + Main.tsRuntime + "," + Main.tsRARuntime);
-
-			for(int i=0; i < bounds.size(); i++)
-				out.write("," + bounds.get(i));		
-			
-			for(int i=0; i < delayResults.size(); i++)
-				out.write("," + delayResults.get(i));			
-			
-			out.write("\n");	
-			out.close();    		
-
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}       
-
-    }
-    
 }

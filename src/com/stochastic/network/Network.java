@@ -61,15 +61,12 @@ public class Network {
             ArrayList<Path> tailPaths = pe.generatePaths();
             logger.info("Number of paths for tail " + tail.getId() + ": " + tailPaths.size());
             
-            System.out.println();            
             for(Path p: tailPaths)
             {
                 for(Leg l: p.getLegs())            	
-                    System.out.print(l.getDepPort()+","+l.getDepTime().getHour() +":"+
+                    logger.debug(l.getDepPort()+","+l.getDepTime().getHour() +":"+
                     		l.getDepTime().getMinute() + ","+l.getArrPort()+","+l.getArrTime().getHour() + ":" +
                     		l.getArrTime().getMinute() + " --> ");
-                
-                System.out.println();                
             }
             paths.addAll(tailPaths);
         }

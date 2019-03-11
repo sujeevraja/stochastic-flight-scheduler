@@ -21,14 +21,6 @@ public class Path {
     private static int pathCounter = 0;
     private int index;
     
-    public static void displayPath(Path p)
-    {
-    	for(Leg l: p.legs)
-    		System.out.print(l.getId() + "->");
-    	
-		System.out.println("\n");    	
-    }
-
 	public Path(Tail tail) {
         this.tail = tail;
         legs = new ArrayList<>();
@@ -36,6 +28,24 @@ public class Path {
         cost = 0.0;
         index = pathCounter;
         pathCounter++;
+    }
+
+    @Override
+    public String toString() {
+	    StringBuilder pathStr = new StringBuilder();
+	    pathStr.append(index);
+	    pathStr.append(": ");
+	    if (legs.isEmpty()) {
+            pathStr.append("empty");
+        }
+        else {
+	        pathStr.append(legs.get(0).getId());
+	        for(int i = 1; i < legs.size(); ++i) {
+	            pathStr.append(" -> ");
+	            pathStr.append(legs.get(i).getId());
+            }
+        }
+        return pathStr.toString();
     }
 
     public static void resetPathCounter() {

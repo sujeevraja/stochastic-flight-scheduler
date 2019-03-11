@@ -7,11 +7,17 @@ import java.util.StringTokenizer;
 
 import com.stochastic.solver.SubSolverWrapper;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 public class InputsDAO
 {
     /**
      * @param fileName
      */
+
+    private final static Logger logger = LogManager.getLogger(InputsDAO.class);
+
     public static void  ReadData()
     {
          try
@@ -49,17 +55,17 @@ public class InputsDAO
 
            readVal = null;
            in.close();
-  		   System.out.println("InputsDAO.txt - Read " + SubSolverWrapper.ScenarioData.dataStore.size());
+  		   logger.debug("InputsDAO.txt - Read " + SubSolverWrapper.ScenarioData.dataStore.size());
          }
          catch (FileNotFoundException ex)
          {
-           System.out.println("File InputsDAO.txt NOT FOUND");
+           logger.error("File InputsDAO.txt NOT FOUND");
            System.exit(0);
          }
          catch(Exception e)
          {
          	e.printStackTrace();
-        	System.out.println("Error in InputsDAO");
+        	logger.error("Error in InputsDAO");
             System.exit(0);
          }
     }

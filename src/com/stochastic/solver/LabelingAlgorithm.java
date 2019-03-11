@@ -5,8 +5,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.math3.util.Pair;
-
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
 import com.stochastic.network.Network;
@@ -126,10 +124,6 @@ public class LabelingAlgorithm {
 		int beforeIndex = lastFlIndex;
 		while(beforeIndex >= 0)
 		{			
-//			System.out.println(" beforeIndex: " + beforeIndex );			
-//			for (Map.Entry<Integer, Integer> entry : legDelayMap.entrySet()) 
-//				System.out.println(" LegIndex: " + entry.getKey() + " value: " + entry.getValue());		
-			
 			p.addLeg(legs.get(beforeIndex), legDelayMap.get(beforeIndex));
 			int niIndex = findMinimum(beforeIndex);
 
@@ -137,11 +131,11 @@ public class LabelingAlgorithm {
 				beforeIndex = I.get(beforeIndex).get(niIndex).getI();
 		}
 
-		ArrayList<Path> paths = new ArrayList<Path>();		
+		ArrayList<Path> paths = new ArrayList<>();
 	
 		for(Path p1 : existingPaths)
 			if(areSamePaths(p, p1))
-				return new ArrayList<Path>();;
+				return new ArrayList<>();
 				
 		paths.add(p);
 		return paths;
@@ -177,8 +171,7 @@ public class LabelingAlgorithm {
     	ArrayList<Leg> legs = dataRegistry.getLegs();    	
     	
     	Leg lg = legs.get(iIndex);
-//    	System.out.println(" 00-1: " + lg.getId());
-    	
+
     	if(!adjacencyList.containsKey(iIndex))
     		return;
     	
@@ -191,14 +184,6 @@ public class LabelingAlgorithm {
    	    	} 		
     	}    	
 
-//    	System.out.println(" index: " + index);
-//    	System.out.println(" 1: " + flightDual[index]);
-//    	System.out.println(" 2: " + delayDual[index] + "," + minIndex);
-//    	System.out.println(" 3: " + I.get(iIndex).get(minIndex).getSumflightDual());
-//    	System.out.println(" 4: " + flightDual[index]);
-//    	System.out.println(" 5: " + I.get(iIndex).get(minIndex).getSumDelayDual());
-//    	System.out.println(" 6: " + delayDual[index]);
-    	
     	NodeInfo ni = new NodeInfo(flightDual[index] + delayDual[index],iIndex,I.get(iIndex).get(minIndex).getSumflightDual() +flightDual[index],
     							I.get(iIndex).get(minIndex).getSumDelayDual() + delayDual[index]);    	
     	
