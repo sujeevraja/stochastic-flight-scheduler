@@ -201,7 +201,13 @@ public class SubSolver {
                         sd.setLegId(pathLeg.getIndex());
                         
                         delayExprs[pathLeg.getIndex()].addTerm(y[i][j], delayTime);
-                        ScenarioData.addData(sceNo, iter, paths.get(tails.get(i).getId()).get(j).getIndex(), tails.get(i).getIndex(), pathLeg.getIndex(), delayTime);
+                        ScenarioData.addData(
+                            sceNo,
+                            iter,
+                            paths.get(tails.get(i).getId()).get(j).getIndex(),
+                            tails.get(i).getIndex(),
+                            pathLeg.getIndex(),
+                            delayTime);
                     }
                   }
                 }
@@ -210,16 +216,20 @@ public class SubSolver {
             // Add constraints to model.
             for (int i = 0; i < numTails; ++i)
                 if (tailPresence[i])
-                    onePathPerTailConstraints[i] = subCplex.addLe(tailCoverExprs[i], 1.0, "tail_" + i + "_" + tails.get(i).getId());
+                    onePathPerTailConstraints[i] = subCplex.addLe(
+                            tailCoverExprs[i], 1.0, "tail_" + i + "_" + tails.get(i).getId());
 
             for (int i = 0; i < numLegs; ++i) {
                 if (legPresence[i])
-                    legCoverConstraints[i] = subCplex.addEq(legCoverExprs[i], 1.0, "leg_" + i + "_" + legs.get(i).getId());
-
-                legDelayLinkConstraints[i] = subCplex.addLe(delayExprs[i], delayRHS[i], "delay_" + i + "_" + legs.get(i).getId());
+                    legCoverConstraints[i] = subCplex.addEq(
+                            legCoverExprs[i], 1.0, "leg_" + i + "_" + legs.get(i).getId());
             }
 
-            
+            for (int i = 0; i < numLegs; ++i) {
+                legDelayLinkConstraints[i] = subCplex.addLe(
+                        delayExprs[i], delayRHS[i], "delay_" + i + "_" + legs.get(i).getId());
+            }
+
             for(int i=0; i< tails.size(); i++)
                 for(int j=0; j< y[i].length; j++)
                     R4[i][j] = subCplex.addLe(y[i][j], 1, "yBound_" + i);
@@ -338,7 +348,7 @@ public class SubSolver {
 
     public void writeLPFile(String fName, int iter, int wcnt, int sceNo) throws OptException {
         try {
-            subCplex.exportModel(fName + "sub_" + iter + "_" + sceNo + "_" + wcnt + ".lp");
+            subCplex.exportModel(fName + "sub_" + iter + "_scen_" + sceNo + "_labelingIter_" + wcnt + ".lp");
         } catch (IloException e) {
             logger.error(e);
             throw new OptException("error writing lp file for sub-problem");

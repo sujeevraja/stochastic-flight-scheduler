@@ -98,7 +98,7 @@ public class Controller {
         int iter = -1;
         MasterSolver.MasterSolverInit(legs, tails, durations, dataRegistry.getWindowStart());
         MasterSolver.constructFirstStage();
-        MasterSolver.writeLPFile("master_initial.lp");
+        MasterSolver.writeLPFile("logs/before_cuts_master.lp");
         MasterSolver.solve(iter);
         MasterSolver.addColumn();
 
@@ -126,7 +126,7 @@ public class Controller {
 
             MasterSolver.constructBendersCut(SubSolverWrapper.getAlpha(), SubSolverWrapper.getBeta());
 
-            MasterSolver.writeLPFile("master_" + iter + ".lp");
+            MasterSolver.writeLPFile("logs/master_" + iter + ".lp");
             MasterSolver.solve(iter);
 
             lBound = MasterSolver.getObjValue();
@@ -149,24 +149,18 @@ public class Controller {
         if (lBound - uBound > 1) {
             logger.info("DATA PRINTED");
             SubSolverWrapper.ScenarioData.printData();
-
-            logger.info(" xxx: " + sceVal[100][100]);
+            // logger.info(" xxx: " + sceVal[100][100]);
         }
 
         logger.info("Algorithm ends.");
     }
 
     private void generateTestDelays() {
-        // scenarioDelays = new ArrayList<>(Collections.singletonList(45));
-        // scenarioProbabilities = new ArrayList<>(Collections.singletonList(1.0));
+        scenarioDelays = new ArrayList<>(Collections.singletonList(45));
+        scenarioProbabilities = new ArrayList<>(Collections.singletonList(1.0));
 
-        // scenarioDelays = new ArrayList<>(Arrays.asList(17, 21, 23, 26, 29, 30, 33, 37, 38));
-        // scenarioProbabilities = new ArrayList<>(Arrays.asList(0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2));
-
-        scenarioDelays = new ArrayList<>(Arrays.asList(19, 21, 23, 24, 25, 26, 29, 30, 35, 36, 38, 43, 45, 46, 51, 62));
-        scenarioProbabilities = new ArrayList<>(Arrays.asList(0.05, 0.1, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.1, 0.05, 0.05,
-                0.05, 0.1, 0.1, 0.05, 0.05));
-
+        // scenarioDelays = new ArrayList<>(Arrays.asList(22, 23, 30, 32, 33, 34, 36, 46, 52));
+        // scenarioProbabilities = new ArrayList<>(Arrays.asList(0.1, 0.1, 0.1, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1));
         dataRegistry.setNumScenarios(scenarioDelays.size());
         dataRegistry.setMaxLegDelayInMin(Collections.max(scenarioDelays));
     }

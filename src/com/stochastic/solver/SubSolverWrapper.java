@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -237,7 +236,7 @@ public class SubSolverWrapper {
                     s.constructSecondStage(xValues, dataRegistry, scenarioNum, iter, pathsAll);
                     s.solve();
                     s.collectDuals();
-                    s.writeLPFile("", iter, wCnt, this.scenarioNum);
+                    s.writeLPFile("logs/", iter, wCnt, this.scenarioNum);
                     uBoundValue = s.getObjValue();
                     calculateAlpha(s.getDualsLeg(), s.getDualsTail(), s.getDualsDelay(), s.getDualsBnd(), s.getDualsRisk());
                     calculateBeta(s.getDualsDelay(), s.getDualsRisk());
@@ -372,11 +371,17 @@ public class SubSolverWrapper {
 
         public static void printData() {
             logger.debug(" Prints the scenario data: ");
-
+            logger.debug("-----");
             for (Map.Entry<ScenarioData, Integer> entry : dataStore.entrySet()) {
                 ScenarioData key = entry.getKey();
                 Integer value = entry.getValue();
-                logger.debug(key.sceNo + "," + key.iter + "," + key.pathIndex + "," + key.tailIndex + "," + key.legId + "," + value);
+                logger.debug("iteration: " + key.iter);
+                logger.debug("scenario number: " + key.sceNo);
+                logger.debug("path index: " + key.pathIndex);
+                logger.debug("tail index: " + key.tailIndex);
+                logger.debug("leg id: " + key.legId);
+                logger.debug("value: " + value);
+                logger.debug("-----");
             }
         }
 

@@ -106,8 +106,10 @@ public class MasterSolver {
     public static void constructFirstStage() throws OptException {
         try {
             for (int i = 0; i < durations.size(); i++)
-                for (int j = 0; j < legs.size(); j++)
-                    X[i][j] = masterCplex.boolVar("X_" + i + "_" + legs.get(j).getId()); // boolVarArray(Data.nD + Data.nT);
+                for (int j = 0; j < legs.size(); j++) {
+                    String varName = "X_" + durations.get(i) + "_" + legs.get(j).getId();
+                    X[i][j] = masterCplex.boolVar(varName);
+                }
 
             thetaVar = masterCplex.numVar(-Double.MAX_VALUE, Double.MAX_VALUE, "theta");
 
