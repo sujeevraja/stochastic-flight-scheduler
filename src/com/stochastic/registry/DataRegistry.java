@@ -107,9 +107,8 @@ public class DataRegistry {
     }
 
     public Tail getTail(Integer id) {
-    	
     	for(Tail t: tails)
-    		if(t.getId() == id)
+    		if(t.getId().equals(id))
     			return t;
     	
         return null;

@@ -16,7 +16,6 @@ public class Path {
     private Tail tail;
     private ArrayList<Leg> legs;
     private ArrayList<Integer> delayTimesInMin;
-    private ArrayList<Integer> departureTimesInMin;
     private double cost;
     private static int pathCounter = 0;
     private int index;
