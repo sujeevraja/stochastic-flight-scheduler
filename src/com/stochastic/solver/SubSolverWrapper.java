@@ -5,15 +5,14 @@ import com.stochastic.delay.DelayGenerator;
 import com.stochastic.delay.FirstFlightDelayGenerator;
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
+import com.stochastic.network.Network;
 import com.stochastic.network.Path;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.utility.OptException;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -30,7 +29,7 @@ public class SubSolverWrapper {
     private static int iter;
     private static double[][] beta;
     private static int numThreads = 2;
-    private static HashMap<Integer, HashMap<Integer, ArrayList<Path>>> hmPaths = new HashMap<Integer, HashMap<Integer, ArrayList<Path>>>();
+    private static HashMap<Integer, HashMap<Integer, ArrayList<Path>>> hmPaths = new HashMap<>();
 
 
     private static double[][] xValues;
@@ -52,7 +51,8 @@ public class SubSolverWrapper {
         }
     }
 
-    private synchronized static void calculateAlpha(double[] dualsLegs, double[] dualsTail, double[] dualsDelay, double[][] dualsBnd, double dualRisk) {
+    private synchronized static void calculateAlpha(double[] dualsLegs, double[] dualsTail, double[] dualsDelay,
+                                                    double[][] dualsBnd, double dualRisk) {
         ArrayList<Leg> legs = dataRegistry.getLegs();
 
         logger.debug("initial alpha value: " + alpha);
@@ -69,10 +69,10 @@ public class SubSolverWrapper {
             alpha += (dualsDelay[j] * 14); //prb*14);
         }
 
-        for (int i = 0; i < dualsBnd.length; i++)
-            for (int j = 0; j < dualsBnd[i].length; j++) {
-                alpha += (dualsBnd[i][j]); //*prb);
-            }
+        for (double[] dualBnd : dualsBnd)
+            if (dualBnd != null)
+                for (double j : dualBnd)
+                    alpha += j; //*prb);
 
         if (Controller.expExcess)
             alpha += (dualRisk * Controller.excessTgt); //*prb);
@@ -132,6 +132,7 @@ public class SubSolverWrapper {
         private int scenarioNum;
         private HashMap<Integer, Integer> randomDelays;
         private double probability;
+        private final double eps = 1.0e-5;
 
         SubSolverRunnable(int scenarioNum, HashMap<Integer, Integer> randomDelays, double probability) {
             this.scenarioNum = scenarioNum;
@@ -201,12 +202,19 @@ public class SubSolverWrapper {
 
         //exSrv.execute(buildSDThrObj) calls brings you here
         public void run() {
+            if (dataRegistry.getUseFullEnumeration())
+                solveWithFullEnumeration();
+            else
+                solveWithLabeling();
+        }
+
+        private void solveWithLabeling() {
             try {
                 HashMap<Integer, ArrayList<Path>> pathsAll;
 
                 SubSolver s1 = new SubSolver(randomDelays, probability);
-                HashMap<Integer, Integer> legDelayMap = s1.getLegDelays(
-                        dataRegistry.getLegs(), dataRegistry.getDurations(), xValues);
+                HashMap<Integer, Integer> legDelayMap = getLegDelays( dataRegistry.getLegs(),
+                        dataRegistry.getDurations(), xValues);
 
                 if (hmPaths.containsKey(this.scenarioNum))
                     pathsAll = hmPaths.get(this.scenarioNum);
@@ -214,7 +222,7 @@ public class SubSolverWrapper {
                     // load on-plan paths with propagated delays into the container that will be provided to SubSolver.
                     HashMap<Integer, Path> initialPaths = getInitialPaths(legDelayMap);
                     pathsAll = new HashMap<>();
-                    for(Map.Entry<Integer, Path> entry : initialPaths.entrySet()) {
+                    for (Map.Entry<Integer, Path> entry : initialPaths.entrySet()) {
                         ArrayList<Path> paths = new ArrayList<>();
                         paths.add(entry.getValue());
                         pathsAll.put(entry.getKey(), paths);
@@ -255,7 +263,7 @@ public class SubSolverWrapper {
 
                         // add the paths to the master list
                         if (arrT.size() > 0) {
-//                            updatePaths(t, arrT); dont add the paths since the list changes everytime based on the new xValue                       	
+//                            updatePaths(t, arrT); dont add the paths since the list changes everytime based on the new xValue
                             pathAdded = true;
 
                             logger.debug(wCnt + " Label-Start: " + t.getId());
@@ -280,13 +288,86 @@ public class SubSolverWrapper {
                         solveAgain = false;
                 }
 
-                uBound += uBoundValue; // from last iteration               
+                uBound += uBoundValue; // from last iteration
 
             } catch (OptException oe) {
                 logger.error("submodel run for scenario " + scenarioNum + " failed.");
                 logger.error(oe);
                 System.exit(17);
             }
+        }
+
+        private void solveWithFullEnumeration() {
+            try {
+                // Enumerate all paths for each tail.
+                HashMap<Integer, Integer> legDelayMap = getLegDelays(
+                        dataRegistry.getLegs(), dataRegistry.getDurations(), xValues);
+
+                Network network = new Network(dataRegistry.getTails(), dataRegistry.getLegs(), legDelayMap,
+                        dataRegistry.getWindowStart(), dataRegistry.getWindowEnd(),
+                        dataRegistry.getMaxLegDelayInMin());
+
+                ArrayList<Path> allPaths = network.enumerateAllPaths();
+
+                // Store paths for each tail separately.
+                HashMap<Integer, ArrayList<Path>> tailPathsMap = new HashMap<>();
+                for (Tail t : dataRegistry.getTails())
+                    tailPathsMap.put(t.getId(), new ArrayList<>());
+
+                for(Path p : allPaths)
+                    tailPathsMap.get(p.getTail().getId()).add(p);
+
+                // beta x + theta >= alpha - Benders cut
+                SubSolver s = new SubSolver(randomDelays, probability);
+                s.constructSecondStage(xValues, dataRegistry, scenarioNum, iter, tailPathsMap);
+                s.solve();
+                s.collectDuals();
+                s.writeLPFile("logs/", iter, -1, this.scenarioNum);
+                calculateAlpha(s.getDualsLeg(), s.getDualsTail(), s.getDualsDelay(), s.getDualsBnd(),
+                        s.getDualsRisk());
+                calculateBeta(s.getDualsDelay(), s.getDualsRisk());
+                s.end();
+
+                uBound += s.getObjValue();
+            } catch (OptException oe) {
+                logger.error("submodel run for scenario " + scenarioNum + " failed.");
+                logger.error(oe);
+                System.exit(17);
+            }
+        }
+
+        private HashMap<Integer, Integer> getLegDelays(ArrayList<Leg> legs, ArrayList<Integer> durations,
+                                                      double[][] xValues) {
+            // Collect planned delays from first stage solution.
+            HashMap<Integer, Integer> plannedDelays = new HashMap<>();
+            for(int i = 0; i < durations.size(); ++i) {
+                for(int j = 0; j < legs.size(); ++j) {
+                    if(xValues[i][j] >= eps)
+                        plannedDelays.put(legs.get(j).getIndex(), durations.get(i));
+                }
+            }
+
+            // Combine planned and delay maps into a single one.
+            HashMap<Integer, Integer> combinedDelayMap = new HashMap<>();
+            for(Leg leg : legs) {
+                int delayTime = 0;
+                boolean updated = false;
+
+                if(randomDelays.containsKey(leg.getIndex())) {
+                    delayTime = randomDelays.get(leg.getIndex());
+                    updated = true;
+                }
+
+                if(plannedDelays.containsKey(leg.getIndex())) {
+                    delayTime = Math.max(delayTime, plannedDelays.get(leg.getIndex()));
+                    updated = true;
+                }
+
+                if(updated)
+                    combinedDelayMap.put(leg.getIndex(), delayTime);
+            }
+
+            return combinedDelayMap;
         }
     }
 

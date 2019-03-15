@@ -67,6 +67,10 @@ public class Controller {
         dataRegistry.setDurations(durations);
     }
 
+    public final void setUseFullEnumeration(boolean val) {
+        dataRegistry.setUseFullEnumeration(val);
+    }
+
     public final void readData(String instancePath) throws OptException {
         logger.info("Started reading data...");
         this.instancePath = instancePath;
@@ -131,13 +135,13 @@ public class Controller {
 
             lBound = MasterSolver.getObjValue();
 
-            logger.info("XXXX----------LB: " + lBound + " UB: " + uBound + " Iter: " + iter
+            logger.info("----- LB: " + lBound + " UB: " + uBound + " Iter: " + iter
                     + " SubSolverWrapper.getuBound(): " + SubSolverWrapper.getuBound());
 
             if (SubSolverWrapper.getuBound() < uBound)
                 uBound = SubSolverWrapper.getuBound();
 
-            logger.info("--------------LB: " + lBound + " UB: " + uBound + " Iter: " + iter);
+            logger.info("----- LB: " + lBound + " UB: " + uBound + " Iter: " + iter);
         }
         while (uBound - lBound > 0.001); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
 
@@ -146,11 +150,10 @@ public class Controller {
         bounds.add(lBound);
         bounds.add(uBound);
 
-        if (lBound - uBound > 1) {
-            logger.info("DATA PRINTED");
-            SubSolverWrapper.ScenarioData.printData();
-            // logger.info(" xxx: " + sceVal[100][100]);
-        }
+        // if (lBound - uBound > 1) {
+        //     logger.info("DATA PRINTED");
+        //     SubSolverWrapper.ScenarioData.printData();
+        // }
 
         logger.info("Algorithm ends.");
     }

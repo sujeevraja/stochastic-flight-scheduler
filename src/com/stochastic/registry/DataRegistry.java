@@ -26,6 +26,7 @@ public class DataRegistry {
     private Integer numScenarios;
     private double scale;
     private double shape;
+    private boolean useFullEnumeration;
     
     public DataRegistry() {
         windowStart = null;
@@ -36,6 +37,7 @@ public class DataRegistry {
         durations = new ArrayList<>();
         scale = 2.5;
         shape = 0.25;
+        useFullEnumeration = false;
     }   
     
     public HashMap<Integer, Path> getTailHashMap() {
@@ -137,4 +139,13 @@ public class DataRegistry {
     public double getShape() {
         return shape;
     }
+
+    public void setUseFullEnumeration(boolean useFullEnumeration) {
+        this.useFullEnumeration = useFullEnumeration;
+    }
+
+    public boolean getUseFullEnumeration() {
+        return useFullEnumeration;
+    }
 }
+

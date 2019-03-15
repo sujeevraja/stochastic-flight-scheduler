@@ -61,13 +61,13 @@ public class Network {
             ArrayList<Path> tailPaths = pe.generatePaths();
             logger.info("Number of paths for tail " + tail.getId() + ": " + tailPaths.size());
             
-            for(Path p: tailPaths)
-            {
-                for(Leg l: p.getLegs())            	
-                    logger.debug(l.getDepPort()+","+l.getDepTime().getHour() +":"+
-                    		l.getDepTime().getMinute() + ","+l.getArrPort()+","+l.getArrTime().getHour() + ":" +
-                    		l.getArrTime().getMinute() + " --> ");
-            }
+            // for(Path p: tailPaths)
+            // {
+            //     for(Leg l: p.getLegs())
+            //         logger.debug(l.getDepPort()+","+l.getDepTime().getHour() +":"+
+            //         		l.getDepTime().getMinute() + ","+l.getArrPort()+","+l.getArrTime().getHour() + ":" +
+            //         		l.getArrTime().getMinute() + " --> ");
+            // }
             paths.addAll(tailPaths);
         }
         logger.info("Total number of paths: " + paths.size());

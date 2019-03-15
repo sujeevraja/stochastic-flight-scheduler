@@ -82,19 +82,18 @@ public class LabelingAlgorithm {
         
         // initialize // add the index
         int i=0;
-		ArrayList<Integer> stLegs =  new ArrayList<Integer>();
+		ArrayList<Integer> stLegs =  new ArrayList<>();
 
-        for(Leg l: legs)
-        {                  	
-           if(l.getArrTime().getHour() < 9) // anyflight before 9 in the morning
+		for(Leg l: legs) {
+           if(l.getDepPort().equals(tail.getSourcePort()))
         	stLegs.add(i);
-           
            i++;
         }
 
 		int chooseIndex = getStFlight(stLegs); // populate niList
+
     	// find the legs which can start in the morning    	
-//    	chooseIndex = findStart();
+        // chooseIndex = findStart();
 
     	while(chooseIndex >= 0)
     	{
@@ -103,7 +102,7 @@ public class LabelingAlgorithm {
         	chooseIndex = findStart();    		
     	}
     	
-//find the last leg
+        // find the last leg
 		LocalDateTime temp = null;
 		int lastFlIndex = -1;
 		for (Map.Entry<Integer, ArrayList<NodeInfo>> entry : I.entrySet()) {

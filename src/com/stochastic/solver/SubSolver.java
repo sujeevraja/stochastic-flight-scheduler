@@ -63,33 +63,19 @@ public class SubSolver {
         this.probability = probability;
     }
 
-    public void constructSecondStage(double[][] xValues, DataRegistry dataRegistry, int sceNo, int iter, HashMap<Integer, ArrayList<Path>> p) throws OptException {
+    public void constructSecondStage(double[][] xValues, DataRegistry dataRegistry, int sceNo, int iter,
+                                     HashMap<Integer, ArrayList<Path>> p) throws OptException {
         try {
             ArrayList<Tail> tails = dataRegistry.getTails();
             ArrayList<Leg> legs = dataRegistry.getLegs();
             ArrayList<Integer> durations = dataRegistry.getDurations();
 
-            // get delay data using planned delays from first stage and random delays from second stage.
-            HashMap<Integer, Integer> legDelayMap = getLegDelays(legs, durations, xValues);
-
-            Network network = new Network(tails, legs, legDelayMap, dataRegistry.getWindowStart(),
-                    dataRegistry.getWindowEnd(), dataRegistry.getMaxLegDelayInMin());
-
-            // Later, the full enumeration algorithm in enumerateAllPaths() will be replaced by a labeling algorithm.
-//            paths = network.enumerateAllPaths();            
-//            paths = new LabelingAlgorithm().getPaths(dataRegistry, tails, legDelayMap);
-            
-            paths = p;            
-
-//             PathEnumerator pe = new PathEnumerator();
-//             paths = pe.addPaths(dataRegistry);
+            paths = p;
 
             logger.info("number of tails: " + tails.size());
             logger.info("number of legs: " + legs.size());
             logger.info("number of durations: " + durations.size());
             logger.info("number of paths: " + paths.size());
-
-            // printAllPaths();
 
             // Create containers to build CPLEX model.
             subCplex = new IloCplex();
@@ -116,8 +102,7 @@ public class SubSolver {
             R4 = new IloRange[tails.size()][]; // delay constraints
             dualsBnd = new double[tails.size()][]; // delay constraints
             		
-            for(int i=0; i< tails.size(); i++)
-            {
+            for(int i=0; i< tails.size(); i++) {
             	R4[i]       = new IloRange[p.get(tails.get(i).getId()).size()];
                 dualsBnd[i] = new double[p.get(tails.get(i).getId()).size()]; // delay constraints            	
             }            
@@ -268,40 +253,6 @@ public class SubSolver {
         }
     }
 
-    public HashMap<Integer, Integer> getLegDelays(ArrayList<Leg> legs, ArrayList<Integer> durations,
-                                                   double[][] xValues) {
-        // Collect planned delays from first stage solution.
-        HashMap<Integer, Integer> plannedDelays = new HashMap<>();
-        for(int i = 0; i < durations.size(); ++i) {
-            for(int j = 0; j < legs.size(); ++j) {
-                if(xValues[i][j] >= eps)
-                    plannedDelays.put(legs.get(j).getIndex(), durations.get(i));
-            }
-        }
-
-        // Combine planned and delay maps into a single one.
-        HashMap<Integer, Integer> combinedDelayMap = new HashMap<>();
-        for(Leg leg : legs) {
-            int delayTime = 0;
-            boolean updated = false;
-
-            if(randomDelays.containsKey(leg.getIndex())) {
-                delayTime = randomDelays.get(leg.getIndex());
-                updated = true;
-            }
-
-            if(plannedDelays.containsKey(leg.getIndex())) {
-                delayTime = Math.max(delayTime, plannedDelays.get(leg.getIndex()));
-                updated = true;
-            }
-
-            if(updated)
-                combinedDelayMap.put(leg.getIndex(), delayTime);
-        }
-
-        return combinedDelayMap;
-    }
-
     public void solve() throws OptException {
         try {
 			subCplex.setParam(IloCplex.IntParam.RootAlg, IloCplex.Algorithm.Dual);
@@ -348,7 +299,15 @@ public class SubSolver {
 
     public void writeLPFile(String fName, int iter, int wcnt, int sceNo) throws OptException {
         try {
-            subCplex.exportModel(fName + "sub_" + iter + "_scen_" + sceNo + "_labelingIter_" + wcnt + ".lp");
+            String modelName = fName + "sub_" + iter + "_scen_" + sceNo;
+
+            if (wcnt >= 0)
+                modelName += "_labelingIter_" + wcnt;
+            else
+                modelName += "_fullEnum";
+            modelName += ".lp";
+
+            subCplex.exportModel(modelName);
         } catch (IloException e) {
             logger.error(e);
             throw new OptException("error writing lp file for sub-problem");

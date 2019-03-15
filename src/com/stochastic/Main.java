@@ -15,8 +15,8 @@ public class Main {
     public static void main(String[] args) {
         try {
             logger.info("Started optimization...");
-            
-            // two-stage
+
+            // Two-stage
             long t1 = System.currentTimeMillis();            
 
             int numScenarios = 10;
@@ -25,6 +25,7 @@ public class Main {
             Controller.expExcess = false;            
             Controller controller = new Controller();
             controller.initHardCodedParameters(numScenarios);
+            controller.setUseFullEnumeration(false);
             controller.readData(path); 
             controller.solve(); //BD
             
