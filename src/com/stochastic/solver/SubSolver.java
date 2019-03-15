@@ -6,6 +6,7 @@ import com.stochastic.domain.Tail;
 import com.stochastic.network.Network;
 import com.stochastic.network.Path;
 import com.stochastic.registry.DataRegistry;
+import com.stochastic.registry.Parameters;
 import com.stochastic.solver.SubSolverWrapper.ScenarioData;
 import com.stochastic.utility.OptException;
 import ilog.concert.*;
@@ -68,7 +69,7 @@ public class SubSolver {
         try {
             ArrayList<Tail> tails = dataRegistry.getTails();
             ArrayList<Leg> legs = dataRegistry.getLegs();
-            ArrayList<Integer> durations = dataRegistry.getDurations();
+            ArrayList<Integer> durations = Parameters.getDurations();
 
             paths = p;
 
@@ -143,9 +144,9 @@ public class SubSolver {
                     }
             }
 
-            if (Controller.expExcess) {
+            if (Parameters.isExpectedExcess()) {
                 v = subCplex.numVar(0, Double.MAX_VALUE, "v");
-                objExpr.addTerm(v, probability * Controller.rho);
+                objExpr.addTerm(v, probability * Parameters.getRho());
             }
 
             subCplex.addMinimize(objExpr);
@@ -222,7 +223,7 @@ public class SubSolver {
 //            for (int i = 0; i < paths.size(); ++i)
 //                R4[i] = subCplex.addLe(y[i], 1, "yBound_" + i);
 
-            if (Controller.expExcess) {
+            if (Parameters.isExpectedExcess()) {
                 double xVal = 0;
                 for (int i = 0; i < legs.size(); i++)
                     for (int j = 0; j < durations.size(); j++)
@@ -235,7 +236,7 @@ public class SubSolver {
 
                 riskExpr.addTerm(v, -1);
 
-                R5 = subCplex.addLe(riskExpr, Controller.excessTgt - xVal, "risk");
+                R5 = subCplex.addLe(riskExpr, Parameters.getExcessTarget() - xVal, "risk");
             }
 
             // Clear all constraint expressions to avoid memory leaks.
@@ -288,7 +289,7 @@ public class SubSolver {
             logger.debug( " legDelayLinkConstraints: " + legDelayLinkConstraints.length);
             logger.debug( " dualsBnd: " + dualsBnd.length);
 
-            if (Controller.expExcess)
+            if (Parameters.isExpectedExcess())
                 dualsRisk = subCplex.getDual(R5);
             
         } catch (IloException ie) {

@@ -1,6 +1,5 @@
 package com.stochastic.solver;
 
-import com.stochastic.controller.Controller;
 import com.stochastic.delay.DelayGenerator;
 import com.stochastic.delay.FirstFlightDelayGenerator;
 import com.stochastic.domain.Leg;
@@ -8,10 +7,11 @@ import com.stochastic.domain.Tail;
 import com.stochastic.network.Network;
 import com.stochastic.network.Path;
 import com.stochastic.registry.DataRegistry;
+import com.stochastic.registry.Parameters;
 import com.stochastic.utility.OptException;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -44,7 +44,7 @@ public class SubSolverWrapper {
 
             alpha = 0;
             uBound = MasterSolver.getFSObjValue();
-            beta = new double[dataRegistry.getDurations().size()][dataRegistry.getLegs().size()];
+            beta = new double[Parameters.getNumDurations()][dataRegistry.getLegs().size()];
         } catch (Exception e) {
             logger.error(e.getStackTrace());
             throw new OptException("error at SubSolverWrapperInit");
@@ -74,21 +74,21 @@ public class SubSolverWrapper {
                 for (double j : dualBnd)
                     alpha += j; //*prb);
 
-        if (Controller.expExcess)
-            alpha += (dualRisk * Controller.excessTgt); //*prb);
+        if (Parameters.isExpectedExcess())
+            alpha += (dualRisk * Parameters.getExcessTarget()); //*prb);
 
         logger.debug("final alpha value: " + alpha);
     }
 
     private synchronized static void calculateBeta(double[] dualsDelay, double dualRisk) {
-        ArrayList<Integer> durations = dataRegistry.getDurations();
+        ArrayList<Integer> durations = Parameters.getDurations();
         ArrayList<Leg> legs = dataRegistry.getLegs();
 
         for (int i = 0; i < durations.size(); i++)
             for (int j = 0; j < legs.size(); j++) {
                 beta[i][j] += dualsDelay[j] * -durations.get(i); // * prb;
 
-                if (Controller.expExcess)
+                if (Parameters.isExpectedExcess())
                     beta[i][j] += dualRisk * durations.get(i); // * prb;
             }
     }
@@ -188,7 +188,7 @@ public class SubSolverWrapper {
                     if (currentTime != null && currentTime.isAfter(delayedDepTime))
                         delayedDepTime = currentTime;
 
-                    legDelay = (int) ChronoUnit.MINUTES.between(leg.getDepTime(), delayedDepTime);
+                    legDelay = (int) Duration.between(leg.getDepTime(), delayedDepTime).toMinutes();
                     pathWithDelays.addLeg(leg, legDelay);
 
                     // update current time based on leg's delayed arrival time and turn time.
@@ -202,7 +202,7 @@ public class SubSolverWrapper {
 
         //exSrv.execute(buildSDThrObj) calls brings you here
         public void run() {
-            if (dataRegistry.getUseFullEnumeration())
+            if (Parameters.isFullEnumeration())
                 solveWithFullEnumeration();
             else
                 solveWithLabeling();
@@ -214,7 +214,7 @@ public class SubSolverWrapper {
 
                 SubSolver s1 = new SubSolver(randomDelays, probability);
                 HashMap<Integer, Integer> legDelayMap = getLegDelays( dataRegistry.getLegs(),
-                        dataRegistry.getDurations(), xValues);
+                        Parameters.getDurations(), xValues);
 
                 if (hmPaths.containsKey(this.scenarioNum))
                     pathsAll = hmPaths.get(this.scenarioNum);
@@ -301,7 +301,7 @@ public class SubSolverWrapper {
             try {
                 // Enumerate all paths for each tail.
                 HashMap<Integer, Integer> legDelayMap = getLegDelays(
-                        dataRegistry.getLegs(), dataRegistry.getDurations(), xValues);
+                        dataRegistry.getLegs(), Parameters.getDurations(), xValues);
 
                 Network network = new Network(dataRegistry.getTails(), dataRegistry.getLegs(), legDelayMap,
                         dataRegistry.getWindowStart(), dataRegistry.getWindowEnd(),

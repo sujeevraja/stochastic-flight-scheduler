@@ -5,6 +5,7 @@ import com.stochastic.delay.DelayGenerator;
 import com.stochastic.delay.FirstFlightDelayGenerator;
 import com.stochastic.domain.Leg;
 import com.stochastic.registry.DataRegistry;
+import com.stochastic.registry.Parameters;
 import com.stochastic.solver.SubSolver;
 import com.stochastic.utility.OptException;
 import org.apache.commons.math3.distribution.LogNormalDistribution;
@@ -52,7 +53,7 @@ public class SolutionManager {
         rescheduleLegIndices = new ArrayList<>();
         rescheduleTimes = new ArrayList<>();
 
-        ArrayList<Integer> durations = dataRegistry.getDurations();
+        ArrayList<Integer> durations = Parameters.getDurations();
         ArrayList<Leg> legs = dataRegistry.getLegs();
         for(int i = 0; i < durations.size(); ++i) {
             for(int j = 0; j < legs.size(); ++j) {
@@ -71,8 +72,8 @@ public class SolutionManager {
         stochasticObjs = new int[testDelays.size()];
         ArrayList<Leg> legs = dataRegistry.getLegs();
 
-        double[][] zeroValues = new double[dataRegistry.getDurations().size()][legs.size()];
-        for(int i = 0; i < dataRegistry.getDurations().size(); ++i)
+        double[][] zeroValues = new double[Parameters.getNumDurations()][legs.size()];
+        for(int i = 0; i < Parameters.getNumDurations(); ++i)
             for (int j = 0; j < legs.size(); ++j)
                 zeroValues[i][j] = 0.0;
 
@@ -128,7 +129,7 @@ public class SolutionManager {
 
     public static void generateDelaysForComparison(int numTestScenarios, DataRegistry dataRegistry) {
         // generate random delay data to compare solutions.
-        LogNormalDistribution logNormal = new LogNormalDistribution(dataRegistry.getScale(), dataRegistry.getShape());
+        LogNormalDistribution logNormal = new LogNormalDistribution(Parameters.getScale(), Parameters.getShape());
 
         int[] delayTimes = new int[numTestScenarios];
         for (int i = 0; i < numTestScenarios; ++i)

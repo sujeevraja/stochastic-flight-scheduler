@@ -9,6 +9,7 @@ import com.stochastic.network.Network;
 import com.stochastic.network.Path;
 import com.stochastic.network.PathEnumerator;
 import com.stochastic.registry.DataRegistry;
+import com.stochastic.registry.Parameters;
 import com.stochastic.utility.OptException;
 import ilog.concert.*;
 import ilog.cplex.IloCplex;
@@ -60,7 +61,7 @@ public class DepSolver {
         try {
             tails = dataRegistry.getTails();
             legs = dataRegistry.getLegs();
-            durations = dataRegistry.getDurations();
+            durations = Parameters.getDurations();
 
             double[][] xValues = new double[legs.size()][durations.size()];
             
@@ -138,13 +139,13 @@ public class DepSolver {
 	                    delayExprs[i][j].addTerm(x[i][j1], -durations.get(j1));                
 	            }            
 
-            if(Controller.expExcess)
+            if(Parameters.isExpectedExcess())
             {
                 for (int j = 0; j < 5; j++)
 	                v[j] = subCplex.numVar(0, Double.MAX_VALUE, "v_" + j);
                 
                 for (int j = 0; j < 5; j++)                
-                	objExpr.addTerm(v[j], Controller.rho*0.20);
+                	objExpr.addTerm(v[j], Parameters.getRho()*0.20);
                 
                 for (int s = 0; s < 5; s++)
                 {
@@ -159,7 +160,7 @@ public class DepSolver {
     	            
 	            	riskExpr.addTerm(v[s], -1);    	            
     	            
-	            	subCplex.addLe(riskExpr, Controller.excessTgt, "risk_" + s);          	
+	            	subCplex.addLe(riskExpr, Parameters.getExcessTarget(), "risk_" + s);
                 }                
             }
             
@@ -313,7 +314,7 @@ public class DepSolver {
                 for(int p=0; p< legs.size(); p++)
                 	oValue  += (dValues[p][j]*0.20*1.5);
 
-               	oValue  += (vValues[j]*Controller.rho*0.20);
+               	oValue  += (vValues[j]*Parameters.getRho()*0.20);
                 
         		logger.info(" Obj-Value: " + " : " + j + " : " +  oValue);
         	}

@@ -21,24 +21,18 @@ public class DataRegistry {
     private Equipment equipment;
     private ArrayList<Leg> legs;
     private ArrayList<Tail> tails;
-    private ArrayList<Integer> durations;
-    private HashMap<Integer, Path> tailHashMap;    
+    private HashMap<Integer, Path> tailHashMap;
+
+    // This is the updated number of scenarios after duplicate random delays have been removed.
     private Integer numScenarios;
-    private double scale;
-    private double shape;
-    private boolean useFullEnumeration;
-    
+
     public DataRegistry() {
         windowStart = null;
         windowEnd = null;
         equipment = null;
         legs = new ArrayList<>();
         tails = new ArrayList<>();
-        durations = new ArrayList<>();
-        scale = 2.5;
-        shape = 0.25;
-        useFullEnumeration = false;
-    }   
+    }
     
     public HashMap<Integer, Path> getTailHashMap() {
 		return tailHashMap;
@@ -47,18 +41,6 @@ public class DataRegistry {
 	public void setTailHashMap(HashMap<Integer, Path> tailHashMap) {
 		this.tailHashMap = tailHashMap;
 	}
-
-	public ArrayList<Integer> getDurations() {
-		return durations;
-	}
-
-	public void setDurations(ArrayList<Integer> durations) {
-		this.durations = durations;
-	}
-
-	public Integer getNumDurations() {
-        return durations.size();
-    }
 
 	public ArrayList<Leg> getLegs() {
         return legs;
@@ -122,30 +104,6 @@ public class DataRegistry {
 
     public Integer getNumScenarios() {
         return numScenarios;
-    }
-
-    public void setScale(double scale) {
-        this.scale = scale;
-    }
-
-    public double getScale() {
-        return scale;
-    }
-
-    public void setShape(double shape) {
-        this.shape = shape;
-    }
-
-    public double getShape() {
-        return shape;
-    }
-
-    public void setUseFullEnumeration(boolean useFullEnumeration) {
-        this.useFullEnumeration = useFullEnumeration;
-    }
-
-    public boolean getUseFullEnumeration() {
-        return useFullEnumeration;
     }
 }
 

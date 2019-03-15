@@ -1,10 +1,14 @@
 package com.stochastic;
 
 import com.stochastic.controller.Controller;
+import com.stochastic.registry.Parameters;
 import com.stochastic.solver.MasterSolver;
 import com.stochastic.utility.OptException;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 
 public class Main {
     /**
@@ -17,16 +21,22 @@ public class Main {
             logger.info("Started optimization...");
 
             // Two-stage
-            long t1 = System.currentTimeMillis();            
+            long t1 = System.currentTimeMillis();
 
-            int numScenarios = 10;
-            String path = "data\\20171115022840-v2";
+            Parameters.setNumScenarios(10);
+            Parameters.setScale(3.5);
+            Parameters.setShape(0.25);
+            Parameters.setDurations(new ArrayList<>(Arrays.asList(5, 10, 15, 20, 25, 30)));
+            Parameters.setFullEnumeration(true);
+            Parameters.setExpectedExcess(false);
+            Parameters.setRho(0.9);
+            Parameters.setExcessTarget(40);
 
-            Controller.expExcess = false;            
+            // String path = "data\\20171115022840-v2";
+            String path = "data\\instance1";
+
             Controller controller = new Controller();
-            controller.initHardCodedParameters(numScenarios);
-            controller.setUseFullEnumeration(false);
-            controller.readData(path); 
+            controller.readData(path);
             controller.solve(); //BD
             
             long tsRuntime  = (System.currentTimeMillis() - t1)/1000;

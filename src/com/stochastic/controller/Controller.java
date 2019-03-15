@@ -9,6 +9,7 @@ import com.stochastic.domain.Tail;
 import com.stochastic.network.Path;
 import com.stochastic.postopt.SolutionManager;
 import com.stochastic.registry.DataRegistry;
+import com.stochastic.registry.Parameters;
 import com.stochastic.solver.MasterSolver;
 import com.stochastic.solver.SubSolverWrapper;
 import com.stochastic.utility.OptException;
@@ -46,29 +47,10 @@ public class Controller {
 
     public static ArrayList<Double> delayResults = new ArrayList<>();
 
-    // parameters for expExcess
-    public static boolean expExcess = false;
-    public static double rho = 0.9;
-    public static double excessTgt = 40;
-
     public static int[][] sceVal;
 
     public Controller() {
         dataRegistry = new DataRegistry();
-    }
-
-    public final void initHardCodedParameters(int numScenarios) {
-        logger.info("Started hard-coded parameter initialization...");
-        dataRegistry.setNumScenarios(numScenarios);
-        dataRegistry.setScale(3.5);
-        dataRegistry.setShape(0.25);
-
-        ArrayList<Integer> durations = new ArrayList<>(Arrays.asList(5, 10, 15, 20, 25, 30));
-        dataRegistry.setDurations(durations);
-    }
-
-    public final void setUseFullEnumeration(boolean val) {
-        dataRegistry.setUseFullEnumeration(val);
     }
 
     public final void readData(String instancePath) throws OptException {
@@ -97,7 +79,7 @@ public class Controller {
     public final void solve() throws OptException {
         ArrayList<Leg> legs = dataRegistry.getLegs();
         ArrayList<Tail> tails = dataRegistry.getTails();
-        ArrayList<Integer> durations = dataRegistry.getDurations();
+        ArrayList<Integer> durations = Parameters.getDurations();
 
         int iter = -1;
         MasterSolver.MasterSolverInit(legs, tails, durations, dataRegistry.getWindowStart());
@@ -112,7 +94,7 @@ public class Controller {
         logger.info("Algorithm starts.");
 
         // generate random delays for 2nd stage scenarios.
-        generateScenarioDelays(dataRegistry.getScale(), dataRegistry.getShape());
+        generateScenarioDelays(Parameters.getScale(), Parameters.getShape());
         // generateTestDelays();
         logScenarioDelays();
 
@@ -173,7 +155,7 @@ public class Controller {
         // Also generates delay probabilities using frequency values.
         // This function changes the number of scenarios as well if delay times repeat.
 
-        int numSamples = dataRegistry.getNumScenarios();
+        int numSamples = Parameters.getNumScenarios();
         LogNormalDistribution logNormal = new LogNormalDistribution(scale, shape);
 
         int[] delayTimes = new int[numSamples];
