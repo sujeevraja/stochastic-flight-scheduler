@@ -17,7 +17,8 @@ public class Leg {
     private LocalDateTime depTime;
     private LocalDateTime arrTime;
     private int blockTimeInMin;
-    private LocalDateTime latestDepTime; // based on maximum allowed delay
+    private double rescheduleCostPerMin; // first stage reschedule cost
+    private double delayCostPerMin; // second stage reschedule cost
 
     // info for labeling algorithm       
     
@@ -33,6 +34,8 @@ public class Leg {
         this.depTime = depTime;
         this.arrTime = arrTime;
         this.blockTimeInMin = (int) Duration.between(depTime, arrTime).toMinutes();
+        this.rescheduleCostPerMin = 0.1 * blockTimeInMin;
+        this.delayCostPerMin = 0.5 * blockTimeInMin;
     }
 
 	public Integer getId() {
@@ -73,6 +76,14 @@ public class Leg {
 
     public int getBlockTimeInMin() {
         return blockTimeInMin;
+    }
+
+    public double getRescheduleCostPerMin() {
+        return rescheduleCostPerMin;
+    }
+
+    public double getDelayCostPerMin() {
+        return delayCostPerMin;
     }
 
     public void reschedule(int numMinutes) {

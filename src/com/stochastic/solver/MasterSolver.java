@@ -129,7 +129,7 @@ public class MasterSolver {
         IloLinearNumExpr cons = masterCplex.linearNumExpr();
         for (int i = 0; i < durations.size(); i++)
             for (int j = 0; j < legs.size(); j++)
-                cons.addTerm(X[i][j], 0.5 * durations.get(i));
+                cons.addTerm(X[i][j], durations.get(i) * legs.get(i).getRescheduleCostPerMin());
 
         // cons.addTerm(thetaVar, 0);
         // cons.addTerm(thetaVar, 1);

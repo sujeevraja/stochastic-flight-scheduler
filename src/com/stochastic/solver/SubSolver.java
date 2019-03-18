@@ -132,7 +132,8 @@ public class SubSolver {
 
                 delayRHS[i] = 14.0; // OTP time limit
 
-                objExpr.addTerm(d[i], leg.getBlockTimeInMin());
+                objExpr.addTerm(d[i], leg.getDelayCostPerMin());
+                // objExpr.addTerm(d[i], leg.getBlockTimeInMin());
                 // objExpr.addTerm(d[i], 1.0);
                 // objExpr.addTerm(d[i], probability*1.5);
                 legCoverExprs[i] = subCplex.linearNumExpr();
