@@ -4,7 +4,6 @@ import java.util.ArrayList;
 
 public class Parameters {
     private static Integer numScenarios;
-    private static Integer maxLegDelayInMin;
     private static double scale;
     private static double shape;
     private static ArrayList<Integer> durations;
@@ -21,14 +20,6 @@ public class Parameters {
 
     public static Integer getNumScenarios() {
         return numScenarios;
-    }
-
-    public static void setMaxLegDelayInMin(Integer maxLegDelayInMin) {
-        Parameters.maxLegDelayInMin = maxLegDelayInMin;
-    }
-
-    public static Integer getMaxLegDelayInMin() {
-        return maxLegDelayInMin;
     }
 
     public static void setScale(double scale) {

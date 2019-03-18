@@ -57,7 +57,7 @@ public class Network {
             PathEnumerator pe = new PathEnumerator(tail, legs, legDelayMap, adjacencyList, maxEndTime,
                     maxLegDelayInMin);
             ArrayList<Path> tailPaths = pe.generatePaths();
-            logger.info("Number of paths for tail " + tail.getId() + ": " + tailPaths.size());
+            // logger.info("Number of paths for tail " + tail.getId() + ": " + tailPaths.size());
             paths.addAll(tailPaths);
         }
         logger.info("Total number of paths: " + paths.size());

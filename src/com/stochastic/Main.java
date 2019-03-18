@@ -24,7 +24,6 @@ public class Main {
             long t1 = System.currentTimeMillis();
 
             Parameters.setNumScenarios(10);
-            Parameters.setMaxLegDelayInMin(30);
             Parameters.setScale(3.5);
             Parameters.setShape(0.25);
             Parameters.setDurations(new ArrayList<>(Arrays.asList(5, 10, 15, 20, 25, 30)));

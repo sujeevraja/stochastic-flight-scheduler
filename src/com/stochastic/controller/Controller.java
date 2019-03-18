@@ -78,9 +78,8 @@ public class Controller {
 
         // Update max delay and max end time
         int requiredMaxDelay = Collections.max(scenarioDelays);
-        if (requiredMaxDelay > dataRegistry.getMaxLegDelayInMin())
-            dataRegistry.setMaxLegDelayInMin(requiredMaxDelay);
-        dataRegistry.setMaxEndTime(dataRegistry.getMaxEndTime().plusMinutes(dataRegistry.getMaxLegDelayInMin()));
+        dataRegistry.setMaxLegDelayInMin(requiredMaxDelay);
+        dataRegistry.setMaxEndTime(dataRegistry.getMaxEndTime().plusMinutes(requiredMaxDelay));
 
         logScenarioDelays();
 
