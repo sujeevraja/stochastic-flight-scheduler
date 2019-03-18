@@ -24,18 +24,16 @@ public class Network {
     private ArrayList<Tail> tails;
     private ArrayList<Leg> legs;
     private HashMap<Integer, Integer> legDelayMap;
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
+    private LocalDateTime maxEndTime;
     private int maxLegDelayInMin;
     private HashMap<Integer, ArrayList<Integer>> adjacencyList; // keys and values are indices of leg list.
 
     public Network(ArrayList<Tail> tails, ArrayList<Leg> legs, HashMap<Integer, Integer> legDelayMap,
-                   LocalDateTime startTime, LocalDateTime endTime, int maxLegDelayInMin) {
+                   LocalDateTime maxEndTime, int maxLegDelayInMin) {
         this.tails = tails;
         this.legs = legs;
         this.legDelayMap = legDelayMap;
-        this.startTime = startTime;
-        this.endTime = endTime;
+        this.maxEndTime = maxEndTime;
         this.maxLegDelayInMin = maxLegDelayInMin;
 
         logger.info("Started building leg nodes...");
@@ -56,18 +54,10 @@ public class Network {
 	public ArrayList<Path> enumerateAllPaths() {
         ArrayList<Path> paths = new ArrayList<>();
         for(Tail tail : tails) {
-            PathEnumerator pe = new PathEnumerator(tail, legs, legDelayMap, adjacencyList, startTime, endTime,
+            PathEnumerator pe = new PathEnumerator(tail, legs, legDelayMap, adjacencyList, maxEndTime,
                     maxLegDelayInMin);
             ArrayList<Path> tailPaths = pe.generatePaths();
             logger.info("Number of paths for tail " + tail.getId() + ": " + tailPaths.size());
-            
-            // for(Path p: tailPaths)
-            // {
-            //     for(Leg l: p.getLegs())
-            //         logger.debug(l.getDepPort()+","+l.getDepTime().getHour() +":"+
-            //         		l.getDepTime().getMinute() + ","+l.getArrPort()+","+l.getArrTime().getHour() + ":" +
-            //         		l.getArrTime().getMinute() + " --> ");
-            // }
             paths.addAll(tailPaths);
         }
         logger.info("Total number of paths: " + paths.size());

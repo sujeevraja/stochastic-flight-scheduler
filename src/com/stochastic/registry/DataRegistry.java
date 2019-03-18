@@ -15,23 +15,21 @@ public class DataRegistry {
      * Holds all airline objects built from input data.
      */
 
-    private LocalDateTime windowStart;
-    private LocalDateTime windowEnd;
     private Integer maxLegDelayInMin;
     private Equipment equipment;
     private ArrayList<Leg> legs;
     private ArrayList<Tail> tails;
     private HashMap<Integer, Path> tailHashMap;
+    private LocalDateTime maxEndTime;
 
     // This is the updated number of scenarios after duplicate random delays have been removed.
     private Integer numScenarios;
 
     public DataRegistry() {
-        windowStart = null;
-        windowEnd = null;
         equipment = null;
         legs = new ArrayList<>();
         tails = new ArrayList<>();
+        maxEndTime = null;
     }
     
     public HashMap<Integer, Path> getTailHashMap() {
@@ -44,22 +42,6 @@ public class DataRegistry {
 
 	public ArrayList<Leg> getLegs() {
         return legs;
-    }
-
-    public void setWindowStart(LocalDateTime windowStart) {
-        this.windowStart = windowStart;
-    }
-
-    public LocalDateTime getWindowStart() {
-        return windowStart;
-    }
-
-    public void setWindowEnd(LocalDateTime windowEnd) {
-        this.windowEnd = windowEnd;
-    }
-
-    public LocalDateTime getWindowEnd() {
-        return windowEnd;
     }
 
     public void setMaxLegDelayInMin(Integer maxLegDelayInMin) {
@@ -96,8 +78,16 @@ public class DataRegistry {
     			return t;
     	
         return null;
-    }   
-    
+    }
+
+    public void setMaxEndTime(LocalDateTime maxEndTime) {
+        this.maxEndTime = maxEndTime;
+    }
+
+    public LocalDateTime getMaxEndTime() {
+        return maxEndTime;
+    }
+
     public void setNumScenarios(Integer numScenarios) {
         this.numScenarios = numScenarios;
     }

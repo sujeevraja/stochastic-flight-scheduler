@@ -1,9 +1,7 @@
 package com.stochastic.controller;
 
 import com.stochastic.domain.Leg;
-import com.stochastic.Main;
 import com.stochastic.dao.EquipmentsDAO;
-import com.stochastic.dao.ParametersDAO;
 import com.stochastic.dao.ScheduleDAO;
 import com.stochastic.domain.Tail;
 import com.stochastic.network.Path;
@@ -14,17 +12,7 @@ import com.stochastic.solver.MasterSolver;
 import com.stochastic.solver.SubSolverWrapper;
 import com.stochastic.utility.OptException;
 import org.apache.commons.math3.distribution.LogNormalDistribution;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
@@ -32,7 +20,6 @@ import java.util.*;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
-import org.xml.sax.SAXException;
 
 public class Controller {
     /**
@@ -57,20 +44,12 @@ public class Controller {
         logger.info("Started reading data...");
         this.instancePath = instancePath;
 
-        // Read parameters
-        ParametersDAO parametersDAO = new ParametersDAO(instancePath + "\\Parameters.xml");
-        dataRegistry.setWindowStart(parametersDAO.getWindowStart());
-        dataRegistry.setWindowEnd(parametersDAO.getWindowEnd());
-        dataRegistry.setMaxLegDelayInMin(parametersDAO.getMaxFlightDelayInMin());
-        logger.info("Completed reading parameter data from Parameters.xml.");
-
         // Read equipment data
         dataRegistry.setEquipment(new EquipmentsDAO(instancePath + "\\Equipments.xml").getEquipments().get(0));
         logger.info("Completed reading equipment data from Equipments.xml.");
 
         // Read leg data and remove unnecessary legs
-        ArrayList<Leg> legs = new ScheduleDAO(instancePath + "\\Schedule.xml",
-                dataRegistry.getMaxLegDelayInMin()).getLegs();
+        ArrayList<Leg> legs = new ScheduleDAO(instancePath + "\\Schedule.xml").getLegs();
         storeLegs(legs);
         logger.info("Collected leg and tail data from Schedule.xml.");
         logger.info("Completed reading data.");
@@ -82,7 +61,7 @@ public class Controller {
         ArrayList<Integer> durations = Parameters.getDurations();
 
         int iter = -1;
-        MasterSolver.MasterSolverInit(legs, tails, durations, dataRegistry.getWindowStart());
+        MasterSolver.MasterSolverInit(legs, tails, durations);
         MasterSolver.constructFirstStage();
         MasterSolver.writeLPFile("logs/before_cuts_master.lp");
         MasterSolver.solve(iter);
@@ -94,8 +73,15 @@ public class Controller {
         logger.info("Algorithm starts.");
 
         // generate random delays for 2nd stage scenarios.
-        generateScenarioDelays(Parameters.getScale(), Parameters.getShape());
-        // generateTestDelays();
+        // generateScenarioDelays(Parameters.getScale(), Parameters.getShape());
+        generateTestDelays();
+
+        // Update max delay and max end time
+        int requiredMaxDelay = Collections.max(scenarioDelays);
+        if (requiredMaxDelay > dataRegistry.getMaxLegDelayInMin())
+            dataRegistry.setMaxLegDelayInMin(requiredMaxDelay);
+        dataRegistry.setMaxEndTime(dataRegistry.getMaxEndTime().plusMinutes(dataRegistry.getMaxLegDelayInMin()));
+
         logScenarioDelays();
 
         // sceVal = new int[3][5];
@@ -189,9 +175,6 @@ public class Controller {
         }
         scenarioProbabilities.add(numCopies * baseProbability);
         dataRegistry.setNumScenarios(scenarioDelays.size());
-        int minMaxDelay = Collections.max(scenarioDelays);
-        if (minMaxDelay > dataRegistry.getMaxLegDelayInMin())
-            dataRegistry.setMaxLegDelayInMin(minMaxDelay);
     }
 
     private void logScenarioDelays() {
@@ -215,18 +198,13 @@ public class Controller {
 
     private void storeLegs(ArrayList<Leg> inputLegs) {
         final ArrayList<Integer> tailIds = dataRegistry.getEquipment().getTailIds();
-        final LocalDateTime windowStart = dataRegistry.getWindowStart();
-        final LocalDateTime windowEnd = dataRegistry.getWindowEnd();
         ArrayList<Leg> legs = new ArrayList<>();
         HashMap<Integer, ArrayList<Leg>> tailHashMap = new HashMap<>();
 
-        // Cleanup unnecessary legs.
+        // Collect legs and build a mapping between tail and legs.
+        LocalDateTime maxEndTime = null;
         Integer index = 0;
         for (Leg leg : inputLegs) {
-            if (leg.getArrTime().isBefore(windowStart)
-                    || leg.getDepTime().isAfter(windowEnd))
-                continue;
-
             Integer tailId = leg.getOrigTailId();
             if (!tailIds.contains(tailId))
                 continue;
@@ -234,6 +212,9 @@ public class Controller {
             leg.setIndex(index);
             ++index;
             legs.add(leg);
+
+            if (maxEndTime == null || leg.getArrTime().isAfter(maxEndTime))
+                maxEndTime = leg.getArrTime();
 
             if (tailHashMap.containsKey(tailId))
                 tailHashMap.get(tailId).add(leg);
@@ -246,6 +227,9 @@ public class Controller {
 
         dataRegistry.setLegs(legs);
         logger.info("Number of legs: " + legs.size());
+
+        dataRegistry.setMaxEndTime(maxEndTime);
+        logger.info("Maximum end time: " + maxEndTime);
 
         // build tails from schedule
         ArrayList<Tail> tails = new ArrayList<>();

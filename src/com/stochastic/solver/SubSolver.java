@@ -127,11 +127,13 @@ public class SubSolver {
             // Build objective, initialize leg coverage and delay constraints.
             IloLinearNumExpr objExpr = subCplex.linearNumExpr();
             for (int i = 0; i < numLegs; i++) {
-                d[i] = subCplex.numVar(0, Double.MAX_VALUE, "d_" + legs.get(i).getId());
+                Leg leg = legs.get(i);
+                d[i] = subCplex.numVar(0, Double.MAX_VALUE, "d_" + leg.getId());
 
                 delayRHS[i] = 14.0; // OTP time limit
 
-                objExpr.addTerm(d[i], 1.0);
+                objExpr.addTerm(d[i], leg.getBlockTimeInMin());
+                // objExpr.addTerm(d[i], 1.0);
                 // objExpr.addTerm(d[i], probability*1.5);
                 legCoverExprs[i] = subCplex.linearNumExpr();
                 delayExprs[i] = subCplex.linearNumExpr();

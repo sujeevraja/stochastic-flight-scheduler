@@ -304,8 +304,7 @@ public class SubSolverWrapper {
                         dataRegistry.getLegs(), Parameters.getDurations(), xValues);
 
                 Network network = new Network(dataRegistry.getTails(), dataRegistry.getLegs(), legDelayMap,
-                        dataRegistry.getWindowStart(), dataRegistry.getWindowEnd(),
-                        dataRegistry.getMaxLegDelayInMin());
+                        dataRegistry.getMaxEndTime(), dataRegistry.getMaxLegDelayInMin());
 
                 ArrayList<Path> allPaths = network.enumerateAllPaths();
 

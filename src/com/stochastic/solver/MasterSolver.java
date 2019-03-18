@@ -43,13 +43,12 @@ public class MasterSolver {
 
 //    private static IloNumVar neta; // = cplex.numVar(-Double.POSITIVE_INFINITY, 0, "neta");    
 
-    public static void MasterSolverInit(ArrayList<Leg> legs, ArrayList<Tail> tails, ArrayList<Integer> durations,
-                                        LocalDateTime startTime) throws OptException {
+    public static void MasterSolverInit(ArrayList<Leg> legs, ArrayList<Tail> tails, ArrayList<Integer> durations)
+            throws OptException {
         try {
             MasterSolver.legs = legs;
             MasterSolver.tails = tails;
             MasterSolver.durations = durations;
-            MasterSolver.startTime = startTime;
 
             masterCplex = new IloCplex();
             X = new IloIntVar[MasterSolver.durations.size()][MasterSolver.legs.size()];
@@ -167,12 +166,9 @@ public class MasterSolver {
                     cons.addTerm(X[j][nextLegIndex], -durations.get(j));
                 }
 
-                int currArrTime = (int) Duration.between(startTime, currLeg.getArrTime()).toMinutes();
-                int turnTime = currLeg.getTurnTimeInMin();
-                int nextDeptime = (int) Duration.between(startTime, nextLeg.getDepTime()).toMinutes();
-                double rhs = nextDeptime - currArrTime - turnTime;
-
-                IloRange r = masterCplex.addLe(cons, rhs);
+                int rhs = (int) Duration.between(currLeg.getArrTime(), nextLeg.getDepTime()).toMinutes();
+                rhs -= currLeg.getTurnTimeInMin();
+                IloRange r = masterCplex.addLe(cons, (double) rhs);
                 r.setName("connect_" + currLeg.getId() + "_" + nextLeg.getId());
             }
         }

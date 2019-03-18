@@ -14,16 +14,15 @@ public class Leg {
     private Integer arrPort;
     private int turnTimeInMin;
     private Integer origTailId;
-    private int blockTimeInMin;
     private LocalDateTime depTime;
     private LocalDateTime arrTime;
+    private int blockTimeInMin;
     private LocalDateTime latestDepTime; // based on maximum allowed delay
 
     // info for labeling algorithm       
     
     public Leg(Integer id, Integer fltNum, Integer depPort, Integer arrPort, int turnTimeInMin,
-               Integer origTailId, LocalDateTime depTime, LocalDateTime arrTime,
-               LocalDateTime latestDepTime) {
+               Integer origTailId, LocalDateTime depTime, LocalDateTime arrTime) {
         this.id = id;
         this.fltNum = fltNum;
         this.index = null;
@@ -31,10 +30,9 @@ public class Leg {
         this.arrPort = arrPort;
         this.turnTimeInMin = turnTimeInMin;
         this.origTailId = origTailId;
-        this.blockTimeInMin = (int) Duration.between(depTime, arrTime).toMinutes();
         this.depTime = depTime;
         this.arrTime = arrTime;
-        this.latestDepTime = latestDepTime;
+        this.blockTimeInMin = (int) Duration.between(depTime, arrTime).toMinutes();
     }
 
 	public Integer getId() {
@@ -71,6 +69,10 @@ public class Leg {
 
     public LocalDateTime getArrTime() {
         return arrTime;
+    }
+
+    public int getBlockTimeInMin() {
+        return blockTimeInMin;
     }
 
     public void reschedule(int numMinutes) {
