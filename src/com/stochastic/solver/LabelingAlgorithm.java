@@ -75,10 +75,12 @@ public class LabelingAlgorithm {
     	
     	ArrayList<Leg> legs = dataRegistry.getLegs();
 
-        Network network = new Network(tails, legs, legDelayMap, dataRegistry.getMaxEndTime(),
-				dataRegistry.getMaxLegDelayInMin());
+        // Network network = new Network(tails, legs, legDelayMap, dataRegistry.getMaxEndTime(),
+		//		dataRegistry.getMaxLegDelayInMin());
                 
-        adjacencyList = network.getAdjacencyList();
+        // adjacencyList = network.getAdjacencyList();
+
+		adjacencyList = dataRegistry.getConnectionNetwork().getAdjacencyList();
         
         // initialize // add the index
         int i=0;

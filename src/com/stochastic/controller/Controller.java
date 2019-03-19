@@ -11,6 +11,7 @@ import com.stochastic.registry.Parameters;
 import com.stochastic.solver.MasterSolver;
 import com.stochastic.solver.SubSolverWrapper;
 import com.stochastic.utility.OptException;
+import ilog.concert.IloException;
 import org.apache.commons.math3.distribution.LogNormalDistribution;
 
 import java.math.RoundingMode;
@@ -52,10 +53,13 @@ public class Controller {
         ArrayList<Leg> legs = new ScheduleDAO(instancePath + "\\Schedule.xml").getLegs();
         storeLegs(legs);
         logger.info("Collected leg and tail data from Schedule.xml.");
+
+        dataRegistry.buildConnectionNetwork();
+        logger.info("built connection network.");
         logger.info("Completed reading data.");
     }
 
-    public final void solve() throws OptException {
+    public final void solve() throws IloException, OptException {
         ArrayList<Leg> legs = dataRegistry.getLegs();
         ArrayList<Tail> tails = dataRegistry.getTails();
         ArrayList<Integer> durations = Parameters.getDurations();
@@ -103,6 +107,7 @@ public class Controller {
 
             MasterSolver.writeLPFile("logs/master_" + iter + ".lp");
             MasterSolver.solve(iter);
+            MasterSolver.writeSolution("logs/master_" + iter + ".xml");
 
             lBound = MasterSolver.getObjValue();
 

@@ -333,10 +333,15 @@ public class SubSolverWrapper {
                 HashMap<Integer, Integer> legDelayMap = getLegDelays(
                         dataRegistry.getLegs(), Parameters.getDurations(), xValues);
 
+                /*
                 Network network = new Network(dataRegistry.getTails(), dataRegistry.getLegs(), legDelayMap,
                         dataRegistry.getMaxEndTime(), dataRegistry.getMaxLegDelayInMin());
 
                 ArrayList<Path> allPaths = network.enumerateAllPaths();
+                */
+
+                ArrayList<Path> allPaths = dataRegistry.getConnectionNetwork().enumeratePathsForTails(
+                        dataRegistry.getTails(), legDelayMap, dataRegistry.getMaxEndTime());
 
                 // Store paths for each tail separately.
                 HashMap<Integer, ArrayList<Path>> tailPathsMap = new HashMap<>();

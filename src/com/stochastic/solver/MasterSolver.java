@@ -93,13 +93,12 @@ public class MasterSolver {
     	return objValue - theta;
     }
 
-    public static void writeLPFile(String fName) throws OptException {
-        try {
-            masterCplex.exportModel(fName);
-        } catch (IloException e) {
-            logger.error(e);
-            throw new OptException("error writing LP file");
-        }
+    public static void writeLPFile(String fName) throws IloException {
+        masterCplex.exportModel(fName);
+    }
+
+    public static void writeSolution(String fName) throws IloException {
+        masterCplex.writeSolution(fName);
     }
 
     public static void constructFirstStage() throws OptException {

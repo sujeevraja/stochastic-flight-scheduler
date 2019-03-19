@@ -64,7 +64,9 @@ public class PathEnumerator {
 
             // generate paths starting from leg.
             int delayTime = (int) Duration.between(leg.getDepTime(), newDepTime).toMinutes();
-            if (delayTime <= maxLegDelayInMin && !leg.getArrTime().plusMinutes(delayTime).isAfter(maxEndTime))
+
+            // if (delayTime <= maxLegDelayInMin && !leg.getArrTime().plusMinutes(delayTime).isAfter(maxEndTime))
+            if (!leg.getArrTime().plusMinutes(delayTime).isAfter(maxEndTime))
                 depthFirstSearch(i, delayTime);
         }
         return paths;
@@ -111,8 +113,10 @@ public class PathEnumerator {
                         : minReqDepTime;
 
                 int neighborDelayTime = (int) Duration.between(neighborLeg.getDepTime(), depTimeOnPath).toMinutes();
-                if(neighborDelayTime <= maxLegDelayInMin
-                        && !neighborLeg.getArrTime().plusMinutes(neighborDelayTime).isAfter(maxEndTime))
+                // if(neighborDelayTime <= maxLegDelayInMin
+                //        && !neighborLeg.getArrTime().plusMinutes(neighborDelayTime).isAfter(maxEndTime))
+
+                if(!neighborLeg.getArrTime().plusMinutes(neighborDelayTime).isAfter(maxEndTime))
                     depthFirstSearch(neighborIndex, neighborDelayTime);
             }
         }

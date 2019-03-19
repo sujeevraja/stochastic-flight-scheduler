@@ -67,16 +67,17 @@ public class DepSolver {
             
             // get delay data using planned delays from first stage and random delays from second stage.
             HashMap<Integer, Integer> legDelayMap = getLegDelays(tails, legs, durations, xValues);
-            Network network = new Network(tails, legs, legDelayMap, dataRegistry.getMaxEndTime(),
-                    dataRegistry.getMaxLegDelayInMin());
+            // Network network = new Network(tails, legs, legDelayMap, dataRegistry.getMaxEndTime(),
+            //        dataRegistry.getMaxLegDelayInMin());
+            // paths = network.enumerateAllPaths();
+
+            // PathEnumerator pe = new PathEnumerator();
+            // paths = pe.addPaths(dataRegistry);
 
             // Later, the full enumeration algorithm in enumerateAllPaths() will be replaced a labeling algorithm.
-//             paths = network.enumerateAllPaths();
-            //
-            
-            PathEnumerator pe = new PathEnumerator(); 
-            paths = pe.addPaths(dataRegistry);            
-            	
+            paths = dataRegistry.getConnectionNetwork().enumeratePathsForTails(tails, legDelayMap,
+                        dataRegistry.getMaxEndTime());
+
     		logger.debug("Tail: " + tails.size() + " legs: " + legs.size() + " durations: " + durations.size());
             printAllPaths();
             

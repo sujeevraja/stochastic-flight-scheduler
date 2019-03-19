@@ -4,6 +4,7 @@ import com.stochastic.controller.Controller;
 import com.stochastic.registry.Parameters;
 import com.stochastic.solver.MasterSolver;
 import com.stochastic.utility.OptException;
+import ilog.concert.IloException;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
@@ -66,8 +67,8 @@ public class Main {
             // ---- SECTION END ----
 
             logger.info("Completed optimization.");
-        } catch (OptException oe) {
-            logger.error(oe);
+        } catch (IloException | OptException ex) {
+            logger.error(ex);
         }
     }
 }

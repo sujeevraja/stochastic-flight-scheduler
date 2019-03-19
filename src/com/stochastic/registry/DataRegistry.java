@@ -3,6 +3,7 @@ package com.stochastic.registry;
 import com.stochastic.domain.Equipment;
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
+import com.stochastic.network.ConnectionNetwork;
 import com.stochastic.network.Path;
 
 import java.time.LocalDateTime;
@@ -21,6 +22,7 @@ public class DataRegistry {
     private ArrayList<Tail> tails;
     private HashMap<Integer, Path> tailHashMap;
     private LocalDateTime maxEndTime;
+    private ConnectionNetwork connectionNetwork;
 
     // This is the updated number of scenarios after duplicate random delays have been removed.
     private Integer numScenarios;
@@ -94,6 +96,14 @@ public class DataRegistry {
 
     public Integer getNumScenarios() {
         return numScenarios;
+    }
+
+    public void buildConnectionNetwork() {
+        connectionNetwork = new ConnectionNetwork(legs);
+    }
+
+    public ConnectionNetwork getConnectionNetwork() {
+        return connectionNetwork;
     }
 }
 
