@@ -4,7 +4,6 @@ import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
 import com.stochastic.registry.DataRegistry;
 
-import java.lang.Math;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -66,7 +65,7 @@ public class PathEnumerator {
             // generate paths starting from leg.
             int delayTime = (int) Duration.between(leg.getDepTime(), newDepTime).toMinutes();
             if (delayTime <= maxLegDelayInMin && !leg.getArrTime().plusMinutes(delayTime).isAfter(maxEndTime))
-            depthFirstSearch(i, delayTime);
+                depthFirstSearch(i, delayTime);
         }
         return paths;
     }

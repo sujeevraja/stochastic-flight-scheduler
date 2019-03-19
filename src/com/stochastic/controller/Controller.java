@@ -81,6 +81,10 @@ public class Controller {
         dataRegistry.setMaxLegDelayInMin(requiredMaxDelay);
         dataRegistry.setMaxEndTime(dataRegistry.getMaxEndTime().plusMinutes(requiredMaxDelay));
 
+        logger.info("updated max 2nd stage delay: " + dataRegistry.getMaxLegDelayInMin());
+        logger.info("updated number of scenarios: " + scenarioDelays.size());
+        logger.info("updated max end time: " + dataRegistry.getMaxEndTime());
+
         logScenarioDelays();
 
         // sceVal = new int[3][5];
@@ -177,9 +181,6 @@ public class Controller {
     }
 
     private void logScenarioDelays() {
-        logger.info("updated max 2nd stage delay: " + dataRegistry.getMaxLegDelayInMin());
-        logger.info("updated number of scenarios: " + scenarioDelays.size());
-
         StringBuilder delayStr = new StringBuilder();
         StringBuilder probStr = new StringBuilder();
         delayStr.append("scenario delays: ");

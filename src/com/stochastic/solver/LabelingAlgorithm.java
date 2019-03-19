@@ -19,7 +19,7 @@ public class LabelingAlgorithm {
 		private double sumDelayDual;
 		private double sumflightDual;		
 		
-		public NodeInfo(double pi, int i, double sumDelayDual, double sumflightDual) {
+		NodeInfo(double pi, int i, double sumDelayDual, double sumflightDual) {
 			super();
 			Pi = pi;
 			this.i = i;
@@ -39,13 +39,13 @@ public class LabelingAlgorithm {
 		public void setI(int i) {
 			this.i = i;
 		}
-		public double getSumDelayDual() {
+		double getSumDelayDual() {
 			return sumDelayDual;
 		}
 		public void setSumDelayDual(double sumDelayDual) {
 			this.sumDelayDual = sumDelayDual;
 		}
-		public double getSumflightDual() {
+		double getSumflightDual() {
 			return sumflightDual;
 		}
 		public void setSumflightDual(double sumflightDual) {
@@ -141,7 +141,7 @@ public class LabelingAlgorithm {
     }   
 
     
-    public boolean areSamePaths(Path p1, Path p2)
+    private boolean areSamePaths(Path p1, Path p2)
     {
     	
     	if(p1.getLegs().size() != p2.getLegs().size())
@@ -160,7 +160,7 @@ public class LabelingAlgorithm {
     }
     
 
-    public void findNextLeg(int iIndex, DataRegistry dataRegistry)
+    private void findNextLeg(int iIndex, DataRegistry dataRegistry)
     {
     	int index     = -1;
     	int niIndex   = -1;
@@ -195,7 +195,7 @@ public class LabelingAlgorithm {
     	I.put(index, niList);    	
     }
     
-    public int findMinimum(int iIndex)
+    private int findMinimum(int iIndex)
     {
 	    ArrayList<NodeInfo> niList = I.get(iIndex);
 	    
@@ -216,7 +216,7 @@ public class LabelingAlgorithm {
 	    return nIndex;
     }
     
-    public int findStart()
+    private int findStart()
     {
     	int iIndex = -1;
     	double minRci = 100000;
@@ -247,7 +247,7 @@ public class LabelingAlgorithm {
     	return iIndex;
     }
     
-    public int getStFlight(ArrayList<Integer> stLegsI)
+    private int getStFlight(ArrayList<Integer> stLegsI)
     {
     	int index = -1;
     	double minValue  = 10000;

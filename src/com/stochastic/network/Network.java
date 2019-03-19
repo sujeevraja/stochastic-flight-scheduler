@@ -46,10 +46,6 @@ public class Network {
     public HashMap<Integer, ArrayList<Integer>> getAdjacencyList() {
 		return adjacencyList;
 	}
-    
-	public void setAdjacencyList(HashMap<Integer, ArrayList<Integer>> adjacencyList) {
-		this.adjacencyList = adjacencyList;
-	}
 
 	public ArrayList<Path> enumerateAllPaths() {
         ArrayList<Path> paths = new ArrayList<>();
