@@ -58,17 +58,14 @@ public class SubSolverWrapper {
 
         logger.debug("initial alpha value: " + alpha);
 
-        for (int j = 0; j < legs.size(); j++) {
+        for (int j = 0; j < legs.size(); j++)
             alpha += (dualsLegs[j]); //*prb);
-        }
 
-        for (int j = 0; j < dataRegistry.getTails().size(); j++) {
+        for (int j = 0; j < dataRegistry.getTails().size(); j++)
             alpha += (dualsTail[j]); //*prb);
-        }
 
-        for (int j = 0; j < legs.size(); j++) {
+        for (int j = 0; j < legs.size(); j++)
             alpha += (dualsDelay[j] * 14); //prb*14);
-        }
 
         for (double[] dualBnd : dualsBnd)
             if (dualBnd != null)
@@ -295,6 +292,7 @@ public class SubSolverWrapper {
             }
 
             // Update master problem data
+            logger.info("reached sub-problem optimality");
             calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(), ss.getDualsBnd(),
                     ss.getDualsRisk());
             calculateBeta(ss.getDualsDelay(), ss.getDualsRisk());
@@ -382,11 +380,6 @@ public class SubSolverWrapper {
                 // Enumerate all paths for each tail.
                 HashMap<Integer, Integer> legDelayMap = getLegDelays(
                         dataRegistry.getLegs(), Parameters.getDurations(), xValues);
-
-                // Network network = new Network(dataRegistry.getTails(), dataRegistry.getLegs(), legDelayMap,
-                //        dataRegistry.getMaxEndTime(), dataRegistry.getMaxLegDelayInMin());
-
-                //ArrayList<Path> allPaths = network.enumerateAllPaths();
 
                 ArrayList<Path> allPaths = dataRegistry.getConnectionNetwork().enumeratePathsForTails(
                         dataRegistry.getTails(), legDelayMap, dataRegistry.getMaxEndTime());

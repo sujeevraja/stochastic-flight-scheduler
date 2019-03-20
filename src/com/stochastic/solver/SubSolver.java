@@ -78,7 +78,7 @@ public class SubSolver {
             int numPaths = 0;
             for (Map.Entry<Integer, ArrayList<Path>> entry : p.entrySet())
                 numPaths += entry.getValue().size();
-            logger.info("number of paths: " + numPaths);
+            logger.info("number of paths given to second stage: " + numPaths);
 
             // Create containers to build CPLEX model.
             subCplex = new IloCplex();
@@ -218,7 +218,7 @@ public class SubSolver {
 
             for (int i = 0; i < tails.size(); i++)
                 for (int j = 0; j < y[i].length; j++)
-                    R4[i][j] = subCplex.addLe(y[i][j], 1, "yBound_" + i);
+                    R4[i][j] = subCplex.addLe(y[i][j], 1, "yBound_" + i + "_" + j);
 
 //            for (int i = 0; i < paths.size(); ++i)
 //                R4[i] = subCplex.addLe(y[i], 1, "yBound_" + i);
@@ -260,6 +260,12 @@ public class SubSolver {
             subCplex.setParam(IloCplex.BooleanParam.PreInd, false);
 
             subCplex.solve();
+
+            IloCplex.Status status = subCplex.getStatus();
+            if (status != IloCplex.Status.Optimal) {
+                logger.error("sub-problem status: " + status);
+                throw new OptException("optimal solution not found for sub-problem");
+            }
             objValue = subCplex.getObjValue();
             logger.debug("subproblem objective value: " + objValue);
 
