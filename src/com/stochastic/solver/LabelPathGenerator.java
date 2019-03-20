@@ -142,35 +142,22 @@ class LabelPathGenerator {
             if (!tail.getSourcePort().equals(leg.getDepPort()))
                 continue;
 
-            // Check if source label has already been added.
-            /*
-            boolean added = false;
-            for (Label srcLabel : labels.get(i)) {
-                if (srcLabel.getVertex() == i) {
-                    added = true;
-                    break;
-                }
-            }
-            if (added)
-                continue;
-                */
-
-            // If not, create a label and add it.
             int totalDelay = delays[i];
 
             double reducedCost = getReducedCostForLeg(i, totalDelay);
             Label label = new Label(leg, null, totalDelay, reducedCost, legs.size());
 
             ArrayList<Label> legLabels = labels.get(i);
-            if (canAddTo(label, legLabels))
+            if (canAddTo(label, legLabels)) {
                 legLabels.add(label);
 
-            // reduced cost for path = (sum of flight reduced costs) - \alpha_t
-            if (leg.getArrPort().equals(tail.getSinkPort())) {
-                Label copy = new Label(label);
-                copy.setReducedCost(label.getReducedCost() - tailDual);
-                if (canAddTo(copy, sinkLabels))
-                    sinkLabels.add(copy);
+                // reduced cost for path = (sum of flight reduced costs) - \alpha_t
+                if (leg.getArrPort().equals(tail.getSinkPort())) {
+                    Label copy = new Label(label);
+                    copy.setReducedCost(label.getReducedCost() - tailDual);
+                    if (canAddTo(copy, sinkLabels))
+                        sinkLabels.add(copy);
+                }
             }
         }
     }
