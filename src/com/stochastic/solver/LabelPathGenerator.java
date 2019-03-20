@@ -153,10 +153,14 @@ class LabelPathGenerator {
 
                 // reduced cost for path = (sum of flight reduced costs) - \alpha_t
                 if (leg.getArrPort().equals(tail.getSinkPort())) {
-                    Label copy = new Label(label);
-                    copy.setReducedCost(label.getReducedCost() - tailDual);
-                    if (canAddTo(copy, sinkLabels))
-                        sinkLabels.add(copy);
+                    double pathReducedCost = label.getReducedCost() - tailDual;
+
+                    if (pathReducedCost <= -Constants.EPS) {
+                        Label copy = new Label(label);
+                        copy.setReducedCost(pathReducedCost);
+                        if (canAddTo(copy, sinkLabels))
+                            sinkLabels.add(copy);
+                    }
                 }
             }
         }
@@ -189,9 +193,12 @@ class LabelPathGenerator {
 
                         if (nextLeg.getArrPort().equals(tail.getSinkPort())) {
                             Label copy = new Label(extension);
-                            copy.setReducedCost(extension.getReducedCost() - tailDual);
-                            if (canAddTo(copy, sinkLabels))
-                                sinkLabels.add(copy);
+                            double pathReducedCost = extension.getReducedCost() - tailDual;
+                            if (pathReducedCost <= -Constants.EPS) {
+                                copy.setReducedCost(pathReducedCost);
+                                if (canAddTo(copy, sinkLabels))
+                                    sinkLabels.add(copy);
+                            }
                         }
                     }
                 }

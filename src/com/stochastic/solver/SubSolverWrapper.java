@@ -231,6 +231,12 @@ public class SubSolverWrapper {
             HashMap<Integer, ArrayList<Path>> pathsAll = getInitialPaths(legDelayMap);
 
             // Run the column generation procedure.
+            ArrayList<Leg> legs = dataRegistry.getLegs();
+            int numLegs = legs.size();
+            int[] delays = new int[numLegs];
+            for (int i = 0; i < numLegs; ++i)
+                delays[i] = legDelayMap.getOrDefault(legs.get(i).getIndex(), 0);
+
             boolean optimal = false;
             int columnGenIter = 0;
             while (!optimal) {
@@ -241,19 +247,13 @@ public class SubSolverWrapper {
                 ss.writeSolution("logs/", iter, columnGenIter, this.scenarioNum);
                 ss.collectDuals();
 
-                // Initialize the labeling path generator class using the latest dual values and pre-existing labels.
-                ArrayList<Leg> legs = dataRegistry.getLegs();
-                int numLegs = legs.size();
-                int[] delays = new int[numLegs];
-                for (int i = 0; i < numLegs; ++i)
-                    delays[i] = legDelayMap.getOrDefault(legs.get(i).getIndex(), 0);
-
                 // Collect paths with negative reduced cost from the labeling algorithm. Optimality is reached when
                 // there are no new negative reduced cost paths available for any tail.
                 ArrayList<Tail> tails = dataRegistry.getTails();
                 double[] tailDuals = ss.getDualsTail();
                 optimal = true;
 
+                logger.info("starting labeling procedure...");
                 for (int i = 0; i < tails.size(); ++i) {
                     Tail tail = tails.get(i);
 
@@ -273,8 +273,16 @@ public class SubSolverWrapper {
                         existingPaths.addAll(tailPaths);
                     }
                 }
+                logger.info("completed labeling procedure.");
 
-                // TODO verify optimality using the feasibility of \gamma_f + b_f >= 0 for all flights.
+                // Verify optimality using the feasibility of \gamma_f + b_f >= 0 for all flights.
+                double[] delayDuals = ss.getDualsDelay();
+                for (int i = 0; i < legs.size(); ++i) {
+                    if (delayDuals[i] + legs.get(i).getDelayCostPerMin() <= -Constants.EPS) {
+                        logger.error("no new paths, but solution not dual feasible");
+                        throw new OptException("invalid optimality in second stage branch and price");
+                    }
+                }
 
                 int numPaths = 0;
                 for (Map.Entry<Integer, ArrayList<Path>> entry : pathsAll.entrySet())
