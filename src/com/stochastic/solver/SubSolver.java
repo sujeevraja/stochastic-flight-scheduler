@@ -1,13 +1,12 @@
 package com.stochastic.solver;
 
-import com.stochastic.controller.Controller;
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
-import com.stochastic.network.Network;
 import com.stochastic.network.Path;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.registry.Parameters;
 import com.stochastic.solver.SubSolverWrapper.ScenarioData;
+import com.stochastic.utility.Constants;
 import com.stochastic.utility.OptException;
 import ilog.concert.*;
 import ilog.cplex.IloCplex;
@@ -27,7 +26,6 @@ public class SubSolver {
     private final Logger logger = LogManager.getLogger(SubSolver.class);
     private HashMap<Integer, Integer> randomDelays; // random delays of 2nd stage scenario
     private double probability;
-    private final double eps = 1.0e-5;
     //    private ArrayList<Path> paths; // subproblem columns
     private HashMap<Integer, ArrayList<Path>> paths; // subproblem columns    
     private double objValue;
@@ -80,7 +78,7 @@ public class SubSolver {
             int numPaths = 0;
             for (Map.Entry<Integer, ArrayList<Path>> entry : p.entrySet())
                 numPaths += entry.getValue().size();
-            logger.info("number of paths: " + p.size());
+            logger.info("number of paths: " + numPaths);
 
             // Create containers to build CPLEX model.
             subCplex = new IloCplex();
@@ -145,7 +143,7 @@ public class SubSolver {
                 delayExprs[i].addTerm(d[i], -1.0);
 
                 for (int j = 0; j < numDurations; ++j)
-                    if (xValues[j][i] >= eps) {
+                    if (xValues[j][i] >= Constants.EPS) {
                         delayRHS[i] += durations.get(j);
                         break;
                     }
@@ -164,11 +162,12 @@ public class SubSolver {
                 for (int j = 0; j < y[i].length; j++) {
                     y[i][j] = subCplex.numVar(0, 1, "y_" + tails.get(i).getId() + "_" + j);
 
-                    tailCoverExprs[tails.get(i).getIndex()].addTerm(y[i][j], 1.0);
-                    tailPresence[tails.get(i).getIndex()] = true;
+                    Tail tail = tails.get(i);
+                    tailCoverExprs[tail.getIndex()].addTerm(y[i][j], 1.0);
+                    tailPresence[tail.getIndex()] = true;
 
-                    ArrayList<Leg> pathLegs = paths.get(tails.get(i).getId()).get(j).getLegs(); // path.getLegs();
-                    ArrayList<Integer> delayTimes = paths.get(tails.get(i).getId()).get(j).getDelayTimesInMin();
+                    ArrayList<Leg> pathLegs = paths.get(tail.getId()).get(j).getLegs(); // path.getLegs();
+                    ArrayList<Integer> delayTimes = paths.get(tail.getId()).get(j).getDelayTimesInMin();
 
                     for (int k = 0; k < pathLegs.size(); ++k) {
                         Leg pathLeg = pathLegs.get(k);
@@ -181,16 +180,16 @@ public class SubSolver {
                             SubSolverWrapper.ScenarioData sd = new SubSolverWrapper.ScenarioData();
                             sd.setSceNo(sceNo);
                             sd.setIter(iter);
-                            sd.setPathIndex(paths.get(tails.get(i).getId()).get(j).getIndex());
-                            sd.setTailIndex(tails.get(i).getIndex());
+                            sd.setPathIndex(paths.get(tail.getId()).get(j).getIndex());
+                            sd.setTailIndex(tail.getIndex());
                             sd.setLegId(pathLeg.getIndex());
 
                             delayExprs[pathLeg.getIndex()].addTerm(y[i][j], delayTime);
                             ScenarioData.addData(
                                     sceNo,
                                     iter,
-                                    paths.get(tails.get(i).getId()).get(j).getIndex(),
-                                    tails.get(i).getIndex(),
+                                    paths.get(tail.getId()).get(j).getIndex(),
+                                    tail.getIndex(),
                                     pathLeg.getIndex(),
                                     delayTime);
                         }
@@ -201,8 +200,10 @@ public class SubSolver {
             // Add constraints to model.
             for (int i = 0; i < numTails; ++i)
                 if (tailPresence[i])
-                    onePathPerTailConstraints[i] = subCplex.addLe(
-                            tailCoverExprs[i], 1.0, "tail_" + i + "_" + tails.get(i).getId());
+                    onePathPerTailConstraints[i] = subCplex.addEq(
+                           tailCoverExprs[i], 1.0, "tail_" + i + "_" + tails.get(i).getId());
+                    // onePathPerTailConstraints[i] = subCplex.addLe(
+                    //        tailCoverExprs[i], 1.0, "tail_" + i + "_" + tails.get(i).getId());
 
             for (int i = 0; i < numLegs; ++i) {
                 if (legPresence[i])

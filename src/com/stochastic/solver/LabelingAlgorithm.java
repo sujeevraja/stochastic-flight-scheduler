@@ -135,32 +135,12 @@ public class LabelingAlgorithm {
 		ArrayList<Path> paths = new ArrayList<>();
 	
 		for(Path p1 : existingPaths)
-			if(areSamePaths(p, p1))
+		    if (p.equals(p1))
 				return new ArrayList<>();
 				
 		paths.add(p);
 		return paths;
     }   
-
-    
-    private boolean areSamePaths(Path p1, Path p2)
-    {
-    	
-    	if(p1.getLegs().size() != p2.getLegs().size())
-    		return false;
-    	
-    	int index = 0;
-    	for(Leg l : p1.getLegs())
-    	{
-    		if(l.getId() != p1.getLegs().get(index).getId())
-    			return false;
-    		
-    		index++;
-    	}
-    	
-    	return true;    	
-    }
-    
 
     private void findNextLeg(int iIndex, DataRegistry dataRegistry)
     {

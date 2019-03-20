@@ -4,7 +4,6 @@ import com.stochastic.delay.DelayGenerator;
 import com.stochastic.delay.FirstFlightDelayGenerator;
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
-import com.stochastic.network.Network;
 import com.stochastic.network.Path;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.registry.Parameters;
@@ -161,8 +160,8 @@ public class SubSolverWrapper {
             }
         }
 
-        private HashMap<Integer, Path> getInitialPaths(HashMap<Integer, Integer> legDelayMap) {
-            HashMap<Integer, Path> initialPaths = new HashMap<>();
+        private HashMap<Integer, ArrayList<Path>> getInitialPaths(HashMap<Integer, Integer> legDelayMap) {
+            HashMap<Integer, ArrayList<Path>> initialPaths = new HashMap<>();
 
             for (Map.Entry<Integer, Path> entry : dataRegistry.getTailHashMap().entrySet()) {
                 int tailId = entry.getKey();
@@ -196,7 +195,12 @@ public class SubSolverWrapper {
                     // update current time based on leg's delayed arrival time and turn time.
                     currentTime = leg.getArrTime().plusMinutes(legDelay).plusMinutes(leg.getTurnTimeInMin());
                 }
-                initialPaths.put(tailId, pathWithDelays);
+
+
+                ArrayList<Path> tailPaths = new ArrayList<>();
+                tailPaths.add(new Path(tail)); // add empty path
+                tailPaths.add(pathWithDelays);
+                initialPaths.put(tailId, tailPaths);
             }
 
             return initialPaths;
@@ -221,28 +225,70 @@ public class SubSolverWrapper {
             }
         }
 
-        private void solveWithNewLabeling() throws OptException {
+        private void solveWithNewLabeling() throws IloException, OptException {
             SubSolver ss = new SubSolver(randomDelays, probability);
             HashMap<Integer, Integer> legDelayMap = getLegDelays(dataRegistry.getLegs(),
                     Parameters.getDurations(), xValues);
 
             // Load on-plan paths with propagated delays.
-            HashMap<Integer, Path> initialPaths = getInitialPaths(legDelayMap);
-            HashMap<Integer, ArrayList<Path>> pathsAll = new HashMap<>();
-            for (Map.Entry<Integer, Path> entry : initialPaths.entrySet()) {
-                ArrayList<Path> paths = new ArrayList<>();
-                paths.add(entry.getValue());
-                pathsAll.put(entry.getKey(), paths);
+            HashMap<Integer, ArrayList<Path>> pathsAll = getInitialPaths(legDelayMap);
+
+            // Run the column generation procedure.
+            boolean optimal = false;
+            int columnGenIter = 0;
+            while (!optimal) {
+                // Solve second-stage RMP (Restricted Master Problem)
+                ss.constructSecondStage(xValues, dataRegistry, scenarioNum, iter, pathsAll);
+                ss.writeLPFile("logs/", iter, columnGenIter, this.scenarioNum);
+                ss.solve();
+                ss.writeSolution("logs/", iter, columnGenIter, this.scenarioNum);
+                ss.collectDuals();
+
+                // Initialize the labeling path generator class using the latest dual values and pre-existing labels.
+                ArrayList<Leg> legs = dataRegistry.getLegs();
+                int numLegs = legs.size();
+                int[] delays = new int[numLegs];
+                for (int i = 0; i < numLegs; ++i)
+                    delays[i] = legDelayMap.getOrDefault(legs.get(i).getIndex(), 0);
+
+                // Collect paths with negative reduced cost from the labeling algorithm. Optimality is reached when
+                // there are no new negative reduced cost paths available for any tail.
+                ArrayList<Tail> tails = dataRegistry.getTails();
+                double[] tailDuals = ss.getDualsTail();
+                optimal = true;
+
+                for (int i = 0; i < tails.size(); ++i) {
+                    Tail tail = tails.get(i);
+
+                    LabelPathGenerator lpg = new LabelPathGenerator(tail, legs, dataRegistry.getConnectionNetwork(),
+                            delays, tailDuals[i], ss.getDualsLeg(), ss.getDualsDelay());
+
+                    // Build sink labels for paths that have already been generated and add them to the labeling
+                    // path generator.
+                    ArrayList<Path> existingPaths = pathsAll.get(tail.getId());
+                    lpg.initLabelsForExistingPaths(existingPaths);
+
+                    ArrayList<Path> tailPaths = lpg.generatePathsForTail();
+                    if (!tailPaths.isEmpty()) {
+                        if (optimal)
+                            optimal = false;
+
+                        existingPaths.addAll(tailPaths);
+                    }
+                }
+
+                // TODO verify optimality using the feasibility of \gamma_f + b_f >= 0 for all flights.
+
+                int numPaths = 0;
+                for (Map.Entry<Integer, ArrayList<Path>> entry : pathsAll.entrySet())
+                    numPaths += entry.getValue().size();
+
+                logger.debug("number of paths: " + numPaths);
+
+                // Re-initialize the SubSolver object to ensure the data within the solver doesn't get stale.
+                ss = new SubSolver(randomDelays, probability);
+                ++columnGenIter;
             }
-
-            // Solve second-stage RMP (Restricted Master Problem)
-            ss.constructSecondStage(xValues, dataRegistry, scenarioNum, iter, pathsAll);
-            ss.solve();
-            ss.collectDuals();
-
-            LabelPathGenerator lpg = new LabelPathGenerator(ss.getDualsTail(), ss.getDualsLeg(), ss.getDualsDelay());
-            lpg.generatePaths();
-            boolean optimal = lpg.secondStageOptimal();
         }
 
         private void solveWithLabeling() throws IloException, OptException {
@@ -256,13 +302,7 @@ public class SubSolverWrapper {
                 pathsAll = hmPaths.get(this.scenarioNum);
             else {
                 // load on-plan paths with propagated delays into the container that will be provided to SubSolver.
-                HashMap<Integer, Path> initialPaths = getInitialPaths(legDelayMap);
-                pathsAll = new HashMap<>();
-                for (Map.Entry<Integer, Path> entry : initialPaths.entrySet()) {
-                    ArrayList<Path> paths = new ArrayList<>();
-                    paths.add(entry.getValue());
-                    pathsAll.put(entry.getKey(), paths);
-                }
+                pathsAll = getInitialPaths(legDelayMap);
             }
 
             boolean solveAgain = true;
@@ -333,20 +373,18 @@ public class SubSolverWrapper {
                 HashMap<Integer, Integer> legDelayMap = getLegDelays(
                         dataRegistry.getLegs(), Parameters.getDurations(), xValues);
 
-                /*
-                Network network = new Network(dataRegistry.getTails(), dataRegistry.getLegs(), legDelayMap,
-                        dataRegistry.getMaxEndTime(), dataRegistry.getMaxLegDelayInMin());
+                // Network network = new Network(dataRegistry.getTails(), dataRegistry.getLegs(), legDelayMap,
+                //        dataRegistry.getMaxEndTime(), dataRegistry.getMaxLegDelayInMin());
 
-                ArrayList<Path> allPaths = network.enumerateAllPaths();
-                */
+                //ArrayList<Path> allPaths = network.enumerateAllPaths();
 
                 ArrayList<Path> allPaths = dataRegistry.getConnectionNetwork().enumeratePathsForTails(
                         dataRegistry.getTails(), legDelayMap, dataRegistry.getMaxEndTime());
 
-                // Store paths for each tail separately.
+                // Store paths for each tail separately. Also add empty paths for each tail.
                 HashMap<Integer, ArrayList<Path>> tailPathsMap = new HashMap<>();
                 for (Tail t : dataRegistry.getTails())
-                    tailPathsMap.put(t.getId(), new ArrayList<>());
+                    tailPathsMap.put(t.getId(), new ArrayList<>(Collections.singletonList(new Path(t))));
 
                 for(Path p : allPaths)
                     tailPathsMap.get(p.getTail().getId()).add(p);

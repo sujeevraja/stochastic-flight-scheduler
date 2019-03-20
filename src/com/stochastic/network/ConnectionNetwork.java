@@ -62,6 +62,10 @@ public class ConnectionNetwork {
         return adjacencyList;
     }
 
+    public ArrayList<Integer> getNeighbors(int legIndex) {
+        return adjacencyList.getOrDefault(legIndex, null);
+    }
+
     private boolean canConnect(Leg currLeg, Leg nextLeg) {
         if(!currLeg.getArrPort().equals(nextLeg.getDepPort()))
             return false;

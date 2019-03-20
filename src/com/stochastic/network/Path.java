@@ -47,6 +47,21 @@ public class Path {
         return pathStr.toString();
     }
 
+    public boolean equals(Path other) {
+	    if (legs.size() != other.legs.size())
+	        return false;
+
+	    for (int i = 0; i < legs.size(); ++i) {
+	        if (!legs.get(i).getId().equals(other.legs.get(i).getId()))
+	            return false;
+
+	        if (!delayTimesInMin.get(i).equals(other.delayTimesInMin.get(i)))
+	            return false;
+        }
+
+        return true;
+    }
+
     public static void resetPathCounter() {
 	    pathCounter = 0;
     }

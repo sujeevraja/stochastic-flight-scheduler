@@ -1,18 +1,95 @@
 package com.stochastic.solver;
 
+import com.stochastic.domain.Leg;
 import com.stochastic.utility.Constants;
+
+import java.util.Arrays;
 
 class Label {
     /**
      * This class is used to track and prune partial paths in a label-setting algorithm.
      */
+    private Leg leg;
     private int vertex;
     private Label predecessor;
+    private int totalDelay;
     private double reducedCost;
-    private int propagatedDelay;
+    private boolean processed;
+    private boolean preExisting;
+    private boolean[] visited;
+
+    Label(Leg leg, Label predecessor, int totalDelay, double reducedCost, int numLegs) {
+        this.leg = leg;
+        this.vertex = leg.getIndex();
+        this.predecessor = predecessor;
+        this.totalDelay = totalDelay;
+        this.reducedCost = reducedCost;
+        this.processed = false;
+        this.preExisting = false; // true if Label got built with a pre-existing path, false otherwise.
+
+        visited = new boolean[numLegs];
+        Arrays.fill(visited, false);
+        visited[vertex] = true;
+    }
+
+    Label(Label other) {
+        this.leg = other.leg;
+        this.vertex = other.vertex;
+        this.predecessor = other.predecessor;
+        this.totalDelay = other.totalDelay;
+        this.reducedCost = other.reducedCost;
+        this.processed = other.processed;
+        this.preExisting = other.preExisting;
+        this.visited = other.visited.clone();
+    }
+
+    @Override
+    public String toString() {
+        return "Label(" + leg.getId() + ", " + reducedCost;
+    }
+
+    public Leg getLeg() {
+        return leg;
+    }
+
+    public int getVertex() {
+        return vertex;
+    }
+
+    public Label getPredecessor() {
+        return predecessor;
+    }
+
+    int getTotalDelay() {
+        return totalDelay;
+    }
+
+    void setReducedCost(double reducedCost) {
+        this.reducedCost = reducedCost;
+    }
+
+    double getReducedCost() {
+        return reducedCost;
+    }
+
+    void setProcessed() {
+        this.processed = true;
+    }
+
+    boolean isProcessed() {
+        return processed;
+    }
+
+    void setPreExisting() {
+        this.preExisting = true;
+    }
+
+    boolean isPreExisting() {
+        return preExisting;
+    }
 
     /**
-     * Note: The "dominates" function is valid only if the graph is a DAG (Directed Acyclic Graph).
+     * The dominance condition here is valid only if the graph is a DAG (Directed Acyclic Graph).
      * Reason is the following:
      *  - Consider paths p1 = {1, 2, 3, 4} and p2 = {1, 4}.
      *  - Assume p2 is better in terms of both reduced cost and propagated delay in p1.
@@ -31,6 +108,9 @@ class Label {
      *  - Say we have p2 = {1, 4} dominating p1.
      *  - At 4, p2 will dominate p1. So, p1 may be thrown away. We can only build {1, 4, 3, 2, 5}.
      *  - So, it is possible to throw out the optimal solution.
+     *
+     * @param other the label with which we want to check the dominance condition.
+     * @return true if this dominates other, false otherwise.
      */
     boolean dominates(Label other) {
         if (vertex != other.vertex)
@@ -41,12 +121,23 @@ class Label {
             return false;
 
         boolean strict = reducedCost <= other.reducedCost - Constants.EPS;
-        if (propagatedDelay > other.propagatedDelay)
+        if (totalDelay > other.totalDelay)
             return false;
 
-        if (!strict && propagatedDelay < other.propagatedDelay)
+        if (!strict && totalDelay < other.totalDelay)
             strict = true;
 
-        return strict;
+        return strict || Arrays.equals(visited, other.visited);
+    }
+
+    Label extend(Leg nextLeg, int totalDelay, double reducedCost) {
+        Label extension = new Label(this);
+        extension.leg = nextLeg;
+        extension.vertex = nextLeg.getIndex();
+        extension.predecessor = this;
+        extension.totalDelay = totalDelay;
+        extension.reducedCost = reducedCost;
+        extension.visited[nextLeg.getIndex()] = true;
+        return extension;
     }
 }

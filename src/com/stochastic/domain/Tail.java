@@ -58,6 +58,11 @@ public class Tail {
         return sinkTime;
     }
 
+    @Override
+    public String toString() {
+        return "Tail(" + id + ")";
+    }
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
