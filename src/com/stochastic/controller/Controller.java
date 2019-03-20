@@ -67,7 +67,10 @@ public class Controller {
         int iter = -1;
         MasterSolver.MasterSolverInit(legs, tails, durations);
         MasterSolver.constructFirstStage();
-        MasterSolver.writeLPFile("logs/before_cuts_master.lp");
+
+        if (Parameters.isDebugVerbose())
+            MasterSolver.writeLPFile("logs/before_cuts_master.lp");
+
         MasterSolver.solve(iter);
         MasterSolver.addColumn();
 
@@ -105,9 +108,13 @@ public class Controller {
 
             MasterSolver.constructBendersCut(SubSolverWrapper.getAlpha(), SubSolverWrapper.getBeta());
 
-            MasterSolver.writeLPFile("logs/master_" + iter + ".lp");
+            if (Parameters.isDebugVerbose())
+                MasterSolver.writeLPFile("logs/master_" + iter + ".lp");
+
             MasterSolver.solve(iter);
-            MasterSolver.writeSolution("logs/master_" + iter + ".xml");
+
+            if (Parameters.isDebugVerbose())
+                MasterSolver.writeSolution("logs/master_" + iter + ".xml");
 
             lBound = MasterSolver.getObjValue();
 

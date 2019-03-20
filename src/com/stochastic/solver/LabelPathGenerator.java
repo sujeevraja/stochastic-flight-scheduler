@@ -183,28 +183,37 @@ class LabelPathGenerator {
         while (label != null) {
             Integer legIndex = label.getVertex();
             ArrayList<Integer> neighbors = connectionNetwork.getNeighbors(legIndex);
-            if (neighbors != null) {
-                for (Integer nextIndex : neighbors) {
-                    Label extension = extend(label, nextIndex);
-
-                    if (canAddTo(extension, labels.get(nextIndex))) {
-                        labels.get(nextIndex).add(extension);
-                        Leg nextLeg = legs.get(nextIndex);
-
-                        if (nextLeg.getArrPort().equals(tail.getSinkPort())) {
-                            Label copy = new Label(extension);
-                            double pathReducedCost = extension.getReducedCost() - tailDual;
-                            if (pathReducedCost <= -Constants.EPS) {
-                                copy.setReducedCost(pathReducedCost);
-                                if (canAddTo(copy, sinkLabels))
-                                    sinkLabels.add(copy);
-                            }
-                        }
-                    }
-                }
-            }
+            if (neighbors != null)
+                generateFeasibleExtensions(label, neighbors);
             label.setProcessed();
             label = getBestLabelToExtend();
+        }
+    }
+
+    /**
+     * Generates and stores all feasible extensions of the given label.
+     *
+     * @param label label to be extended.
+     * @param neighbors candidates for feasible extensions.
+     */
+    private void generateFeasibleExtensions(Label label, ArrayList<Integer> neighbors) {
+        for (Integer nextIndex : neighbors) {
+            Label extension = extend(label, nextIndex);
+            if (!canAddTo(extension, labels.get(nextIndex)))
+                continue;
+
+            labels.get(nextIndex).add(extension);
+            Leg nextLeg = legs.get(nextIndex);
+            if (!nextLeg.getArrPort().equals(tail.getSinkPort()))
+                continue;
+
+            Label copy = new Label(extension);
+            double pathReducedCost = extension.getReducedCost() - tailDual;
+            if (pathReducedCost <= -Constants.EPS) {
+                copy.setReducedCost(pathReducedCost);
+                if (canAddTo(copy, sinkLabels))
+                    sinkLabels.add(copy);
+            }
         }
     }
 

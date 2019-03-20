@@ -242,10 +242,15 @@ public class SubSolverWrapper {
             while (!optimal) {
                 // Solve second-stage RMP (Restricted Master Problem)
                 ss.constructSecondStage(xValues, dataRegistry, scenarioNum, iter, pathsAll);
-                ss.writeLPFile("logs/", iter, columnGenIter, this.scenarioNum);
+
+                if (Parameters.isDebugVerbose())
+                    ss.writeLPFile("logs/", iter, columnGenIter, this.scenarioNum);
+
                 ss.solve();
-                ss.writeSolution("logs/", iter, columnGenIter, this.scenarioNum);
                 ss.collectDuals();
+
+                if (Parameters.isDebugVerbose())
+                    ss.writeSolution("logs/", iter, columnGenIter, this.scenarioNum);
 
                 // Collect paths with negative reduced cost from the labeling algorithm. Optimality is reached when
                 // there are no new negative reduced cost paths available for any tail.
@@ -336,7 +341,9 @@ public class SubSolverWrapper {
                 s.constructSecondStage(xValues, dataRegistry, scenarioNum, iter, pathsAll);
                 s.solve();
                 s.collectDuals();
-                s.writeLPFile("logs/", iter, wCnt, this.scenarioNum);
+                if (Parameters.isDebugVerbose())
+                    s.writeLPFile("logs/", iter, wCnt, this.scenarioNum);
+
                 uBoundValue = s.getObjValue();
                 calculateAlpha(s.getDualsLeg(), s.getDualsTail(), s.getDualsDelay(), s.getDualsBnd(), s.getDualsRisk());
                 calculateBeta(s.getDualsDelay(), s.getDualsRisk());
@@ -403,10 +410,16 @@ public class SubSolverWrapper {
                 // beta x + theta >= alpha - Benders cut
                 SubSolver s = new SubSolver(randomDelays, probability);
                 s.constructSecondStage(xValues, dataRegistry, scenarioNum, iter, tailPathsMap);
-                s.writeLPFile("logs/", iter, -1, this.scenarioNum);
+
+                if (Parameters.isDebugVerbose())
+                    s.writeLPFile("logs/", iter, -1, this.scenarioNum);
+
                 s.solve();
-                s.writeSolution("logs/", iter, -1, this.scenarioNum);
                 s.collectDuals();
+
+                if (Parameters.isDebugVerbose())
+                    s.writeSolution("logs/", iter, -1, this.scenarioNum);
+
                 calculateAlpha(s.getDualsLeg(), s.getDualsTail(), s.getDualsDelay(), s.getDualsBnd(),
                         s.getDualsRisk());
                 calculateBeta(s.getDualsDelay(), s.getDualsRisk());

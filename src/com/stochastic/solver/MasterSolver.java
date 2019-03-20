@@ -2,8 +2,7 @@ package com.stochastic.solver;
 
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
-import com.stochastic.network.Path;
-import com.stochastic.utility.CostUtility;
+import com.stochastic.registry.Parameters;
 import com.stochastic.utility.OptException;
 import ilog.concert.*;
 import ilog.cplex.IloCplex;
@@ -11,7 +10,6 @@ import ilog.cplex.IloCplex;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -51,6 +49,9 @@ public class MasterSolver {
             MasterSolver.durations = durations;
 
             masterCplex = new IloCplex();
+            if (!Parameters.isDebugVerbose())
+                masterCplex.setOut(null);
+
             X = new IloIntVar[MasterSolver.durations.size()][MasterSolver.legs.size()];
         } catch (IloException e) {
             logger.error(e.getStackTrace());

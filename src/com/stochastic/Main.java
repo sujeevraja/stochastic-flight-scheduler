@@ -28,7 +28,12 @@ public class Main {
             Parameters.setScale(3.5);
             Parameters.setShape(0.25);
             Parameters.setDurations(new ArrayList<>(Arrays.asList(5, 10, 15, 20, 25, 30)));
-            Parameters.setFullEnumeration(true);
+            Parameters.setFullEnumeration(false);
+
+            // Change setDebugVerbose to true to see CPLEX logs, lp files and solution xml files.
+            Parameters.setDebugVerbose(false);
+
+            // Expected excess parameters
             Parameters.setExpectedExcess(false);
             Parameters.setRho(0.9);
             Parameters.setExcessTarget(40);

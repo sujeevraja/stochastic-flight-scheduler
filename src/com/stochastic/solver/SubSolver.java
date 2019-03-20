@@ -82,6 +82,10 @@ public class SubSolver {
 
             // Create containers to build CPLEX model.
             subCplex = new IloCplex();
+
+            if (!Parameters.isDebugVerbose())
+                subCplex.setOut(null);
+
             final Integer numLegs = legs.size();
             final Integer numTails = tails.size();
             final Integer numDurations = durations.size();

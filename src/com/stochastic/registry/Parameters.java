@@ -8,6 +8,7 @@ public class Parameters {
     private static double shape;
     private static ArrayList<Integer> durations;
     private static boolean fullEnumeration;
+    private static boolean debugVerbose; // generates additional logging, writes lP files and solutions.
 
     // Parameters for expected excess formulation
     private static boolean expectedExcess;
@@ -80,5 +81,13 @@ public class Parameters {
 
     public static double getExcessTarget() {
         return excessTarget;
+    }
+
+    public static void setDebugVerbose(boolean debugVerbose) {
+        Parameters.debugVerbose = debugVerbose;
+    }
+
+    public static boolean isDebugVerbose() {
+        return debugVerbose;
     }
 }
