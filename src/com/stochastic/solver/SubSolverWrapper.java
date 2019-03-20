@@ -284,11 +284,21 @@ public class SubSolverWrapper {
                     numPaths += entry.getValue().size();
 
                 logger.debug("number of paths: " + numPaths);
+                logger.debug("completed column-gen iteration " + columnGenIter);
 
-                // Re-initialize the SubSolver object to ensure the data within the solver doesn't get stale.
-                ss = new SubSolver(randomDelays, probability);
+                // Re-initialize the SubSolver object to ensure that its data doesn't get stale.
+                if (!optimal) {
+                    ss.end();
+                    ss = new SubSolver(randomDelays, probability);
+                }
                 ++columnGenIter;
             }
+
+            // Update master problem data
+            calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(), ss.getDualsBnd(),
+                    ss.getDualsRisk());
+            calculateBeta(ss.getDualsDelay(), ss.getDualsRisk());
+            uBound += ss.getObjValue();
         }
 
         private void solveWithLabeling() throws IloException, OptException {
