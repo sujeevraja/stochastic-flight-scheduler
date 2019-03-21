@@ -297,7 +297,7 @@ public class Controller {
         int tailIndex = 0;
 
         // for (int i = 0; i < 60; ++i) {
-        // for (int i = 10; i < 60; ++i, ++tailIndex) {
+        // for (int i = 10; i < 60; ++i, ++tailIndex) { // this causes infeasible 2nd stage, check why
         //  for (int i = 20; i < 60; ++i, ++tailIndex) {
         // for (int i = 30; i < 60; ++i, ++tailIndex) {
         // for (int i = 40; i < 60; ++i, ++tailIndex) {
