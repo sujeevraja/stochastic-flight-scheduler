@@ -230,7 +230,7 @@ public class SubSolverWrapper {
         }
 
         private void solveWithNewLabeling() throws IloException, OptException {
-            SubSolver ss = new SubSolver(randomDelays, probability);
+            SubSolver ss = new SubSolver(probability);
             HashMap<Integer, Integer> legDelayMap = getLegDelays(dataRegistry.getLegs(),
                     Parameters.getDurations(), xValues);
 
@@ -257,7 +257,7 @@ public class SubSolverWrapper {
                 ss.collectDuals();
 
                 if (Parameters.isDebugVerbose())
-                    ss.writeSolution("logs/", iter, columnGenIter, this.scenarioNum);
+                    ss.writeCplexSolution("logs/", iter, columnGenIter, this.scenarioNum);
 
                 // Collect paths with negative reduced cost from the labeling algorithm. Optimality is reached when
                 // there are no new negative reduced cost paths available for any tail.
@@ -306,7 +306,7 @@ public class SubSolverWrapper {
                 // Re-initialize the SubSolver object to ensure that its data doesn't get stale.
                 if (!optimal) {
                     ss.end();
-                    ss = new SubSolver(randomDelays, probability);
+                    ss = new SubSolver(probability);
                 }
                 ++columnGenIter;
             }
@@ -322,7 +322,7 @@ public class SubSolverWrapper {
         private void solveWithLabeling() throws IloException, OptException {
             HashMap<Integer, ArrayList<Path>> pathsAll;
 
-            SubSolver s1 = new SubSolver(randomDelays, probability);
+            SubSolver s1 = new SubSolver(probability);
             HashMap<Integer, Integer> legDelayMap = getLegDelays( dataRegistry.getLegs(),
                     Parameters.getDurations(), xValues);
 
@@ -344,7 +344,7 @@ public class SubSolverWrapper {
             while (solveAgain) {
                 wCnt++;
                 // beta x + theta >= alpha - Benders cut
-                SubSolver s = new SubSolver(randomDelays, probability);
+                SubSolver s = new SubSolver(probability);
                 s.constructSecondStage(xValues, dataRegistry, scenarioNum, iter, pathsAll);
                 s.solve();
                 s.collectDuals();
@@ -415,24 +415,24 @@ public class SubSolverWrapper {
                     tailPathsMap.get(p.getTail().getId()).add(p);
 
                 // beta x + theta >= alpha - Benders cut
-                SubSolver s = new SubSolver(randomDelays, probability);
-                s.constructSecondStage(xValues, dataRegistry, scenarioNum, iter, tailPathsMap);
+                SubSolver ss = new SubSolver(probability);
+                ss.constructSecondStage(xValues, dataRegistry, scenarioNum, iter, tailPathsMap);
 
                 if (Parameters.isDebugVerbose())
-                    s.writeLPFile("logs/", iter, -1, this.scenarioNum);
+                    ss.writeLPFile("logs/", iter, -1, this.scenarioNum);
 
-                s.solve();
-                s.collectDuals();
+                ss.solve();
+                ss.collectDuals();
 
                 if (Parameters.isDebugVerbose())
-                    s.writeSolution("logs/", iter, -1, this.scenarioNum);
+                    ss.writeCplexSolution("logs/", iter, -1, this.scenarioNum);
 
-                calculateAlpha(s.getDualsLeg(), s.getDualsTail(), s.getDualsDelay(), s.getDualsBnd(),
-                        s.getDualsRisk());
-                calculateBeta(s.getDualsDelay(), s.getDualsRisk());
-                s.end();
+                calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(), ss.getDualsBnd(),
+                        ss.getDualsRisk());
+                calculateBeta(ss.getDualsDelay(), ss.getDualsRisk());
+                ss.end();
 
-                uBound += s.getObjValue();
+                uBound += ss.getObjValue();
             } catch (OptException oe) {
                 logger.error("submodel run for scenario " + scenarioNum + " failed.");
                 logger.error(oe);

@@ -13,7 +13,6 @@ import ilog.cplex.IloCplex;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -24,10 +23,7 @@ public class SubSolver {
      * set of paths.
      */
     private final Logger logger = LogManager.getLogger(SubSolver.class);
-    private HashMap<Integer, Integer> randomDelays; // random delays of 2nd stage scenario
     private double probability;
-    //    private ArrayList<Path> paths; // subproblem columns
-    private HashMap<Integer, ArrayList<Path>> paths; // subproblem columns    
     private double objValue;
 
     private double[] dualsLeg;
@@ -38,7 +34,6 @@ public class SubSolver {
 
     private int[][] indices;
     private double[][] values;
-//    private double[] yValues;
 
     // CPLEX variables
     private IloNumVar[][] y; // y[i][j] = 1 if path j is selected for tail i is selected, 0 else.
@@ -57,28 +52,16 @@ public class SubSolver {
     private boolean[] legPresence;
     private boolean[] tailPresence;
 
-    // private static IloNumVar neta; // = cplex.numVar(-Double.POSITIVE_INFINITY, 0, "neta");
-    public SubSolver(HashMap<Integer, Integer> randomDelays, double probability) {
-        this.randomDelays = randomDelays;
+    public SubSolver(double probability) {
         this.probability = probability;
     }
 
     public void constructSecondStage(double[][] xValues, DataRegistry dataRegistry, int sceNo, int iter,
-                                     HashMap<Integer, ArrayList<Path>> p) throws OptException {
+                                     HashMap<Integer, ArrayList<Path>> paths) throws OptException {
         try {
             ArrayList<Tail> tails = dataRegistry.getTails();
             ArrayList<Leg> legs = dataRegistry.getLegs();
             ArrayList<Integer> durations = Parameters.getDurations();
-
-            paths = p;
-
-            logger.info("number of tails: " + tails.size());
-            logger.info("number of legs: " + legs.size());
-            logger.info("number of durations: " + durations.size());
-            int numPaths = 0;
-            for (Map.Entry<Integer, ArrayList<Path>> entry : p.entrySet())
-                numPaths += entry.getValue().size();
-            logger.info("number of paths given to second stage: " + numPaths);
 
             // Create containers to build CPLEX model.
             subCplex = new IloCplex();
@@ -93,7 +76,7 @@ public class SubSolver {
             y = new IloNumVar[tails.size()][];
 
             for (int i = 0; i < tails.size(); i++)
-                y[i] = new IloNumVar[p.get(tails.get(i).getId()).size()];
+                y[i] = new IloNumVar[paths.get(tails.get(i).getId()).size()];
 
 //            for(int i=0; i< tails.size(); i++)
 //                for(int j=0; j< y[i].length; j++)
@@ -110,8 +93,8 @@ public class SubSolver {
             dualsBnd = new double[tails.size()][]; // delay constraints
 
             for (int i = 0; i < tails.size(); i++) {
-                R4[i] = new IloRange[p.get(tails.get(i).getId()).size()];
-                dualsBnd[i] = new double[p.get(tails.get(i).getId()).size()]; // delay constraints            	
+                R4[i] = new IloRange[paths.get(tails.get(i).getId()).size()];
+                dualsBnd[i] = new double[paths.get(tails.get(i).getId()).size()]; // delay constraints
             }
 
             dualsLeg = new double[legs.size()];
@@ -206,8 +189,6 @@ public class SubSolver {
                 if (tailPresence[i])
                     onePathPerTailConstraints[i] = subCplex.addEq(
                            tailCoverExprs[i], 1.0, "tail_" + i + "_" + tails.get(i).getId());
-                    // onePathPerTailConstraints[i] = subCplex.addLe(
-                    //        tailCoverExprs[i], 1.0, "tail_" + i + "_" + tails.get(i).getId());
 
             for (int i = 0; i < numLegs; ++i) {
                 if (legPresence[i])
@@ -223,9 +204,6 @@ public class SubSolver {
             for (int i = 0; i < tails.size(); i++)
                 for (int j = 0; j < y[i].length; j++)
                     R4[i][j] = subCplex.addLe(y[i][j], 1, "yBound_" + i + "_" + j);
-
-//            for (int i = 0; i < paths.size(); ++i)
-//                R4[i] = subCplex.addLe(y[i], 1, "yBound_" + i);
 
             if (Parameters.isExpectedExcess()) {
                 double xVal = 0;
@@ -272,9 +250,6 @@ public class SubSolver {
             }
             objValue = subCplex.getObjValue();
             logger.debug("subproblem objective value: " + objValue);
-
-//            yValues = new double[paths.size()];
-//            yValues = subCplex.getValues(y);
         } catch (IloException ie) {
             logger.error(ie);
             throw new OptException("error solving subproblem");
@@ -320,7 +295,7 @@ public class SubSolver {
         subCplex.exportModel(modelName);
     }
 
-    public void writeSolution(String fName, int iter, int wcnt, int sceNo) throws IloException {
+    public void writeCplexSolution(String fName, int iter, int wcnt, int sceNo) throws IloException {
         String slnName = fName + "sub_" + iter + "_scen_" + sceNo;
 
         if (wcnt >= 0)
