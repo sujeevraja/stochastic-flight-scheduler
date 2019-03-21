@@ -5,7 +5,6 @@ import com.stochastic.domain.Tail;
 import com.stochastic.network.Path;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.registry.Parameters;
-import com.stochastic.solver.SubSolverWrapper.ScenarioData;
 import com.stochastic.utility.Constants;
 import com.stochastic.utility.OptException;
 import ilog.concert.*;
@@ -162,24 +161,8 @@ public class SubSolver {
                         legPresence[pathLeg.getIndex()] = true;
 
                         Integer delayTime = delayTimes.get(k);
-
-                        if (delayTime > 0) {
-                            SubSolverWrapper.ScenarioData sd = new SubSolverWrapper.ScenarioData();
-                            sd.setSceNo(sceNo);
-                            sd.setIter(iter);
-                            sd.setPathIndex(paths.get(tail.getId()).get(j).getIndex());
-                            sd.setTailIndex(tail.getIndex());
-                            sd.setLegId(pathLeg.getIndex());
-
+                        if (delayTime > 0)
                             delayExprs[pathLeg.getIndex()].addTerm(y[i][j], delayTime);
-                            ScenarioData.addData(
-                                    sceNo,
-                                    iter,
-                                    paths.get(tail.getId()).get(j).getIndex(),
-                                    tail.getIndex(),
-                                    pathLeg.getIndex(),
-                                    delayTime);
-                        }
                     }
                 }
             }
