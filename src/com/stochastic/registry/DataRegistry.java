@@ -3,12 +3,11 @@ package com.stochastic.registry;
 import com.stochastic.domain.Equipment;
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
-import com.stochastic.network.ConnectionNetwork;
+import com.stochastic.network.Network;
 import com.stochastic.network.Path;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 
 public class DataRegistry {
@@ -17,18 +16,16 @@ public class DataRegistry {
      */
 
     private Integer maxLegDelayInMin;
-    private Equipment equipment;
     private ArrayList<Leg> legs;
     private ArrayList<Tail> tails;
     private HashMap<Integer, Path> tailHashMap;
     private LocalDateTime maxEndTime;
-    private ConnectionNetwork connectionNetwork;
+    private Network network;
 
     // This is the updated number of scenarios after duplicate random delays have been removed.
     private Integer numScenarios;
 
     public DataRegistry() {
-        equipment = null;
         legs = new ArrayList<>();
         tails = new ArrayList<>();
         maxEndTime = null;
@@ -52,14 +49,6 @@ public class DataRegistry {
 
     public Integer getMaxLegDelayInMin() {
         return maxLegDelayInMin;
-    }
-
-    public void setEquipment(Equipment equipment) {
-        this.equipment = equipment;
-    }
-
-    public Equipment getEquipment() {
-        return equipment;
     }
 
     public void setLegs(ArrayList<Leg> legs) {
@@ -99,11 +88,11 @@ public class DataRegistry {
     }
 
     public void buildConnectionNetwork() {
-        connectionNetwork = new ConnectionNetwork(legs);
+        network = new Network(legs);
     }
 
-    public ConnectionNetwork getConnectionNetwork() {
-        return connectionNetwork;
+    public Network getNetwork() {
+        return network;
     }
 }
 

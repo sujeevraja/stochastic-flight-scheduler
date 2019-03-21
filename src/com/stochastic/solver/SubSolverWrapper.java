@@ -269,7 +269,7 @@ public class SubSolverWrapper {
                 for (int i = 0; i < tails.size(); ++i) {
                     Tail tail = tails.get(i);
 
-                    LabelPathGenerator lpg = new LabelPathGenerator(tail, legs, dataRegistry.getConnectionNetwork(),
+                    LabelPathGenerator lpg = new LabelPathGenerator(tail, legs, dataRegistry.getNetwork(),
                             delays, tailDuals[i], ss.getDualsLeg(), ss.getDualsDelay());
 
                     // Build sink labels for paths that have already been generated and add them to the labeling
@@ -403,7 +403,7 @@ public class SubSolverWrapper {
                 HashMap<Integer, Integer> legDelayMap = getLegDelays(
                         dataRegistry.getLegs(), Parameters.getDurations(), xValues);
 
-                ArrayList<Path> allPaths = dataRegistry.getConnectionNetwork().enumeratePathsForTails(
+                ArrayList<Path> allPaths = dataRegistry.getNetwork().enumeratePathsForTails(
                         dataRegistry.getTails(), legDelayMap, dataRegistry.getMaxEndTime());
 
                 // Store paths for each tail separately. Also add empty paths for each tail.

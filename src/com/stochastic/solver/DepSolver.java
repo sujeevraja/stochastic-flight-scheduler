@@ -5,9 +5,7 @@ import com.stochastic.delay.DelayGenerator;
 import com.stochastic.delay.FirstFlightDelayGenerator;
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
-import com.stochastic.network.Network;
 import com.stochastic.network.Path;
-import com.stochastic.network.PathEnumerator;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.registry.Parameters;
 import com.stochastic.utility.OptException;
@@ -67,15 +65,9 @@ public class DepSolver {
             
             // get delay data using planned delays from first stage and random delays from second stage.
             HashMap<Integer, Integer> legDelayMap = getLegDelays(tails, legs, durations, xValues);
-            // Network network = new Network(tails, legs, legDelayMap, dataRegistry.getMaxEndTime(),
-            //        dataRegistry.getMaxLegDelayInMin());
-            // paths = network.enumerateAllPaths();
-
-            // PathEnumerator pe = new PathEnumerator();
-            // paths = pe.addPaths(dataRegistry);
 
             // Later, the full enumeration algorithm in enumerateAllPaths() will be replaced a labeling algorithm.
-            paths = dataRegistry.getConnectionNetwork().enumeratePathsForTails(tails, legDelayMap,
+            paths = dataRegistry.getNetwork().enumeratePathsForTails(tails, legDelayMap,
                         dataRegistry.getMaxEndTime());
 
     		logger.debug("Tail: " + tails.size() + " legs: " + legs.size() + " durations: " + durations.size());

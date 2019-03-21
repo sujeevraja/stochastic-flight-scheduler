@@ -1,7 +1,6 @@
 package com.stochastic.controller;
 
 import com.stochastic.domain.Leg;
-import com.stochastic.dao.EquipmentsDAO;
 import com.stochastic.dao.ScheduleDAO;
 import com.stochastic.domain.Tail;
 import com.stochastic.network.Path;
@@ -45,10 +44,6 @@ public class Controller {
     public final void readData(String instancePath) throws OptException {
         logger.info("Started reading data...");
         this.instancePath = instancePath;
-
-        // Read equipment data
-        dataRegistry.setEquipment(new EquipmentsDAO(instancePath + "\\Equipments.xml").getEquipments().get(0));
-        logger.info("Completed reading equipment data from Equipments.xml.");
 
         // Read leg data and remove unnecessary legs
         ArrayList<Leg> legs = new ScheduleDAO(instancePath + "\\Schedule.xml").getLegs();
@@ -210,7 +205,6 @@ public class Controller {
     }
 
     private void storeLegs(ArrayList<Leg> inputLegs) {
-        final ArrayList<Integer> tailIds = dataRegistry.getEquipment().getTailIds();
         ArrayList<Leg> legs = new ArrayList<>();
         HashMap<Integer, ArrayList<Leg>> tailHashMap = new HashMap<>();
 
@@ -219,8 +213,6 @@ public class Controller {
         Integer index = 0;
         for (Leg leg : inputLegs) {
             Integer tailId = leg.getOrigTailId();
-            if (!tailIds.contains(tailId))
-                continue;
 
             leg.setIndex(index);
             ++index;

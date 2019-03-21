@@ -24,7 +24,7 @@ public class ScheduleDAO {
     /**
      * Used to read relevant leg data from Schedule.xml
      */
-    private final static Logger logger = LogManager.getLogger(EquipmentsDAO.class);
+    private final static Logger logger = LogManager.getLogger(ScheduleDAO.class);
     private ArrayList<Leg> legs;
     private DateTimeFormatter format;
 

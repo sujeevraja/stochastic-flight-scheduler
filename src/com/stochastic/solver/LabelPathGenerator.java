@@ -2,7 +2,7 @@ package com.stochastic.solver;
 
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
-import com.stochastic.network.ConnectionNetwork;
+import com.stochastic.network.Network;
 import com.stochastic.network.Path;
 import com.stochastic.utility.Constants;
 import org.apache.logging.log4j.LogManager;
@@ -21,7 +21,7 @@ class LabelPathGenerator {
     private Tail tail;
     private ArrayList<Leg> legs;
     private int numLegs;
-    private ConnectionNetwork connectionNetwork;
+    private Network network;
     private int[] delays; // delays[i] = total departure delay of legs[i] (a_{rf} in paper)
 
     // Dual values fromm latest solution of Second Stage Restricted Master Problem.
@@ -33,12 +33,12 @@ class LabelPathGenerator {
     private ArrayList<ArrayList<Label>> labels; // labels[i] are labels ending at legs[i].
     private ArrayList<Label> sinkLabels; // labels ending at sink node.
 
-    LabelPathGenerator(Tail tail, ArrayList<Leg> legs, ConnectionNetwork connectionNetwork, int[] delays,
+    LabelPathGenerator(Tail tail, ArrayList<Leg> legs, Network network, int[] delays,
                        double tailDual, double[] legCoverDuals, double[] delayLinkDuals) {
         this.tail = tail;
         this.legs = legs;
         this.numLegs = legs.size();
-        this.connectionNetwork = connectionNetwork;
+        this.network = network;
         this.delays = delays;
 
         this.tailDual = tailDual;
@@ -182,7 +182,7 @@ class LabelPathGenerator {
         Label label = getBestLabelToExtend();
         while (label != null) {
             Integer legIndex = label.getVertex();
-            ArrayList<Integer> neighbors = connectionNetwork.getNeighbors(legIndex);
+            ArrayList<Integer> neighbors = network.getNeighbors(legIndex);
             if (neighbors != null)
                 generateFeasibleExtensions(label, neighbors);
             label.setProcessed();

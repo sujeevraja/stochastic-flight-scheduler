@@ -7,7 +7,6 @@ import java.util.Map;
 
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
-import com.stochastic.network.Network;
 import com.stochastic.network.Path;
 import com.stochastic.registry.DataRegistry;
 
@@ -74,13 +73,7 @@ public class LabelingAlgorithm {
         delayDual  = dDual;
     	
     	ArrayList<Leg> legs = dataRegistry.getLegs();
-
-        // Network network = new Network(tails, legs, legDelayMap, dataRegistry.getMaxEndTime(),
-		//		dataRegistry.getMaxLegDelayInMin());
-                
-        // adjacencyList = network.getAdjacencyList();
-
-		adjacencyList = dataRegistry.getConnectionNetwork().getAdjacencyList();
+		adjacencyList = dataRegistry.getNetwork().getAdjacencyList();
         
         // initialize // add the index
         int i=0;
