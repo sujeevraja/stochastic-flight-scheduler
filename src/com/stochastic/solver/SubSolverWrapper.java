@@ -59,21 +59,26 @@ public class SubSolverWrapper {
         logger.debug("initial alpha value: " + alpha);
 
         for (int j = 0; j < legs.size(); j++)
-            alpha += (dualsLegs[j]); //*prb);
+            if (Math.abs(dualsLegs[j]) >= Constants.EPS)
+                alpha += dualsLegs[j]; //*prb);
 
         for (int j = 0; j < dataRegistry.getTails().size(); j++)
-            alpha += (dualsTail[j]); //*prb);
+            if (Math.abs(dualsTail[j]) >= Constants.EPS)
+                alpha += dualsTail[j]; //*prb);
 
         for (int j = 0; j < legs.size(); j++)
-            alpha += (dualsDelay[j] * 14); //prb*14);
+            if (Math.abs(dualsDelay[j]) >= Constants.EPS)
+                alpha += (dualsDelay[j] * 14); //prb*14);
 
         for (double[] dualBnd : dualsBnd)
             if (dualBnd != null)
                 for (double j : dualBnd)
-                    alpha += j; //*prb);
+                    if (Math.abs(j) >= Constants.EPS)
+                        alpha += j; //*prb);
 
         if (Parameters.isExpectedExcess())
-            alpha += (dualRisk * Parameters.getExcessTarget()); //*prb);
+            if (Math.abs(dualRisk) >= Constants.EPS)
+                alpha += (dualRisk * Parameters.getExcessTarget()); //*prb);
 
         logger.debug("final alpha value: " + alpha);
     }
@@ -82,13 +87,15 @@ public class SubSolverWrapper {
         ArrayList<Integer> durations = Parameters.getDurations();
         ArrayList<Leg> legs = dataRegistry.getLegs();
 
-        for (int i = 0; i < durations.size(); i++)
+        for (int i = 0; i < durations.size(); i++) {
             for (int j = 0; j < legs.size(); j++) {
-                beta[i][j] += dualsDelay[j] * -durations.get(i); // * prb;
+                if (Math.abs(dualsDelay[j]) >= Constants.EPS)
+                    beta[i][j] += dualsDelay[j] * -durations.get(i); // * prb;
 
-                if (Parameters.isExpectedExcess())
+                if (Parameters.isExpectedExcess() && Math.abs(dualRisk) >= Constants.EPS)
                     beta[i][j] += dualRisk * durations.get(i); // * prb;
             }
+        }
     }
 
     public void solveSequential(ArrayList<Integer> scenarioDelays, ArrayList<Double> probabilities) {
