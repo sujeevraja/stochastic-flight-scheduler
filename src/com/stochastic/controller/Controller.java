@@ -48,6 +48,7 @@ public class Controller {
         // Read leg data and remove unnecessary legs
         ArrayList<Leg> legs = new ScheduleDAO(instancePath + "\\Schedule.xml").getLegs();
         storeLegs(legs);
+        limitNumTails();
         logger.info("Collected leg and tail data from Schedule.xml.");
 
         dataRegistry.buildConnectionNetwork();
@@ -251,7 +252,7 @@ public class Controller {
         dataRegistry.setTails(tails);
         logger.info("Number of tails: " + tails.size());
 
-        HashMap<Integer, Path> tailPaths = new HashMap<Integer, Path>();
+        HashMap<Integer, Path> tailPaths = new HashMap<>();
         for (Map.Entry<Integer, ArrayList<Leg>> entry : tailHashMap.entrySet()) {
             ArrayList<Leg> tailLegs = entry.getValue();
             tailLegs.sort(Comparator.comparing(Leg::getDepTime));
@@ -277,6 +278,58 @@ public class Controller {
             tailPaths.put(entry.getKey(), p);
         }
         dataRegistry.setTailHashMap(tailPaths);
+    }
+
+    /**
+     * This function helps reduce problem size for debugging/testing purposes.
+     */
+    private void limitNumTails() {
+        // limit the stored tails.
+        ArrayList<Tail> newTails = new ArrayList<>();
+        ArrayList<Tail> oldTails = dataRegistry.getTails();
+
+        int tailIndex = 0;
+
+        // for (int i = 0; i < 60; ++i) {
+        // for (int i = 10; i < 60; ++i, ++tailIndex) {
+        //  for (int i = 20; i < 60; ++i, ++tailIndex) {
+        // for (int i = 30; i < 60; ++i, ++tailIndex) {
+        // for (int i = 40; i < 60; ++i, ++tailIndex) {
+        // for (int i = 43; i < 60; ++i, ++tailIndex) {
+        // for (int i = 44; i < 60; ++i, ++tailIndex) {
+        // for (int i = 44; i < 55; ++i, ++tailIndex) {
+        // for (int i = 44; i < 54; ++i, ++tailIndex) {
+        for (int i = 45; i < 54; ++i, ++tailIndex) {
+            Tail tail = oldTails.get(i);
+            tail.setIndex(tailIndex);
+            newTails.add(tail);
+            logger.debug("selected tail " + tail.getId());
+        }
+        dataRegistry.setTails(newTails);
+
+        // cleanup tail paths.
+        HashMap<Integer, Path> tailHashMap = dataRegistry.getTailHashMap();
+        HashMap<Integer, Path> newTailPathMap = new HashMap<>();
+        for (Tail tail : newTails)
+            newTailPathMap.put(tail.getId(), tailHashMap.get(tail.getId()));
+        dataRegistry.setTailHashMap(newTailPathMap);
+
+        // cleanup legs.
+        LocalDateTime maxEndTime = null;
+        ArrayList<Leg> newLegs = new ArrayList<>();
+        int legIndex = 0;
+        for (Leg leg : dataRegistry.getLegs()) {
+            Integer tailId = leg.getOrigTailId();
+            if (newTailPathMap.containsKey(tailId)) {
+                leg.setIndex(legIndex);
+                newLegs.add(leg);
+                if (maxEndTime == null || leg.getArrTime().isAfter(maxEndTime))
+                    maxEndTime = leg.getArrTime();
+                ++legIndex;
+            }
+        }
+        dataRegistry.setLegs(newLegs);
+        dataRegistry.setMaxEndTime(maxEndTime);
     }
 
     public void generateDelays(int numTestScenarios) {
