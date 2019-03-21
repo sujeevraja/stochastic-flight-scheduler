@@ -36,20 +36,14 @@ public class SubSolverWrapper {
     private static double[][] xValues;
     private static double uBound;
 
-    public static void SubSolverWrapperInit(DataRegistry dataRegistry, double[][] xValues, int iter)
-            throws OptException {
-        try {
-            SubSolverWrapper.dataRegistry = dataRegistry;
-            SubSolverWrapper.xValues = xValues;
-            SubSolverWrapper.iter = iter;
+    public static void SubSolverWrapperInit(DataRegistry dataRegistry, double[][] xValues, int iter) {
+        SubSolverWrapper.dataRegistry = dataRegistry;
+        SubSolverWrapper.xValues = xValues;
+        SubSolverWrapper.iter = iter;
 
-            alpha = 0;
-            uBound = MasterSolver.getFSObjValue();
-            beta = new double[Parameters.getNumDurations()][dataRegistry.getLegs().size()];
-        } catch (Exception e) {
-            logger.error(e.getStackTrace());
-            throw new OptException("error at SubSolverWrapperInit");
-        }
+        alpha = 0;
+        uBound = MasterSolver.getFSObjValue();
+        beta = new double[Parameters.getNumDurations()][dataRegistry.getLegs().size()];
     }
 
     private synchronized static void calculateAlpha(double[] dualsLegs, double[] dualsTail, double[] dualsDelay,

@@ -129,15 +129,13 @@ public class Controller {
         MasterSolver.end();
         bounds.add(lBound);
         bounds.add(uBound);
-
-        // if (lBound - uBound > 1) {
-        //     logger.info("DATA PRINTED");
-        //     SubSolverWrapper.ScenarioData.printData();
-        // }
-
         logger.info("Algorithm ends.");
     }
 
+    /**
+     * This funciton is an alternative to generateScenarioDelays() and can be used to study a specific set of random
+     * delay scenarios.
+     */
     private void generateTestDelays() {
         scenarioDelays = new ArrayList<>(Collections.singletonList(45));
         scenarioProbabilities = new ArrayList<>(Collections.singletonList(1.0));
@@ -148,11 +146,15 @@ public class Controller {
         dataRegistry.setMaxLegDelayInMin(Collections.max(scenarioDelays));
     }
 
+    /**
+     * Generates random delays that will be applied to the first flight of each tail's original schedule.
+     * Also generates delay probabilites using frequency values. This function also updates the number of scenarios
+     * if delay times repeat.
+     *
+     * @param scale scale parameter of the lognormal distribution used to generate random delays
+     * @param shape shape parameter of the distribution
+     */
     private void generateScenarioDelays(double scale, double shape) {
-        // Generates random delays that will be applied to the first flight of each tail's original schedule.
-        // Also generates delay probabilities using frequency values.
-        // This function changes the number of scenarios as well if delay times repeat.
-
         int numSamples = Parameters.getNumScenarios();
         LogNormalDistribution logNormal = new LogNormalDistribution(scale, shape);
 
@@ -200,11 +202,15 @@ public class Controller {
             probStr.append(scenarioProbabilities.get(i));
             probStr.append(" ");
         }
-
         logger.info(delayStr);
         logger.info(probStr);
     }
 
+    /**
+     * Processes the parsed data to populate data registry containers like legs, tails and on-plan paths.
+     *
+     * @param inputLegs list of legs parsed from a Schedule.xml file.
+     */
     private void storeLegs(ArrayList<Leg> inputLegs) {
         ArrayList<Leg> legs = new ArrayList<>();
         HashMap<Integer, ArrayList<Leg>> tailHashMap = new HashMap<>();
