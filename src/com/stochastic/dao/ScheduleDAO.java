@@ -24,14 +24,12 @@ public class ScheduleDAO {
     /**
      * Used to read relevant leg data from Schedule.xml
      */
-    private final static Logger logger = LogManager.getLogger(EquipmentsDAO.class);
+    private final static Logger logger = LogManager.getLogger(ScheduleDAO.class);
     private ArrayList<Leg> legs;
     private DateTimeFormatter format;
-    private Integer maxFlightDelayInMin;
 
-    public ScheduleDAO(String filePath, Integer maxFligtDelayInMin) throws OptException {
+    public ScheduleDAO(String filePath) throws OptException {
         try {
-            this.maxFlightDelayInMin = maxFligtDelayInMin;
             File xmlFile = new File(filePath);
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
@@ -72,11 +70,10 @@ public class ScheduleDAO {
 
         String depTimeStr = legElem.getElementsByTagName("depTime").item(0).getTextContent();
         LocalDateTime depTime = LocalDateTime.parse(depTimeStr, format);
-        LocalDateTime latestDepTime = depTime.plusMinutes(maxFlightDelayInMin);
 
         String arrTimeStr = legElem.getElementsByTagName("arrTime").item(0).getTextContent();
         LocalDateTime arrTime = LocalDateTime.parse(arrTimeStr, format);
 
-        return new Leg(id, fltNum, depPort, arrPort, turnTime, tail, depTime, arrTime, latestDepTime);
+        return new Leg(id, fltNum, depPort, arrPort, turnTime, tail, depTime, arrTime);
     }
 }

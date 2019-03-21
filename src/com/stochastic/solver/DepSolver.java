@@ -5,10 +5,9 @@ import com.stochastic.delay.DelayGenerator;
 import com.stochastic.delay.FirstFlightDelayGenerator;
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
-import com.stochastic.network.Network;
 import com.stochastic.network.Path;
-import com.stochastic.network.PathEnumerator;
 import com.stochastic.registry.DataRegistry;
+import com.stochastic.registry.Parameters;
 import com.stochastic.utility.OptException;
 import ilog.concert.*;
 import ilog.cplex.IloCplex;
@@ -49,10 +48,10 @@ public class DepSolver {
     {
     	for(Path p: paths)
     	{
-    		System.out.println("Tail: " + p.getTail().getId());
+    		logger.debug("Tail: " + p.getTail().getId());
     		
         	for(Leg l: p.getLegs())    		
-        		System.out.println("Leg: " + l.getId());        		
+        		logger.debug("Leg: " + l.getId());
     	}
     }
 
@@ -60,23 +59,18 @@ public class DepSolver {
         try {
             tails = dataRegistry.getTails();
             legs = dataRegistry.getLegs();
-            durations = dataRegistry.getDurations();
+            durations = Parameters.getDurations();
 
             double[][] xValues = new double[legs.size()][durations.size()];
             
             // get delay data using planned delays from first stage and random delays from second stage.
             HashMap<Integer, Integer> legDelayMap = getLegDelays(tails, legs, durations, xValues);
-            Network network = new Network(tails, legs, legDelayMap, dataRegistry.getWindowStart(),
-                    dataRegistry.getWindowEnd(), dataRegistry.getMaxLegDelayInMin());
 
             // Later, the full enumeration algorithm in enumerateAllPaths() will be replaced a labeling algorithm.
-//             paths = network.enumerateAllPaths();
-            //
-            
-            PathEnumerator pe = new PathEnumerator(); 
-            paths = pe.addPaths(dataRegistry);            
-            	
-    		System.out.println("Tail: " + tails.size() + " legs: " + legs.size() + " durations: " + durations.size());    		
+            paths = dataRegistry.getNetwork().enumeratePathsForTails(tails, legDelayMap,
+                        dataRegistry.getMaxEndTime());
+
+    		logger.debug("Tail: " + tails.size() + " legs: " + legs.size() + " durations: " + durations.size());
             printAllPaths();
             
             // Create containers to build CPLEX model.
@@ -138,13 +132,13 @@ public class DepSolver {
 	                    delayExprs[i][j].addTerm(x[i][j1], -durations.get(j1));                
 	            }            
 
-            if(Controller.expExcess)
+            if(Parameters.isExpectedExcess())
             {
                 for (int j = 0; j < 5; j++)
 	                v[j] = subCplex.numVar(0, Double.MAX_VALUE, "v_" + j);
                 
                 for (int j = 0; j < 5; j++)                
-                	objExpr.addTerm(v[j], Controller.rho*0.20);
+                	objExpr.addTerm(v[j], Parameters.getRho()*0.20);
                 
                 for (int s = 0; s < 5; s++)
                 {
@@ -159,7 +153,7 @@ public class DepSolver {
     	            
 	            	riskExpr.addTerm(v[s], -1);    	            
     	            
-	            	subCplex.addLe(riskExpr, Controller.excessTgt, "risk_" + s);          	
+	            	subCplex.addLe(riskExpr, Parameters.getExcessTarget(), "risk_" + s);
                 }                
             }
             
@@ -190,17 +184,7 @@ public class DepSolver {
                     legPresence[pathLeg.getIndex()][j] = true;
 
                     delayExprs[pathLeg.getIndex()][j].addTerm(y[i][j], Controller.sceVal[i][j]);
-/*                    
-                    final Integer delayTime = delayTimes.get(j);
-                    if (delayTime > 0)
-                    {
-                        delayExprs[pathLeg.getIndex()][j].addTerm(y[i][j], delayTime);
-                        System.out.println(" DEP-Leg: " + pathLeg.getId() + " delayTime: " + delayTime);                        
-                    }
-*/
-//                        delayExprs[pathLeg.getIndex()].addTerm(y[i], 20);//delayTime);                   
-                    
-                }                
+                }
             }
 
             // Add constraints to model.
@@ -303,37 +287,33 @@ public class DepSolver {
             for(int i=0; i< legs.size(); i++)
                 for(int j=0; j< durations.size(); j++)            	
                 	if(xValues[i][j] > 0)
-                		System.out.println(" i: " + i + " j: " + j + " : " + x[i][j].getName() + " : " + xValues[i][j] + " , " + durations.get(j));
+                		logger.debug(" i: " + i + " j: " + j + " : " + x[i][j].getName() + " : " + xValues[i][j] + " , " + durations.get(j));
             
             for(int p=0; p< paths.size(); p++)
             	for (int j = 0; j < 5; j++)            	
             	if(yValues[p][j] > 0)            	
-            		System.out.println(" p: " + p + " : " + j + " : " +  y[p][j].getName() + " : " + yValues[p][j]);
+            		logger.debug(" p: " + p + " : " + j + " : " +  y[p][j].getName() + " : " + yValues[p][j]);
 
             for(int p=0; p< legs.size(); p++)
             	for (int j = 0; j < 5; j++)            	
             		if(dValues[p][j] > 0)            	
-                		System.out.println(" p: " + p + " : " + j + " : " +  d[p][j].getName() + " : " + dValues[p][j]);  
+                		logger.debug(" p: " + p + " : " + j + " : " +  d[p][j].getName() + " : " + dValues[p][j]);
             
         	for (int j = 0; j < 5; j++)
         	{
         		double oValue = 0;
-        		System.out.println(" Sub-Problem: " + j);
+        		logger.info(" Sub-Problem: " + j);
         		
                 for(int p=0; p< legs.size(); p++)
                 	oValue  += (dValues[p][j]*0.20*1.5);
 
-               	oValue  += (vValues[j]*Controller.rho*0.20);
+               	oValue  += (vValues[j]*Parameters.getRho()*0.20);
                 
-        		System.out.println(" Obj-Value: " + " : " + j + " : " +  oValue);               
+        		logger.info(" Obj-Value: " + " : " + j + " : " +  oValue);
         	}
-            
-//            duals1 = subCplex.getDuals(R1);
-//            duals2 = subCplex.getDuals(R2);
-//            duals3 = subCplex.getDuals(R3);
         } catch (IloException e) {
             e.printStackTrace();
-            System.out.println("Error: SubSolve");
+            logger.error("Error: SubSolve");
         }
     }
 
@@ -345,7 +325,7 @@ public class DepSolver {
         } catch (IloException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
-            System.out.println("Error: GetLPFile-Sub");
+            logger.error("Error: GetLPFile-Sub");
         }
     }
 

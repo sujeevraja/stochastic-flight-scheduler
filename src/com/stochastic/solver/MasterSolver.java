@@ -2,8 +2,8 @@ package com.stochastic.solver;
 
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
-import com.stochastic.network.Path;
-import com.stochastic.utility.CostUtility;
+import com.stochastic.registry.Parameters;
+import com.stochastic.utility.Constants;
 import com.stochastic.utility.OptException;
 import ilog.concert.*;
 import ilog.cplex.IloCplex;
@@ -11,7 +11,6 @@ import ilog.cplex.IloCplex;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -21,7 +20,6 @@ public class MasterSolver {
      * Class that solves the entire 2-stage stochastic programming problem.
      */
     private final static Logger logger = LogManager.getLogger(MasterSolver.class);
-    private final static double eps = 1.0e-5;
     private static ArrayList<Leg> legs;
     private static ArrayList<Tail> tails;
     private static ArrayList<Integer> durations;
@@ -44,15 +42,17 @@ public class MasterSolver {
 
 //    private static IloNumVar neta; // = cplex.numVar(-Double.POSITIVE_INFINITY, 0, "neta");    
 
-    public static void MasterSolverInit(ArrayList<Leg> legs, ArrayList<Tail> tails, ArrayList<Integer> durations,
-                                        LocalDateTime startTime) throws OptException {
+    public static void MasterSolverInit(ArrayList<Leg> legs, ArrayList<Tail> tails, ArrayList<Integer> durations)
+            throws OptException {
         try {
             MasterSolver.legs = legs;
             MasterSolver.tails = tails;
             MasterSolver.durations = durations;
-            MasterSolver.startTime = startTime;
 
             masterCplex = new IloCplex();
+            if (!Parameters.isDebugVerbose())
+                masterCplex.setOut(null);
+
             X = new IloIntVar[MasterSolver.durations.size()][MasterSolver.legs.size()];
         } catch (IloException e) {
             logger.error(e.getStackTrace());
@@ -95,20 +95,21 @@ public class MasterSolver {
     	return objValue - theta;
     }
 
-    public static void writeLPFile(String fName) throws OptException {
-        try {
-            masterCplex.exportModel(fName);
-        } catch (IloException e) {
-            logger.error(e);
-            throw new OptException("error writing LP file");
-        }
+    public static void writeLPFile(String fName) throws IloException {
+        masterCplex.exportModel(fName);
+    }
+
+    public static void writeSolution(String fName) throws IloException {
+        masterCplex.writeSolution(fName);
     }
 
     public static void constructFirstStage() throws OptException {
         try {
             for (int i = 0; i < durations.size(); i++)
-                for (int j = 0; j < legs.size(); j++)
-                    X[i][j] = masterCplex.boolVar("X_" + i + "_" + legs.get(j).getId()); // boolVarArray(Data.nD + Data.nT);
+                for (int j = 0; j < legs.size(); j++) {
+                    String varName = "X_" + durations.get(i) + "_" + legs.get(j).getId();
+                    X[i][j] = masterCplex.boolVar(varName);
+                }
 
             thetaVar = masterCplex.numVar(-Double.MAX_VALUE, Double.MAX_VALUE, "theta");
 
@@ -129,7 +130,7 @@ public class MasterSolver {
         IloLinearNumExpr cons = masterCplex.linearNumExpr();
         for (int i = 0; i < durations.size(); i++)
             for (int j = 0; j < legs.size(); j++)
-                cons.addTerm(X[i][j], 0.5 * durations.get(i));
+                cons.addTerm(X[i][j], durations.get(i) * legs.get(i).getRescheduleCostPerMin());
 
         // cons.addTerm(thetaVar, 0);
         // cons.addTerm(thetaVar, 1);
@@ -166,12 +167,9 @@ public class MasterSolver {
                     cons.addTerm(X[j][nextLegIndex], -durations.get(j));
                 }
 
-                int currArrTime = (int) Duration.between(startTime, currLeg.getArrTime()).toMinutes();
-                int turnTime = currLeg.getTurnTimeInMin();
-                int nextDeptime = (int) Duration.between(startTime, nextLeg.getDepTime()).toMinutes();
-                double rhs = nextDeptime - currArrTime - turnTime;
-
-                IloRange r = masterCplex.addLe(cons, rhs);
+                int rhs = (int) Duration.between(currLeg.getArrTime(), nextLeg.getDepTime()).toMinutes();
+                rhs -= currLeg.getTurnTimeInMin();
+                IloRange r = masterCplex.addLe(cons, (double) rhs);
                 r.setName("connect_" + currLeg.getId() + "_" + nextLeg.getId());
             }
         }
@@ -183,11 +181,13 @@ public class MasterSolver {
 
             for (int i = 0; i < durations.size(); i++)
                 for (int j = 0; j < legs.size(); j++)
-                    cons.addTerm(X[i][j], betaValue[i][j]);
+                    if (Math.abs(betaValue[i][j]) >= Constants.EPS)
+                        cons.addTerm(X[i][j], betaValue[i][j]);
 
             cons.addTerm(thetaVar, 1);
 
-            IloRange r = masterCplex.addGe(cons, alphaValue);
+            double rhs = Math.abs(alphaValue) >= Constants.EPS ? alphaValue : 0.0;
+            IloRange r = masterCplex.addGe(cons, rhs);
             r.setName("benders_cut_" + cutcounter);
             ++cutcounter;
 
@@ -204,16 +204,12 @@ public class MasterSolver {
             for(int i=0; i< durations.size(); i++)
             	for(int j=0; j< legs.size(); j++)            	
                 	if(xValues[i][j] > 0)
-                		System.out.println(" xValues: " + " i: " + i + " j: " + j + " : " + X[i][j].getName() + " : " + xValues[i][j] + " , " + durations.get(i));
+                		logger.debug(" xValues: " + " i: " + i + " j: " + j + " : " + X[i][j].getName() + " : " + xValues[i][j] + " , " + durations.get(i));
             
-       		System.out.println(" theta: " + theta);            			
-            
-//            duals1 = subCplex.getDuals(R1);
-//            duals2 = subCplex.getDuals(R2);
-//            duals3 = subCplex.getDuals(R3);
+       		logger.debug(" theta: " + theta);
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("Error: SubSolve");
+            logger.error("Error: SubSolve");
         }
     }
     
@@ -225,4 +221,18 @@ public class MasterSolver {
     public static double[][] getxValues() {
         return xValues;
     }
+    
+    public static void end()
+    {
+//        legs.clear();
+//        tails.clear();
+//        durations.clear();
+                // cplex variables
+        X        = null;
+        thetaVar = null;
+        obj      = null;        
+        mastLp   = null;        
+        masterCplex.end();    	
+    }
+    
 }

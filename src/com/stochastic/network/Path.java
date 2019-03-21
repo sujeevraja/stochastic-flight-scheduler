@@ -16,22 +16,62 @@ public class Path {
     private Tail tail;
     private ArrayList<Leg> legs;
     private ArrayList<Integer> delayTimesInMin;
-    private ArrayList<Integer> departureTimesInMin;    
     private double cost;
-    private static int indexCount = 0;
+    private static int pathCounter = 0;
     private int index;
-
-	Path(Tail tail) {
+    
+	public Path(Tail tail) {
         this.tail = tail;
         legs = new ArrayList<>();
         delayTimesInMin = new ArrayList<>();
         cost = 0.0;
-        index = indexCount;
-        indexCount++;
+        index = pathCounter;
+        pathCounter++;
     }
 
-    void addLeg(Leg leg, Integer delayTimeInMin) {
+    @Override
+    public String toString() {
+	    StringBuilder pathStr = new StringBuilder();
+	    pathStr.append(index);
+	    pathStr.append(": ");
+	    if (legs.isEmpty()) {
+            pathStr.append("empty");
+        }
+        else {
+	        pathStr.append(legs.get(0).getId());
+	        for(int i = 1; i < legs.size(); ++i) {
+	            pathStr.append(" -> ");
+	            pathStr.append(legs.get(i).getId());
+            }
+        }
+        return pathStr.toString();
+    }
+
+    public boolean equals(Path other) {
+	    if (legs.size() != other.legs.size())
+	        return false;
+
+	    for (int i = 0; i < legs.size(); ++i) {
+	        if (!legs.get(i).getId().equals(other.legs.get(i).getId()))
+	            return false;
+
+	        if (!delayTimesInMin.get(i).equals(other.delayTimesInMin.get(i)))
+	            return false;
+        }
+
+        return true;
+    }
+
+    public static void resetPathCounter() {
+	    pathCounter = 0;
+    }
+
+    public void addLeg(Leg leg, Integer delayTimeInMin) {
         legs.add(leg);
+        
+        if(delayTimeInMin == null)
+        	delayTimeInMin = 0;
+        
         delayTimesInMin.add(delayTimeInMin);
         cost += CostUtility.getAssignCostForLegToTail(leg, tail, delayTimeInMin);
     }
@@ -75,4 +115,5 @@ public class Path {
             logger.info("delay time in minutes: " + delayTimesInMin.get(i));
         }
     }
+	
 }

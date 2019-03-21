@@ -4,7 +4,6 @@ import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
 import com.stochastic.registry.DataRegistry;
 
-import java.lang.Math;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -18,8 +17,7 @@ public class PathEnumerator {
     private ArrayList<Leg> legs;
     private HashMap<Integer, Integer> legDelayMap;
     private HashMap<Integer, ArrayList<Integer>> adjacencyList;
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
+    private LocalDateTime maxEndTime;
     private int maxLegDelayInMin;
 
     private ArrayList<Path> paths;
@@ -37,14 +35,13 @@ public class PathEnumerator {
 	}
 
 	PathEnumerator(Tail tail, ArrayList<Leg> legs, HashMap<Integer, Integer> legDelayMap,
-                   HashMap<Integer, ArrayList<Integer>> adjacencyList, LocalDateTime startTime, LocalDateTime endTime,
+                   HashMap<Integer, ArrayList<Integer>> adjacencyList, LocalDateTime maxEndTime,
                    int maxLegDelayInMin)  {
         this.tail = tail;
         this.legs = legs;
         this.legDelayMap = legDelayMap;
         this.adjacencyList = adjacencyList;
-        this.startTime = startTime;
-        this.endTime = endTime;
+        this.maxEndTime = maxEndTime;
         this.maxLegDelayInMin = maxLegDelayInMin;
 
         paths = new ArrayList<>();
@@ -65,13 +62,10 @@ public class PathEnumerator {
             // add initial (1st-stage/random) delay.
             LocalDateTime newDepTime = getNewDepTime(leg);
 
-            // add delay to scenario start time if needed.
-            if(newDepTime.isBefore(startTime))
-                newDepTime = startTime;
-
-            // generate paths through leg if its current delay is valid.
+            // generate paths starting from leg.
             int delayTime = (int) Duration.between(leg.getDepTime(), newDepTime).toMinutes();
-            if(delayTime <= maxLegDelayInMin)
+
+            if (!leg.getArrTime().plusMinutes(delayTime).isAfter(maxEndTime))
                 depthFirstSearch(i, delayTime);
         }
         return paths;
@@ -89,12 +83,12 @@ public class PathEnumerator {
         currentPath.add(legIndex);
         onPath[legIndex] = true;
         delayTimes.add(delayTimeInMin);
-        Leg leg = legs.get(legIndex);
 
         // if the last leg on the path can connect to the sink node, store the current path
+        Leg leg = legs.get(legIndex);
         if(leg.getArrPort().equals(tail.getSinkPort())) {
             LocalDateTime newArrTime = leg.getArrTime().plusMinutes(delayTimeInMin);
-            if(!newArrTime.isAfter(endTime))
+            if(!newArrTime.isAfter(maxEndTime))
                 storeCurrentPath();
         }
 
@@ -118,7 +112,10 @@ public class PathEnumerator {
                         : minReqDepTime;
 
                 int neighborDelayTime = (int) Duration.between(neighborLeg.getDepTime(), depTimeOnPath).toMinutes();
-                if(neighborDelayTime <= maxLegDelayInMin)
+                // if(neighborDelayTime <= maxLegDelayInMin
+                //        && !neighborLeg.getArrTime().plusMinutes(neighborDelayTime).isAfter(maxEndTime))
+
+                if(!neighborLeg.getArrTime().plusMinutes(neighborDelayTime).isAfter(maxEndTime))
                     depthFirstSearch(neighborIndex, neighborDelayTime);
             }
         }
