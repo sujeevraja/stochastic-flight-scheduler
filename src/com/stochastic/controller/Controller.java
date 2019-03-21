@@ -16,6 +16,7 @@ import org.apache.commons.math3.distribution.LogNormalDistribution;
 
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -262,6 +263,19 @@ public class Controller {
         for (Map.Entry<Integer, ArrayList<Leg>> entry : tailHashMap.entrySet()) {
             ArrayList<Leg> tailLegs = entry.getValue();
             tailLegs.sort(Comparator.comparing(Leg::getDepTime));
+
+            // correct turn times as we assume that the input schedule is always valid.
+            for(int i = 0; i < tailLegs.size() - 1; ++i) {
+                Leg leg = tailLegs.get(i);
+                Leg nextLeg =  tailLegs.get(i+1);
+                int turnTime = (int) Duration.between(leg.getArrTime(), nextLeg.getDepTime()).toMinutes();
+                if (turnTime < leg.getTurnTimeInMin()) {
+                    logger.warn("turn after leg " + leg.getId() + " is shorter than its turn time "
+                            + leg.getTurnTimeInMin() + ".");
+                    logger.warn("shorterning it to " + turnTime);
+                    leg.setTurnTimeInMin(turnTime);
+                }
+            }
 
             Path p = new Path(dataRegistry.getTail(entry.getKey()));
 

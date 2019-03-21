@@ -58,6 +58,10 @@ public class Leg {
         return arrPort;
     }
 
+    public void setTurnTimeInMin(int turnTimeInMin) {
+        this.turnTimeInMin = turnTimeInMin;
+    }
+
     public int getTurnTimeInMin() {
         return turnTimeInMin;
     }

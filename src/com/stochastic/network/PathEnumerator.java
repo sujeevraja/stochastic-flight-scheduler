@@ -65,7 +65,6 @@ public class PathEnumerator {
             // generate paths starting from leg.
             int delayTime = (int) Duration.between(leg.getDepTime(), newDepTime).toMinutes();
 
-            // if (delayTime <= maxLegDelayInMin && !leg.getArrTime().plusMinutes(delayTime).isAfter(maxEndTime))
             if (!leg.getArrTime().plusMinutes(delayTime).isAfter(maxEndTime))
                 depthFirstSearch(i, delayTime);
         }
