@@ -25,28 +25,26 @@ public class SubSolverWrapper {
      * Wrapper class that can be used to solve the second-stage problems in parallel.
      */
     private final static Logger logger = LogManager.getLogger(SubSolverWrapper.class);
-    private static DataRegistry dataRegistry;
-    private static double alpha;
-    private static int iter;
-    private static double[][] beta;
-    private static int numThreads = 2;
-    private static HashMap<Integer, HashMap<Integer, ArrayList<Path>>> hmPaths = new HashMap<>();
+    private DataRegistry dataRegistry;
+    private double alpha;
+    private int iter;
+    private double[][] beta;
+    private int numThreads = 2;
 
+    private double[][] xValues;
+    private double uBound;
 
-    private static double[][] xValues;
-    private static double uBound;
-
-    public static void SubSolverWrapperInit(DataRegistry dataRegistry, double[][] xValues, int iter) {
-        SubSolverWrapper.dataRegistry = dataRegistry;
-        SubSolverWrapper.xValues = xValues;
-        SubSolverWrapper.iter = iter;
+    public SubSolverWrapper(DataRegistry dataRegistry, double[][] xValues, int iter) {
+        this.dataRegistry = dataRegistry;
+        this.xValues = xValues;
+        this.iter = iter;
 
         alpha = 0;
         uBound = MasterSolver.getFSObjValue();
         beta = new double[Parameters.getNumDurations()][dataRegistry.getLegs().size()];
     }
 
-    private synchronized static void calculateAlpha(double[] dualsLegs, double[] dualsTail, double[] dualsDelay,
+    private synchronized void calculateAlpha(double[] dualsLegs, double[] dualsTail, double[] dualsDelay,
                                                     double[][] dualsBnd, double dualRisk) {
         ArrayList<Leg> legs = dataRegistry.getLegs();
 
@@ -77,7 +75,7 @@ public class SubSolverWrapper {
         logger.debug("final alpha value: " + alpha);
     }
 
-    private synchronized static void calculateBeta(double[] dualsDelay, double dualRisk) {
+    private synchronized void calculateBeta(double[] dualsDelay, double dualRisk) {
         ArrayList<Integer> durations = Parameters.getDurations();
         ArrayList<Leg> legs = dataRegistry.getLegs();
 
@@ -137,25 +135,6 @@ public class SubSolverWrapper {
             this.scenarioNum = scenarioNum;
             this.randomDelays = randomDelays;
             this.probability = probability;
-        }
-
-        public void updatePaths(Tail t, ArrayList<Path> arrT) {
-            if (hmPaths.containsKey(this.scenarioNum)) {
-                HashMap<Integer, ArrayList<Path>> pAll = hmPaths.get(this.scenarioNum);
-                ArrayList<Path> arrPath;
-
-                if (pAll.containsKey(t.getId()))
-                    arrPath = pAll.get(t.getId());
-                else
-                    arrPath = new ArrayList<>();
-
-                arrPath.addAll(arrT);
-            } else {
-                HashMap<Integer, ArrayList<Path>> pAll = new HashMap<>();
-                ArrayList<Path> arrPath = new ArrayList<>(arrT);
-                pAll.put(t.getId(), arrPath);
-                hmPaths.put(this.scenarioNum, pAll);
-            }
         }
 
         private HashMap<Integer, ArrayList<Path>> getInitialPaths(HashMap<Integer, Integer> legDelayMap) {
@@ -390,15 +369,15 @@ public class SubSolverWrapper {
         }
     }
 
-    public static double getuBound() {
+    public double getuBound() {
         return uBound;
     }
 
-    public static double getAlpha() {
+    public double getAlpha() {
         return alpha;
     }
 
-    public static double[][] getBeta() {
+    public double[][] getBeta() {
         return beta;
     }
 }

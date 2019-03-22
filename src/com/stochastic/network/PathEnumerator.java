@@ -112,8 +112,6 @@ public class PathEnumerator {
                         : minReqDepTime;
 
                 int neighborDelayTime = (int) Duration.between(neighborLeg.getDepTime(), depTimeOnPath).toMinutes();
-                // if(neighborDelayTime <= maxLegDelayInMin
-                //        && !neighborLeg.getArrTime().plusMinutes(neighborDelayTime).isAfter(maxEndTime))
 
                 if(!neighborLeg.getArrTime().plusMinutes(neighborDelayTime).isAfter(maxEndTime))
                     depthFirstSearch(neighborIndex, neighborDelayTime);

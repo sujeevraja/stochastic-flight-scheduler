@@ -91,19 +91,13 @@ public class Controller {
 
         logScenarioDelays();
 
-        // sceVal = new int[3][5];
-        // Random rand = new Random();
-        // for(int i=0; i<3;i++)
-        //    for(int j=0; j<5;j++)
-        //    	sceVal[i][j] = (i+20) + j; //rand.nextInt(40 - 20 + 1) + 20; // (max - min + 1) + min;  (i+20) + j
-
         do {
             iter++;
-            SubSolverWrapper.SubSolverWrapperInit(dataRegistry, MasterSolver.getxValues(), iter);
-            new SubSolverWrapper().solveSequential(scenarioDelays, scenarioProbabilities);
-            // new SubSolverWrapper().solveParallel(scenarioDelays, scenarioProbabilities);
+            SubSolverWrapper ssWrapper = new SubSolverWrapper(dataRegistry, MasterSolver.getxValues(), iter);
+            ssWrapper.solveSequential(scenarioDelays, scenarioProbabilities);
+            // ssWrapper.solveParallel(scenarioDelays, scenarioProbabilities);
 
-            MasterSolver.constructBendersCut(SubSolverWrapper.getAlpha(), SubSolverWrapper.getBeta());
+            MasterSolver.constructBendersCut(ssWrapper.getAlpha(), ssWrapper.getBeta());
 
             if (Parameters.isDebugVerbose())
                 MasterSolver.writeLPFile("logs/master_" + iter + ".lp");
@@ -116,10 +110,10 @@ public class Controller {
             lBound = MasterSolver.getObjValue();
 
             logger.info("----- LB: " + lBound + " UB: " + uBound + " Iter: " + iter
-                    + " SubSolverWrapper.getuBound(): " + SubSolverWrapper.getuBound());
+                    + " ssWrapper.getuBound(): " + ssWrapper.getuBound());
 
-            if (SubSolverWrapper.getuBound() < uBound)
-                uBound = SubSolverWrapper.getuBound();
+            if (ssWrapper.getuBound() < uBound)
+                uBound = ssWrapper.getuBound();
 
             logger.info("----- LB: " + lBound + " UB: " + uBound + " Iter: " + iter);
         }
