@@ -56,8 +56,7 @@ public class DepSolver {
             HashMap<Integer, Integer> legDelayMap = getLegDelays(tails, legs, durations, xValues);
 
             // Later, the full enumeration algorithm in enumerateAllPaths() will be replaced a labeling algorithm.
-            paths = dataRegistry.getNetwork().enumeratePathsForTails(tails, legDelayMap,
-                        dataRegistry.getMaxEndTime());
+            paths = dataRegistry.getNetwork().enumeratePathsForTails(tails, legDelayMap);
 
     		logger.debug("Tail: " + tails.size() + " legs: " + legs.size() + " durations: " + durations.length);
 

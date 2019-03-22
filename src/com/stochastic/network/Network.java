@@ -26,10 +26,10 @@ public class Network {
         buildAdjacencyList();
     }
 
-    public ArrayList<Path> enumeratePathsForTails(ArrayList<Tail> tails, HashMap<Integer, Integer> legDelayMap, LocalDateTime maxEndTime) {
+    public ArrayList<Path> enumeratePathsForTails(ArrayList<Tail> tails, HashMap<Integer, Integer> legDelayMap) {
         ArrayList<Path> paths = new ArrayList<>();
         for(Tail tail : tails) {
-            PathEnumerator pe = new PathEnumerator(tail, legs, legDelayMap, adjacencyList, maxEndTime, 0);
+            PathEnumerator pe = new PathEnumerator(tail, legs, legDelayMap, adjacencyList);
             ArrayList<Path> tailPaths = pe.generatePaths();
             paths.addAll(tailPaths);
         }

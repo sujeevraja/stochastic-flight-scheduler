@@ -17,8 +17,6 @@ public class PathEnumerator {
     private ArrayList<Leg> legs;
     private HashMap<Integer, Integer> legDelayMap;
     private HashMap<Integer, ArrayList<Integer>> adjacencyList;
-    private LocalDateTime maxEndTime;
-    private int maxLegDelayInMin;
 
     private ArrayList<Path> paths;
 
@@ -35,14 +33,11 @@ public class PathEnumerator {
 	}
 
 	PathEnumerator(Tail tail, ArrayList<Leg> legs, HashMap<Integer, Integer> legDelayMap,
-                   HashMap<Integer, ArrayList<Integer>> adjacencyList, LocalDateTime maxEndTime,
-                   int maxLegDelayInMin)  {
+                   HashMap<Integer, ArrayList<Integer>> adjacencyList)  {
         this.tail = tail;
         this.legs = legs;
         this.legDelayMap = legDelayMap;
         this.adjacencyList = adjacencyList;
-        this.maxEndTime = maxEndTime;
-        this.maxLegDelayInMin = maxLegDelayInMin;
 
         paths = new ArrayList<>();
         currentPath = new ArrayList<>();
@@ -64,9 +59,7 @@ public class PathEnumerator {
 
             // generate paths starting from leg.
             int delayTime = (int) Duration.between(leg.getDepTime(), newDepTime).toMinutes();
-
-            if (!leg.getArrTime().plusMinutes(delayTime).isAfter(maxEndTime))
-                depthFirstSearch(i, delayTime);
+            depthFirstSearch(i, delayTime);
         }
         return paths;
     }
@@ -88,8 +81,7 @@ public class PathEnumerator {
         Leg leg = legs.get(legIndex);
         if(leg.getArrPort().equals(tail.getSinkPort())) {
             LocalDateTime newArrTime = leg.getArrTime().plusMinutes(delayTimeInMin);
-            if(!newArrTime.isAfter(maxEndTime))
-                storeCurrentPath();
+            storeCurrentPath();
         }
 
         // dive to current node's neighbors
@@ -112,9 +104,7 @@ public class PathEnumerator {
                         : minReqDepTime;
 
                 int neighborDelayTime = (int) Duration.between(neighborLeg.getDepTime(), depTimeOnPath).toMinutes();
-
-                if(!neighborLeg.getArrTime().plusMinutes(neighborDelayTime).isAfter(maxEndTime))
-                    depthFirstSearch(neighborIndex, neighborDelayTime);
+                depthFirstSearch(neighborIndex, neighborDelayTime);
             }
         }
 
