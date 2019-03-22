@@ -203,7 +203,7 @@ public class SubSolverWrapper {
         }
 
         private void solveWithLabeling() throws IloException, OptException {
-            SubSolver ss = new SubSolver(probability);
+            SubSolver ss = new SubSolver(dataRegistry.getTails(), dataRegistry.getLegs(), reschedules, probability);
             HashMap<Integer, Integer> legDelayMap = getTotalDelays();
 
             // Load on-plan paths with propagated delays.
@@ -220,7 +220,7 @@ public class SubSolverWrapper {
             int columnGenIter = 0;
             while (!optimal) {
                 // Solve second-stage RMP (Restricted Master Problem)
-                ss.constructSecondStage(reschedules, dataRegistry, scenarioNum, iter, pathsAll);
+                ss.constructSecondStage(pathsAll);
 
                 if (Parameters.isDebugVerbose())
                     ss.writeLPFile("logs/", iter, columnGenIter, this.scenarioNum);
@@ -275,19 +275,17 @@ public class SubSolverWrapper {
                 logger.debug("number of paths: " + numPaths);
                 logger.debug("completed column-gen iteration " + columnGenIter);
 
-                // Re-initialize the SubSolver object to ensure that its data doesn't get stale.
-                if (!optimal) {
+                // Cleanup CPLEX continers of the SubSolver object.
+                if (!optimal)
                     ss.end();
-                    ss = new SubSolver(probability);
-                }
                 ++columnGenIter;
             }
 
             // Update master problem data
             logger.info("reached sub-problem optimality");
-            calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(), ss.getDualsBnd(),
-                    ss.getDualsRisk());
-            calculateBeta(ss.getDualsDelay(), ss.getDualsRisk());
+            calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(), ss.getDualsBound(),
+                    ss.getDualRisk());
+            calculateBeta(ss.getDualsDelay(), ss.getDualRisk());
             uBound += ss.getObjValue();
         }
 
@@ -307,22 +305,22 @@ public class SubSolverWrapper {
                 for(Path p : allPaths)
                     tailPathsMap.get(p.getTail().getId()).add(p);
 
-                SubSolver ss = new SubSolver(probability);
-                ss.constructSecondStage(reschedules, dataRegistry, scenarioNum, iter, tailPathsMap);
+                SubSolver ss = new SubSolver(dataRegistry.getTails(), dataRegistry.getLegs(), reschedules, probability);
+                ss.constructSecondStage(tailPathsMap);
 
                 if (Parameters.isDebugVerbose())
                     ss.writeLPFile("logs/", iter, -1, this.scenarioNum);
 
                 ss.solve();
                 ss.collectDuals();
+                ss.end();
 
                 if (Parameters.isDebugVerbose())
                     ss.writeCplexSolution("logs/", iter, -1, this.scenarioNum);
 
-                calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(), ss.getDualsBnd(),
-                        ss.getDualsRisk());
-                calculateBeta(ss.getDualsDelay(), ss.getDualsRisk());
-                ss.end();
+                calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(), ss.getDualsBound(),
+                        ss.getDualRisk());
+                calculateBeta(ss.getDualsDelay(), ss.getDualRisk());
 
                 uBound += ss.getObjValue();
             } catch (OptException oe) {

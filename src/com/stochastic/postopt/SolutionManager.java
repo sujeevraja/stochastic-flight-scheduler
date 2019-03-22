@@ -85,9 +85,10 @@ public class SolutionManager {
 
             // solve model without rescheduling legs
             HashMap<Integer, Integer> legDelayMap = dgen.generateDelays();
-            SubSolver determSolver = new SubSolver(1.0);
-            determSolver.constructSecondStage(zeroes, dataRegistry, i, 0, null);
+            SubSolver determSolver = new SubSolver(dataRegistry.getTails(), dataRegistry.getLegs(), zeroes,1.0);
+            determSolver.constructSecondStage(null);
             determSolver.solve();
+            determSolver.end();
             deterministicObjs[i] = (int) Math.round(determSolver.getObjValue());
             
             logger.debug(" xxx-i: " + i + " : " + deterministicObjs[i] + " rescheduleLegIndices: " + rescheduleLegIndices.size());
@@ -113,9 +114,10 @@ public class SolutionManager {
             }
 
             // solve model with reschedule legs
-            SubSolver stocSolver = new SubSolver(1.0);
-            stocSolver.constructSecondStage(zeroes, dataRegistry, i, 0, null);
+            SubSolver stocSolver = new SubSolver(dataRegistry.getTails(), dataRegistry.getLegs(), zeroes, 1.0);
+            stocSolver.constructSecondStage(null);
             stocSolver.solve();
+            stocSolver.end();
             stochasticObjs[i] = (int) Math.round(stocSolver.getObjValue());
 
             // reset legs back to original times
