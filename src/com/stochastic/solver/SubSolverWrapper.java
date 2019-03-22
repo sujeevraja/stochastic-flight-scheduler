@@ -294,7 +294,7 @@ public class SubSolverWrapper {
                 HashMap<Integer, Integer> legDelayMap = getTotalDelays();
 
                 ArrayList<Path> allPaths = dataRegistry.getNetwork().enumeratePathsForTails(
-                        dataRegistry.getTails(), legDelayMap, dataRegistry.getMaxEndTime());
+                        dataRegistry.getTails(), legDelayMap);
 
                 // Store paths for each tail separately. Also add empty paths for each tail.
                 HashMap<Integer, ArrayList<Path>> tailPathsMap = new HashMap<>();
@@ -312,10 +312,11 @@ public class SubSolverWrapper {
 
                 ss.solve();
                 ss.collectDuals();
-                ss.end();
 
                 if (Parameters.isDebugVerbose())
                     ss.writeCplexSolution("logs/", iter, -1, this.scenarioNum);
+
+                ss.end();
 
                 calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(), ss.getDualsBound(),
                         ss.getDualRisk());

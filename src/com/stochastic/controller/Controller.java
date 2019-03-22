@@ -80,11 +80,9 @@ public class Controller {
         // Update max delay and max end time
         int requiredMaxDelay = Collections.max(scenarioDelays);
         dataRegistry.setMaxLegDelayInMin(requiredMaxDelay);
-        dataRegistry.setMaxEndTime(dataRegistry.getMaxEndTime().plusMinutes(requiredMaxDelay));
 
         logger.info("updated max 2nd stage delay: " + dataRegistry.getMaxLegDelayInMin());
         logger.info("updated number of scenarios: " + scenarioDelays.size());
-        logger.info("updated max end time: " + dataRegistry.getMaxEndTime());
 
         logScenarioDelays();
 
@@ -212,7 +210,6 @@ public class Controller {
         HashMap<Integer, ArrayList<Leg>> tailHashMap = new HashMap<>();
 
         // Collect legs and build a mapping between tail and legs.
-        LocalDateTime maxEndTime = null;
         Integer index = 0;
         for (Leg leg : inputLegs) {
             Integer tailId = leg.getOrigTailId();
@@ -220,9 +217,6 @@ public class Controller {
             leg.setIndex(index);
             ++index;
             legs.add(leg);
-
-            if (maxEndTime == null || leg.getArrTime().isAfter(maxEndTime))
-                maxEndTime = leg.getArrTime();
 
             if (tailHashMap.containsKey(tailId))
                 tailHashMap.get(tailId).add(leg);
@@ -235,9 +229,6 @@ public class Controller {
 
         dataRegistry.setLegs(legs);
         logger.info("Number of legs: " + legs.size());
-
-        dataRegistry.setMaxEndTime(maxEndTime);
-        logger.info("Maximum end time: " + maxEndTime);
 
         // build tails from schedule
         ArrayList<Tail> tails = new ArrayList<>();
@@ -317,7 +308,6 @@ public class Controller {
         dataRegistry.setTailHashMap(newTailPathMap);
 
         // cleanup legs.
-        LocalDateTime maxEndTime = null;
         ArrayList<Leg> newLegs = new ArrayList<>();
         int legIndex = 0;
         for (Leg leg : dataRegistry.getLegs()) {
@@ -325,13 +315,10 @@ public class Controller {
             if (newTailPathMap.containsKey(tailId)) {
                 leg.setIndex(legIndex);
                 newLegs.add(leg);
-                if (maxEndTime == null || leg.getArrTime().isAfter(maxEndTime))
-                    maxEndTime = leg.getArrTime();
                 ++legIndex;
             }
         }
         dataRegistry.setLegs(newLegs);
-        dataRegistry.setMaxEndTime(maxEndTime);
     }
 
     public void generateDelays(int numTestScenarios) {
