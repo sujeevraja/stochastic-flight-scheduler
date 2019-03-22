@@ -11,6 +11,8 @@ import org.apache.logging.log4j.Logger;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 class PricingProblemSolver {
     /**
@@ -99,6 +101,7 @@ class PricingProblemSolver {
         initSourceLabels();
         runLabelSettingAlgorithm();
 
+        /*
         ArrayList<Path> paths = new ArrayList<>();
         for (Label sinkLabel : sinkLabels) {
             if (!sinkLabel.isPreExisting()) {
@@ -106,6 +109,20 @@ class PricingProblemSolver {
                 paths.add(path);
             }
         }
+        */
+
+        ArrayList<Label> newLabels = new ArrayList<>();
+        for (Label sinkLabel : sinkLabels)
+            if (!sinkLabel.isPreExisting())
+                newLabels.add(sinkLabel);
+
+        newLabels.sort(Comparator.comparing(Label::getReducedCost));
+
+        ArrayList<Path> paths = new ArrayList<>();
+        int numPaths = Math.min(10, newLabels.size());
+        for (int i = 0;  i < numPaths; ++i)
+            paths.add(buildPathFromLabel(newLabels.get(i)));
+
         return paths;
     }
 
