@@ -1,23 +1,26 @@
 package com.stochastic.registry;
 
 public class Parameters {
-    private static Integer numScenarios;
+    private static int numScenarios;
     private static double scale;
     private static double shape;
     private static int[] durations;
     private static boolean fullEnumeration;
     private static boolean debugVerbose; // generates additional logging, writes lP files and solutions.
 
+    private static boolean runSecondStageInParallel = false;
+    private static int numThreadsForSecondStage = 1;
+
     // Parameters for expected excess formulation
     private static boolean expectedExcess;
     private static double rho;
     private static double excessTarget;
 
-    public static void setNumScenarios(Integer numScenarios) {
+    public static void setNumScenarios(int numScenarios) {
         Parameters.numScenarios = numScenarios;
     }
 
-    public static Integer getNumScenarios() {
+    public static int getNumScenarios() {
         return numScenarios;
     }
 
@@ -55,6 +58,22 @@ public class Parameters {
 
     public static boolean isFullEnumeration() {
         return fullEnumeration;
+    }
+
+    public static void setRunSecondStageInParallel(boolean runSecondStageInParallel) {
+        Parameters.runSecondStageInParallel = runSecondStageInParallel;
+    }
+
+    public static boolean isRunSecondStageInParallel() {
+        return runSecondStageInParallel;
+    }
+
+    public static void setNumThreadsForSecondStage(int numThreadsForSecondStage) {
+        Parameters.numThreadsForSecondStage = numThreadsForSecondStage;
+    }
+
+    public static int getNumThreadsForSecondStage() {
+        return numThreadsForSecondStage;
     }
 
     public static void setExpectedExcess(boolean expectedExcess) {

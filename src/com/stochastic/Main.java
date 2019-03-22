@@ -24,11 +24,15 @@ public class Main {
             // Two-stage
             long t1 = System.currentTimeMillis();
 
+            // ----- PARAMETER SETTINGS SECTION START -----
             Parameters.setNumScenarios(10);
             Parameters.setScale(3.5);
             Parameters.setShape(0.25);
             Parameters.setDurations(new int[]{5, 10, 15, 20, 25, 30});
-            Parameters.setFullEnumeration(false);
+            Parameters.setFullEnumeration(true);
+
+            Parameters.setRunSecondStageInParallel(false);
+            Parameters.setNumThreadsForSecondStage(2);
 
             // Change setDebugVerbose to true to see CPLEX logs, lp files and solution xml files.
             Parameters.setDebugVerbose(false);
@@ -38,8 +42,9 @@ public class Main {
             Parameters.setRho(0.9);
             Parameters.setExcessTarget(40);
 
-            // String path = "data\\20171115022840-v2";
-            String path = "data\\instance1";
+            String path = "data\\20171115022840-v2";
+            // String path = "data\\instance1";
+            // ----- PARAMETER SETTINGS SECTION END -----
 
             Controller controller = new Controller();
             controller.readData(path);

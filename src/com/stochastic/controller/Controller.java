@@ -93,11 +93,13 @@ public class Controller {
 
         do {
             iter++;
-            SubSolverWrapper ssWrapper = new SubSolverWrapper(dataRegistry, masterSolver.getxValues(), iter,
-                    masterSolver.getFSObjValue());
+            SubSolverWrapper ssWrapper = new SubSolverWrapper(dataRegistry, masterSolver.getReschedules(), iter,
+                    masterSolver.getFirstStageObjValue());
 
-            ssWrapper.solveSequential(scenarioDelays, scenarioProbabilities);
-            // ssWrapper.solveParallel(scenarioDelays, scenarioProbabilities);
+            if (Parameters.isRunSecondStageInParallel())
+                ssWrapper.solveParallel(scenarioDelays, scenarioProbabilities);
+            else
+                ssWrapper.solveSequential(scenarioDelays, scenarioProbabilities);
 
             masterSolver.constructBendersCut(ssWrapper.getAlpha(), ssWrapper.getBeta());
 
@@ -118,8 +120,7 @@ public class Controller {
                 uBound = ssWrapper.getuBound();
 
             logger.info("----- LB: " + lBound + " UB: " + uBound + " Iter: " + iter);
-        }
-        while (uBound - lBound > 0.001); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
+        } while (uBound - lBound > 0.001); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
 
         masterSolver.printSolution();
         masterSolver.end();

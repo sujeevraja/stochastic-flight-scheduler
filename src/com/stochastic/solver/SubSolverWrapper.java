@@ -26,30 +26,23 @@ public class SubSolverWrapper {
      */
     private final static Logger logger = LogManager.getLogger(SubSolverWrapper.class);
     private DataRegistry dataRegistry;
-    private double alpha;
-    private int iter;
-    private double[][] beta;
     private int numThreads = 2;
-
     private int[] reschedules; // planned delays from first stage solution.
+    private int iter;
     private double uBound;
 
-    public SubSolverWrapper(DataRegistry dataRegistry, double[][] xValues, int iter, double uBound) {
+    // Values used to consstruct Bender's cut using the sub-problem solution.
+    // Benders cut: beta x + theta >= alpha
+    private double alpha;
+    private double[][] beta;
+
+    public SubSolverWrapper(DataRegistry dataRegistry, int[] reschedules, int iter, double uBound) {
         this.dataRegistry = dataRegistry;
+        this.reschedules = reschedules;
         this.iter = iter;
         this.uBound = uBound;
         this.alpha = 0;
         this.beta = new double[Parameters.getNumDurations()][dataRegistry.getLegs().size()];
-
-        // Collect planned delays from first stage solution.
-        ArrayList<Leg> legs = dataRegistry.getLegs();
-        int[] durations = Parameters.getDurations();
-        reschedules = new int[legs.size()];
-        Arrays.fill(reschedules, 0);
-        for (int i = 0; i < durations.length; ++i)
-            for (int j = 0; j < legs.size(); ++j)
-                if (xValues[i][j] >= Constants.EPS)
-                    reschedules[j] = durations[i];
     }
 
     private synchronized void calculateAlpha(double[] dualsLegs, double[] dualsTail, double[] dualsDelay,
@@ -314,7 +307,6 @@ public class SubSolverWrapper {
                 for(Path p : allPaths)
                     tailPathsMap.get(p.getTail().getId()).add(p);
 
-                // beta x + theta >= alpha - Benders cut
                 SubSolver ss = new SubSolver(probability);
                 ss.constructSecondStage(reschedules, dataRegistry, scenarioNum, iter, tailPathsMap);
 
