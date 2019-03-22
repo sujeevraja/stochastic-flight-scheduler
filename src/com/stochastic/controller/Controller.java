@@ -48,7 +48,7 @@ public class Controller {
         // Read leg data and remove unnecessary legs
         ArrayList<Leg> legs = new ScheduleDAO(instancePath + "\\Schedule.xml").getLegs();
         storeLegs(legs);
-        limitNumTails();
+        // limitNumTails();
         logger.info("Collected leg and tail data from Schedule.xml.");
 
         dataRegistry.buildConnectionNetwork();
@@ -296,16 +296,16 @@ public class Controller {
 
         int tailIndex = 0;
 
-        // for (int i = 0; i < 60; ++i) {
-        // for (int i = 10; i < 60; ++i, ++tailIndex) { // this causes infeasible 2nd stage, check why
-        //  for (int i = 20; i < 60; ++i, ++tailIndex) {
+        for (int i = 0; i < 60; ++i, ++tailIndex) { // this causes infeasible 2nd stage, check why
+        // for (int i = 10; i < 60; ++i, ++tailIndex) {
+        // for (int i = 20; i < 60; ++i, ++tailIndex) {
         // for (int i = 30; i < 60; ++i, ++tailIndex) {
         // for (int i = 40; i < 60; ++i, ++tailIndex) {
         // for (int i = 43; i < 60; ++i, ++tailIndex) {
         // for (int i = 44; i < 60; ++i, ++tailIndex) {
         // for (int i = 44; i < 55; ++i, ++tailIndex) {
         // for (int i = 44; i < 54; ++i, ++tailIndex) {
-        for (int i = 45; i < 54; ++i, ++tailIndex) {
+        // for (int i = 45; i < 54; ++i, ++tailIndex) {
             Tail tail = oldTails.get(i);
             tail.setIndex(tailIndex);
             newTails.add(tail);
