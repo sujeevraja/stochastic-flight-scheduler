@@ -59,7 +59,7 @@ public class Controller {
     public final void solve() throws IloException, OptException {
         ArrayList<Leg> legs = dataRegistry.getLegs();
         ArrayList<Tail> tails = dataRegistry.getTails();
-        ArrayList<Integer> durations = Parameters.getDurations();
+        int[] durations = Parameters.getDurations();
 
         int iter = -1;
         MasterSolver.MasterSolverInit(legs, tails, durations);

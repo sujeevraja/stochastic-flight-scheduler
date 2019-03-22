@@ -11,6 +11,7 @@ import ilog.concert.*;
 import ilog.cplex.IloCplex;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 import org.apache.logging.log4j.Logger;
@@ -52,12 +53,12 @@ public class SubSolver {
         this.probability = probability;
     }
 
-    public void constructSecondStage(double[][] xValues, DataRegistry dataRegistry, int sceNo, int iter,
+    public void constructSecondStage(int[] reschedules, DataRegistry dataRegistry, int sceNo, int iter,
                                      HashMap<Integer, ArrayList<Path>> paths) throws OptException {
         try {
             ArrayList<Tail> tails = dataRegistry.getTails();
             ArrayList<Leg> legs = dataRegistry.getLegs();
-            ArrayList<Integer> durations = Parameters.getDurations();
+            int[] durations = Parameters.getDurations();
 
             // Create containers to build CPLEX model.
             subCplex = new IloCplex();
@@ -65,9 +66,9 @@ public class SubSolver {
             if (!Parameters.isDebugVerbose())
                 subCplex.setOut(null);
 
-            final Integer numLegs = legs.size();
-            final Integer numTails = tails.size();
-            final Integer numDurations = durations.size();
+            final int numLegs = legs.size();
+            final int numTails = tails.size();
+            final int numDurations = durations.length;
 
             y = new IloNumVar[tails.size()][];
 
@@ -113,11 +114,8 @@ public class SubSolver {
                 delayExprs[i] = subCplex.linearNumExpr();
                 delayExprs[i].addTerm(d[i], -1.0);
 
-                for (int j = 0; j < numDurations; ++j)
-                    if (xValues[j][i] >= Constants.EPS) {
-                        delayRHS[i] += durations.get(j);
-                        break;
-                    }
+                if (reschedules[i] > 0)
+                    delayRHS[i] += reschedules[i];
             }
 
             if (Parameters.isExpectedExcess()) {
@@ -172,18 +170,13 @@ public class SubSolver {
                 }
 
             if (Parameters.isExpectedExcess()) {
-                double xVal = 0;
-                for (int i = 0; i < legs.size(); i++)
-                    for (int j = 0; j < durations.size(); j++)
-                        xVal += (xValues[j][i] * durations.get(j));
-
+                double xVal = Arrays.stream(reschedules).sum();
                 IloLinearNumExpr riskExpr = subCplex.linearNumExpr();
 
                 for (int i = 0; i < numLegs; i++)
                     riskExpr.addTerm(d[i], 1.5);
 
                 riskExpr.addTerm(v, -1);
-
                 riskConstraint = subCplex.addLe(riskExpr, Parameters.getExcessTarget() - xVal, "risk");
             }
 

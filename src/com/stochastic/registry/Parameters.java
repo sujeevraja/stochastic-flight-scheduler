@@ -1,12 +1,10 @@
 package com.stochastic.registry;
 
-import java.util.ArrayList;
-
 public class Parameters {
     private static Integer numScenarios;
     private static double scale;
     private static double shape;
-    private static ArrayList<Integer> durations;
+    private static int[] durations;
     private static boolean fullEnumeration;
     private static boolean debugVerbose; // generates additional logging, writes lP files and solutions.
 
@@ -39,16 +37,16 @@ public class Parameters {
         return shape;
     }
 
-    public static void setDurations(ArrayList<Integer> durations) {
+    public static void setDurations(int[] durations) {
         Parameters.durations = durations;
     }
 
-    public static ArrayList<Integer> getDurations() {
+    public static int[] getDurations() {
         return durations;
     }
 
     public static int getNumDurations() {
-        return durations.size();
+        return durations.length;
     }
 
     public static void setFullEnumeration(boolean fullEnumeration) {

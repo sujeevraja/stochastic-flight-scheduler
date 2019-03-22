@@ -23,7 +23,7 @@ public class MasterSolver {
     private final static Logger logger = LogManager.getLogger(MasterSolver.class);
     private static ArrayList<Leg> legs;
     private static ArrayList<Tail> tails;
-    private static ArrayList<Integer> durations;
+    private static int[] durations;
     private static LocalDateTime startTime;
 
     // cplex variables
@@ -43,7 +43,7 @@ public class MasterSolver {
 
 //    private static IloNumVar neta; // = cplex.numVar(-Double.POSITIVE_INFINITY, 0, "neta");    
 
-    public static void MasterSolverInit(ArrayList<Leg> legs, ArrayList<Tail> tails, ArrayList<Integer> durations)
+    public static void MasterSolverInit(ArrayList<Leg> legs, ArrayList<Tail> tails, int[] durations)
             throws OptException {
         try {
             MasterSolver.legs = legs;
@@ -54,7 +54,7 @@ public class MasterSolver {
             if (!Parameters.isDebugVerbose())
                 masterCplex.setOut(null);
 
-            X = new IloIntVar[MasterSolver.durations.size()][MasterSolver.legs.size()];
+            X = new IloIntVar[MasterSolver.durations.length][MasterSolver.legs.size()];
         } catch (IloException e) {
             logger.error(e.getStackTrace());
             throw new OptException("CPLEX error while adding benders variable");
@@ -77,8 +77,8 @@ public class MasterSolver {
             objValue = masterCplex.getObjValue();
 
             logger.debug("master objective: " + objValue);
-            xValues = new double[durations.size()][legs.size()];
-            for (int i = 0; i < durations.size(); i++)
+            xValues = new double[durations.length][legs.size()];
+            for (int i = 0; i < durations.length; i++)
                 xValues[i] = MasterSolver.masterCplex.getValues(X[i]);
             
             if(iter > -1)
@@ -106,9 +106,9 @@ public class MasterSolver {
 
     public static void constructFirstStage() throws OptException {
         try {
-            for (int i = 0; i < durations.size(); i++)
+            for (int i = 0; i < durations.length; i++)
                 for (int j = 0; j < legs.size(); j++) {
-                    String varName = "X_" + durations.get(i) + "_" + legs.get(j).getId();
+                    String varName = "X_" + durations[i] + "_" + legs.get(j).getId();
                     X[i][j] = masterCplex.boolVar(varName);
                 }
 
@@ -129,9 +129,9 @@ public class MasterSolver {
         // (first stage) and recourse (second stage).
 
         IloLinearNumExpr cons = masterCplex.linearNumExpr();
-        for (int i = 0; i < durations.size(); i++)
+        for (int i = 0; i < durations.length; i++)
             for (int j = 0; j < legs.size(); j++)
-                cons.addTerm(X[i][j], durations.get(i) * legs.get(i).getRescheduleCostPerMin());
+                cons.addTerm(X[i][j], durations[i] * legs.get(i).getRescheduleCostPerMin());
 
         // cons.addTerm(thetaVar, 0);
         // cons.addTerm(thetaVar, 1);
@@ -142,7 +142,7 @@ public class MasterSolver {
         for (int i = 0; i < legs.size(); i++) {
             IloLinearNumExpr cons = masterCplex.linearNumExpr();
 
-            for (int j = 0; j < durations.size(); j++)
+            for (int j = 0; j < durations.length; j++)
                 cons.addTerm(X[j][i], 1);
 
             IloRange r = masterCplex.addLe(cons, 1);
@@ -163,9 +163,9 @@ public class MasterSolver {
                 int nextLegIndex = nextLeg.getIndex();
 
                 IloLinearNumExpr cons = masterCplex.linearNumExpr();
-                for (int j = 0; j < durations.size(); j++) {
-                    cons.addTerm(X[j][currLegIndex], durations.get(j));
-                    cons.addTerm(X[j][nextLegIndex], -durations.get(j));
+                for (int j = 0; j < durations.length; j++) {
+                    cons.addTerm(X[j][currLegIndex], durations[j]);
+                    cons.addTerm(X[j][nextLegIndex], -durations[j]);
                 }
 
                 int rhs = (int) Duration.between(currLeg.getArrTime(), nextLeg.getDepTime()).toMinutes();
@@ -180,7 +180,7 @@ public class MasterSolver {
         try {
             IloLinearNumExpr cons = masterCplex.linearNumExpr();
 
-            for (int i = 0; i < durations.size(); i++)
+            for (int i = 0; i < durations.length; i++)
                 for (int j = 0; j < legs.size(); j++)
                     if (Math.abs(betaValue[i][j]) >= Constants.EPS)
                         cons.addTerm(X[i][j], Utility.roundUp(betaValue[i][j], 3));
@@ -202,10 +202,11 @@ public class MasterSolver {
     public static void printSolution() {
         try {
              // solution value           
-            for(int i=0; i< durations.size(); i++)
+            for(int i=0; i< durations.length; i++)
             	for(int j=0; j< legs.size(); j++)            	
                 	if(xValues[i][j] > 0)
-                		logger.debug(" xValues: " + " i: " + i + " j: " + j + " : " + X[i][j].getName() + " : " + xValues[i][j] + " , " + durations.get(i));
+                		logger.debug(" xValues: " + " i: " + i + " j: " + j + " : " + X[i][j].getName() + " : "
+                                + xValues[i][j] + " , " + durations[i]);
             
        		logger.debug(" theta: " + theta);
         } catch (Exception e) {

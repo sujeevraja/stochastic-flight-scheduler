@@ -28,7 +28,7 @@ public class DepSolver {
     private ArrayList<Path> paths; // subproblem columns
     ArrayList<Tail> tails;
     ArrayList<Leg> legs;
-    ArrayList<Integer> durations;
+    int[] durations;
 //    int[][] sceVal;
     
     // cplex variables
@@ -61,7 +61,7 @@ public class DepSolver {
             legs = dataRegistry.getLegs();
             durations = Parameters.getDurations();
 
-            double[][] xValues = new double[legs.size()][durations.size()];
+            double[][] xValues = new double[legs.size()][durations.length];
             
             // get delay data using planned delays from first stage and random delays from second stage.
             HashMap<Integer, Integer> legDelayMap = getLegDelays(tails, legs, durations, xValues);
@@ -70,20 +70,20 @@ public class DepSolver {
             paths = dataRegistry.getNetwork().enumeratePathsForTails(tails, legDelayMap,
                         dataRegistry.getMaxEndTime());
 
-    		logger.debug("Tail: " + tails.size() + " legs: " + legs.size() + " durations: " + durations.size());
+    		logger.debug("Tail: " + tails.size() + " legs: " + legs.size() + " durations: " + durations.length);
             printAllPaths();
             
             // Create containers to build CPLEX model.
             subCplex = new IloCplex();
             final Integer numLegs = legs.size();
             final Integer numTails = tails.size();
-            final Integer numDurations = durations.size();
+            final Integer numDurations = durations.length;
             final Integer maxDelay = dataRegistry.getMaxLegDelayInMin();
             
-            x = new IloIntVar[numLegs][durations.size()];            
+            x = new IloIntVar[numLegs][durations.length];
 
             for (int i = 0; i < legs.size(); i++)            
-            	for (int j = 0; j < durations.size(); j++)
+            	for (int j = 0; j < durations.length; j++)
                     x[i][j] = subCplex.boolVar("X_" + legs.get(i).getId() +"_" + j); // boolVarArray(Data.nD + Data.nT);
 
             IloRange r;
@@ -91,7 +91,7 @@ public class DepSolver {
             for (int i = 0; i < legs.size(); i++) {
                 cons = subCplex.linearNumExpr();
 
-                for (int j = 0; j < durations.size(); j++)
+                for (int j = 0; j < durations.length; j++)
                     cons.addTerm(x[i][j], 1);
 
                 r = subCplex.addLe(cons, 1);
@@ -129,7 +129,7 @@ public class DepSolver {
 	                delayExprs[i][j].addTerm(d[i][j], -1.0);
 	                
 	                for (int j1 = 0; j1 < numDurations; ++j1)
-	                    delayExprs[i][j].addTerm(x[i][j1], -durations.get(j1));                
+	                    delayExprs[i][j].addTerm(x[i][j1], -durations[j1]);
 	            }            
 
             if(Parameters.isExpectedExcess())
@@ -145,8 +145,8 @@ public class DepSolver {
                     IloLinearNumExpr riskExpr = subCplex.linearNumExpr();
 
                     for (int i = 0; i < legs.size(); i++)
-                    	for (int j = 0; j < durations.size(); j++)
-                    		riskExpr.addTerm(x[i][j], durations.get(j));          
+                    	for (int j = 0; j < durations.length; j++)
+                    		riskExpr.addTerm(x[i][j], durations[j]);
 	                
     	            for (int i = 0; i < numLegs; i++)                     
     	            	riskExpr.addTerm(d[i][s], 1.5);
@@ -159,8 +159,8 @@ public class DepSolver {
             
             // first-stage obj function
             for (int i = 0; i < legs.size(); i++)
-            	for (int j = 0; j < durations.size(); j++)
-                	objExpr.addTerm(x[i][j], durations.get(j));          
+            	for (int j = 0; j < durations.length; j++)
+                	objExpr.addTerm(x[i][j], durations[j]);
             
             subCplex.addMinimize(objExpr);
             objExpr.clear();
@@ -223,7 +223,7 @@ public class DepSolver {
 
     
     private HashMap<Integer, Integer> getLegDelays(ArrayList<Tail> tails, ArrayList<Leg> legs,
-            ArrayList<Integer> durations, double[][] xValues) {
+            int[] durations, double[][] xValues) {
         // Generate random delays using a delay generator.
         DelayGenerator dgen = new FirstFlightDelayGenerator(tails, 20);
         HashMap<Integer, Integer> randomDelays = dgen.generateDelays();
@@ -231,10 +231,10 @@ public class DepSolver {
         // Collect planned delays from first stage solution.
         HashMap<Integer, Integer> plannedDelays = new HashMap<>();
 
-        for (int i = 0; i < durations.size(); ++i) {
+        for (int i = 0; i < durations.length; ++i) {
             for (int j = 0; j < legs.size(); ++j) {
                 if (xValues[j][i] >= eps)
-                    plannedDelays.put(legs.get(j).getIndex(), durations.get(i));
+                    plannedDelays.put(legs.get(j).getIndex(), durations.length);
             }
         }
 
@@ -271,7 +271,7 @@ public class DepSolver {
 
              // solution value
             double[][] dValues =  new double[legs.size()][5]; // d[i] >= 0 is the total delay of leg i.
-            double[][] xValues = new double[legs.size()][durations.size()];
+            double[][] xValues = new double[legs.size()][durations.length];
             double[][] yValues = new double[paths.size()][5];
             double[]   vValues = new double[5];
             
@@ -285,9 +285,10 @@ public class DepSolver {
             	xValues[i] = subCplex.getValues(x[i]);
             
             for(int i=0; i< legs.size(); i++)
-                for(int j=0; j< durations.size(); j++)            	
+                for(int j=0; j< durations.length; j++)
                 	if(xValues[i][j] > 0)
-                		logger.debug(" i: " + i + " j: " + j + " : " + x[i][j].getName() + " : " + xValues[i][j] + " , " + durations.get(j));
+                		logger.debug(" i: " + i + " j: " + j + " : " + x[i][j].getName() + " : "
+                                + xValues[i][j] + " , " + durations[j]);
             
             for(int p=0; p< paths.size(); p++)
             	for (int j = 0; j < 5; j++)            	

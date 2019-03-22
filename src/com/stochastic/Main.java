@@ -27,7 +27,7 @@ public class Main {
             Parameters.setNumScenarios(10);
             Parameters.setScale(3.5);
             Parameters.setShape(0.25);
-            Parameters.setDurations(new ArrayList<>(Arrays.asList(5, 10, 15, 20, 25, 30)));
+            Parameters.setDurations(new int[]{5, 10, 15, 20, 25, 30});
             Parameters.setFullEnumeration(false);
 
             // Change setDebugVerbose to true to see CPLEX logs, lp files and solution xml files.

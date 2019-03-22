@@ -32,12 +32,23 @@ public class SubSolverWrapper {
     private int numThreads = 2;
 
     private double[][] xValues;
+    private int[] reschedules; // planned delays from first stage solution.
     private double uBound;
 
     public SubSolverWrapper(DataRegistry dataRegistry, double[][] xValues, int iter) {
         this.dataRegistry = dataRegistry;
         this.xValues = xValues;
         this.iter = iter;
+
+        // Collect planned delays from first stage solution.
+        ArrayList<Leg> legs = dataRegistry.getLegs();
+        int[] durations = Parameters.getDurations();
+        reschedules = new int[legs.size()];
+        Arrays.fill(reschedules, 0);
+        for (int i = 0; i < durations.length; ++i)
+            for (int j = 0; j < legs.size(); ++j)
+                if (xValues[i][j] >= Constants.EPS)
+                    reschedules[j] = durations[i];
 
         alpha = 0;
         uBound = MasterSolver.getFSObjValue();
@@ -76,16 +87,16 @@ public class SubSolverWrapper {
     }
 
     private synchronized void calculateBeta(double[] dualsDelay, double dualRisk) {
-        ArrayList<Integer> durations = Parameters.getDurations();
+        int[] durations = Parameters.getDurations();
         ArrayList<Leg> legs = dataRegistry.getLegs();
 
-        for (int i = 0; i < durations.size(); i++) {
+        for (int i = 0; i < durations.length; i++) {
             for (int j = 0; j < legs.size(); j++) {
                 if (Math.abs(dualsDelay[j]) >= Constants.EPS)
-                    beta[i][j] += dualsDelay[j] * -durations.get(i); // * prb;
+                    beta[i][j] += dualsDelay[j] * -durations[i]; // * prb;
 
                 if (Parameters.isExpectedExcess() && Math.abs(dualRisk) >= Constants.EPS)
-                    beta[i][j] += dualRisk * durations.get(i); // * prb;
+                    beta[i][j] += dualRisk * durations[i]; // * prb;
             }
         }
     }
@@ -203,8 +214,7 @@ public class SubSolverWrapper {
 
         private void solveWithLabeling() throws IloException, OptException {
             SubSolver ss = new SubSolver(probability);
-            HashMap<Integer, Integer> legDelayMap = getLegDelays(dataRegistry.getLegs(),
-                    Parameters.getDurations(), xValues);
+            HashMap<Integer, Integer> legDelayMap = getTotalDelays();
 
             // Load on-plan paths with propagated delays.
             HashMap<Integer, ArrayList<Path>> pathsAll = getInitialPaths(legDelayMap);
@@ -220,7 +230,7 @@ public class SubSolverWrapper {
             int columnGenIter = 0;
             while (!optimal) {
                 // Solve second-stage RMP (Restricted Master Problem)
-                ss.constructSecondStage(xValues, dataRegistry, scenarioNum, iter, pathsAll);
+                ss.constructSecondStage(reschedules, dataRegistry, scenarioNum, iter, pathsAll);
 
                 if (Parameters.isDebugVerbose())
                     ss.writeLPFile("logs/", iter, columnGenIter, this.scenarioNum);
@@ -294,8 +304,7 @@ public class SubSolverWrapper {
         private void solveWithFullEnumeration() throws IloException {
             try {
                 // Enumerate all paths for each tail.
-                HashMap<Integer, Integer> legDelayMap = getLegDelays(
-                        dataRegistry.getLegs(), Parameters.getDurations(), xValues);
+                HashMap<Integer, Integer> legDelayMap = getTotalDelays();
 
                 ArrayList<Path> allPaths = dataRegistry.getNetwork().enumeratePathsForTails(
                         dataRegistry.getTails(), legDelayMap, dataRegistry.getMaxEndTime());
@@ -310,7 +319,7 @@ public class SubSolverWrapper {
 
                 // beta x + theta >= alpha - Benders cut
                 SubSolver ss = new SubSolver(probability);
-                ss.constructSecondStage(xValues, dataRegistry, scenarioNum, iter, tailPathsMap);
+                ss.constructSecondStage(reschedules, dataRegistry, scenarioNum, iter, tailPathsMap);
 
                 if (Parameters.isDebugVerbose())
                     ss.writeLPFile("logs/", iter, -1, this.scenarioNum);
@@ -334,20 +343,15 @@ public class SubSolverWrapper {
             }
         }
 
-        private HashMap<Integer, Integer> getLegDelays(ArrayList<Leg> legs, ArrayList<Integer> durations,
-                                                      double[][] xValues) {
-            // Collect planned delays from first stage solution.
-            HashMap<Integer, Integer> plannedDelays = new HashMap<>();
-            for(int i = 0; i < durations.size(); ++i) {
-                for(int j = 0; j < legs.size(); ++j) {
-                    if(xValues[i][j] >= eps)
-                        plannedDelays.put(legs.get(j).getIndex(), durations.get(i));
-                }
-            }
-
-            // Combine planned and delay maps into a single one.
+        /**
+         * Return the total delay time in minutes of each leg for the second stage.
+         *
+         * Total delay is the maximum of rescheduled time from first stage and random delay of second-stage scenario.
+         * @return map with leg indices as keys, total delay times as corresponding values.
+         */
+        private HashMap<Integer, Integer> getTotalDelays() {
             HashMap<Integer, Integer> combinedDelayMap = new HashMap<>();
-            for(Leg leg : legs) {
+            for(Leg leg : dataRegistry.getLegs()) {
                 int delayTime = 0;
                 boolean updated = false;
 
@@ -356,8 +360,8 @@ public class SubSolverWrapper {
                     updated = true;
                 }
 
-                if(plannedDelays.containsKey(leg.getIndex())) {
-                    delayTime = Math.max(delayTime, plannedDelays.get(leg.getIndex()));
+                if (reschedules[leg.getIndex()] > 0)  {
+                    delayTime = Math.max(delayTime, reschedules[leg.getIndex()]);
                     updated = true;
                 }
 
