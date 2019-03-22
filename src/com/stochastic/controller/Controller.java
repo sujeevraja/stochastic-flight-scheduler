@@ -59,20 +59,17 @@ public class Controller {
     public final void solve() throws IloException, OptException {
         ArrayList<Leg> legs = dataRegistry.getLegs();
         ArrayList<Tail> tails = dataRegistry.getTails();
-        ArrayList<Integer> durations = Parameters.getDurations();
+        int[] durations = Parameters.getDurations();
 
         int iter = -1;
-        MasterSolver.MasterSolverInit(legs, tails, durations);
-        MasterSolver.constructFirstStage();
+        MasterSolver masterSolver = new MasterSolver(legs, tails, durations);
+        masterSolver.constructFirstStage();
 
         if (Parameters.isDebugVerbose())
-            MasterSolver.writeLPFile("logs/before_cuts_master.lp");
+            masterSolver.writeLPFile("logs/before_cuts_master.lp");
 
-        MasterSolver.solve(iter);
-        MasterSolver.addColumn();
-
-        double lBound;
-        double uBound = Double.MAX_VALUE;
+        masterSolver.solve(iter);
+        masterSolver.addColumn();
 
         logger.info("Algorithm starts.");
 
@@ -91,42 +88,41 @@ public class Controller {
 
         logScenarioDelays();
 
-        // sceVal = new int[3][5];
-        // Random rand = new Random();
-        // for(int i=0; i<3;i++)
-        //    for(int j=0; j<5;j++)
-        //    	sceVal[i][j] = (i+20) + j; //rand.nextInt(40 - 20 + 1) + 20; // (max - min + 1) + min;  (i+20) + j
-
+        double lBound;
+        double uBound = Double.MAX_VALUE;
         do {
             iter++;
-            SubSolverWrapper.SubSolverWrapperInit(dataRegistry, MasterSolver.getxValues(), iter);
-            new SubSolverWrapper().solveSequential(scenarioDelays, scenarioProbabilities);
-            // new SubSolverWrapper().solveParallel(scenarioDelays, scenarioProbabilities);
+            SubSolverWrapper ssWrapper = new SubSolverWrapper(dataRegistry, masterSolver.getReschedules(), iter,
+                    masterSolver.getFirstStageObjValue());
 
-            MasterSolver.constructBendersCut(SubSolverWrapper.getAlpha(), SubSolverWrapper.getBeta());
+            if (Parameters.isRunSecondStageInParallel())
+                ssWrapper.solveParallel(scenarioDelays, scenarioProbabilities);
+            else
+                ssWrapper.solveSequential(scenarioDelays, scenarioProbabilities);
+
+            masterSolver.constructBendersCut(ssWrapper.getAlpha(), ssWrapper.getBeta());
 
             if (Parameters.isDebugVerbose())
-                MasterSolver.writeLPFile("logs/master_" + iter + ".lp");
+                masterSolver.writeLPFile("logs/master_" + iter + ".lp");
 
-            MasterSolver.solve(iter);
+            masterSolver.solve(iter);
 
             if (Parameters.isDebugVerbose())
-                MasterSolver.writeSolution("logs/master_" + iter + ".xml");
+                masterSolver.writeSolution("logs/master_" + iter + ".xml");
 
-            lBound = MasterSolver.getObjValue();
+            lBound = masterSolver.getObjValue();
 
             logger.info("----- LB: " + lBound + " UB: " + uBound + " Iter: " + iter
-                    + " SubSolverWrapper.getuBound(): " + SubSolverWrapper.getuBound());
+                    + " ssWrapper.getuBound(): " + ssWrapper.getuBound());
 
-            if (SubSolverWrapper.getuBound() < uBound)
-                uBound = SubSolverWrapper.getuBound();
+            if (ssWrapper.getuBound() < uBound)
+                uBound = ssWrapper.getuBound();
 
             logger.info("----- LB: " + lBound + " UB: " + uBound + " Iter: " + iter);
-        }
-        while (uBound - lBound > 0.001); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
+        } while (uBound - lBound > 0.001); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
 
-        MasterSolver.printSolution();
-        MasterSolver.end();
+        masterSolver.printSolution();
+        masterSolver.end();
         bounds.add(lBound);
         bounds.add(uBound);
         logger.info("Algorithm ends.");

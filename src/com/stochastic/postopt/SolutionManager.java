@@ -32,7 +32,7 @@ public class SolutionManager {
     private DataRegistry dataRegistry;
     private ArrayList<Integer> scenarioDelays;
     private ArrayList<Double> scenarioProbabilities;
-    double[][] xValues; // xValues[i][j] = 1 if durations[i] is selected for legs[j], 0 otherwise.
+    private double[][] xValues; // xValues[i][j] = 1 if durations[i] is selected for legs[j], 0 otherwise.
     private boolean solutionsCompared;
 
     private ArrayList<Integer> rescheduleLegIndices;
@@ -53,13 +53,13 @@ public class SolutionManager {
         rescheduleLegIndices = new ArrayList<>();
         rescheduleTimes = new ArrayList<>();
 
-        ArrayList<Integer> durations = Parameters.getDurations();
+        int[] durations = Parameters.getDurations();
         ArrayList<Leg> legs = dataRegistry.getLegs();
-        for(int i = 0; i < durations.size(); ++i) {
+        for(int i = 0; i < durations.length; ++i) {
             for(int j = 0; j < legs.size(); ++j) {
                 if(xValues[i][j] >= eps) {
                     rescheduleLegIndices.add(j);
-                    rescheduleTimes.add(durations.get(i));
+                    rescheduleTimes.add(durations[i]);
                 }
             }
         }
@@ -72,24 +72,22 @@ public class SolutionManager {
         stochasticObjs = new int[testDelays.size()];
         ArrayList<Leg> legs = dataRegistry.getLegs();
 
-        double[][] zeroValues = new double[Parameters.getNumDurations()][legs.size()];
-        for(int i = 0; i < Parameters.getNumDurations(); ++i)
-            for (int j = 0; j < legs.size(); ++j)
-                zeroValues[i][j] = 0.0;
+        int[] zeroes = new int[dataRegistry.getLegs().size()];
+        Arrays.fill(zeroes, 0);
 
         dataRegistry.setMaxLegDelayInMin(Math.max(dataRegistry.getMaxLegDelayInMin(), 100));
         
         for(int i = 0; i < testDelays.size(); ++i) {
             Integer currDelay = testDelays.get(i);
             logger.info("Current test delay: " + currDelay);
-//            dataRegistry.setMaxLegDelayInMin(Math.max(dataRegistry.getMaxLegDelayInMin(), currDelay));
             DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getTails(), currDelay);
 
             // solve model without rescheduling legs
             HashMap<Integer, Integer> legDelayMap = dgen.generateDelays();
-            SubSolver determSolver = new SubSolver(1.0);
-            determSolver.constructSecondStage(zeroValues, dataRegistry, i, 0, null);
+            SubSolver determSolver = new SubSolver(dataRegistry.getTails(), dataRegistry.getLegs(), zeroes,1.0);
+            determSolver.constructSecondStage(null);
             determSolver.solve();
+            determSolver.end();
             deterministicObjs[i] = (int) Math.round(determSolver.getObjValue());
             
             logger.debug(" xxx-i: " + i + " : " + deterministicObjs[i] + " rescheduleLegIndices: " + rescheduleLegIndices.size());
@@ -115,9 +113,10 @@ public class SolutionManager {
             }
 
             // solve model with reschedule legs
-            SubSolver stocSolver = new SubSolver(1.0);
-            stocSolver.constructSecondStage(zeroValues, dataRegistry, i, 0, null);
+            SubSolver stocSolver = new SubSolver(dataRegistry.getTails(), dataRegistry.getLegs(), zeroes, 1.0);
+            stocSolver.constructSecondStage(null);
             stocSolver.solve();
+            stocSolver.end();
             stochasticObjs[i] = (int) Math.round(stocSolver.getObjValue());
 
             // reset legs back to original times

@@ -25,28 +25,26 @@ public class SubSolverWrapper {
      * Wrapper class that can be used to solve the second-stage problems in parallel.
      */
     private final static Logger logger = LogManager.getLogger(SubSolverWrapper.class);
-    private static DataRegistry dataRegistry;
-    private static double alpha;
-    private static int iter;
-    private static double[][] beta;
-    private static int numThreads = 2;
-    private static HashMap<Integer, HashMap<Integer, ArrayList<Path>>> hmPaths = new HashMap<>();
+    private DataRegistry dataRegistry;
+    private int[] reschedules; // planned delays from first stage solution.
+    private int iter;
+    private double uBound;
 
+    // Values used to consstruct Bender's cut using the sub-problem solution.
+    // Benders cut: beta x + theta >= alpha
+    private double alpha;
+    private double[][] beta;
 
-    private static double[][] xValues;
-    private static double uBound;
-
-    public static void SubSolverWrapperInit(DataRegistry dataRegistry, double[][] xValues, int iter) {
-        SubSolverWrapper.dataRegistry = dataRegistry;
-        SubSolverWrapper.xValues = xValues;
-        SubSolverWrapper.iter = iter;
-
-        alpha = 0;
-        uBound = MasterSolver.getFSObjValue();
-        beta = new double[Parameters.getNumDurations()][dataRegistry.getLegs().size()];
+    public SubSolverWrapper(DataRegistry dataRegistry, int[] reschedules, int iter, double uBound) {
+        this.dataRegistry = dataRegistry;
+        this.reschedules = reschedules;
+        this.iter = iter;
+        this.uBound = uBound;
+        this.alpha = 0;
+        this.beta = new double[Parameters.getNumDurations()][dataRegistry.getLegs().size()];
     }
 
-    private synchronized static void calculateAlpha(double[] dualsLegs, double[] dualsTail, double[] dualsDelay,
+    private synchronized void calculateAlpha(double[] dualsLegs, double[] dualsTail, double[] dualsDelay,
                                                     double[][] dualsBnd, double dualRisk) {
         ArrayList<Leg> legs = dataRegistry.getLegs();
 
@@ -77,17 +75,17 @@ public class SubSolverWrapper {
         logger.debug("final alpha value: " + alpha);
     }
 
-    private synchronized static void calculateBeta(double[] dualsDelay, double dualRisk) {
-        ArrayList<Integer> durations = Parameters.getDurations();
+    private synchronized void calculateBeta(double[] dualsDelay, double dualRisk) {
+        int[] durations = Parameters.getDurations();
         ArrayList<Leg> legs = dataRegistry.getLegs();
 
-        for (int i = 0; i < durations.size(); i++) {
+        for (int i = 0; i < durations.length; i++) {
             for (int j = 0; j < legs.size(); j++) {
                 if (Math.abs(dualsDelay[j]) >= Constants.EPS)
-                    beta[i][j] += dualsDelay[j] * -durations.get(i); // * prb;
+                    beta[i][j] += dualsDelay[j] * -durations[i]; // * prb;
 
                 if (Parameters.isExpectedExcess() && Math.abs(dualRisk) >= Constants.EPS)
-                    beta[i][j] += dualRisk * durations.get(i); // * prb;
+                    beta[i][j] += dualRisk * durations[i]; // * prb;
             }
         }
     }
@@ -105,7 +103,7 @@ public class SubSolverWrapper {
 
     public void solveParallel(ArrayList<Integer> scenarioDelays, ArrayList<Double> probabilities) throws OptException {
         try {
-            ExecutorService exSrv = Executors.newFixedThreadPool(numThreads);
+            ExecutorService exSrv = Executors.newFixedThreadPool(Parameters.getNumThreadsForSecondStage());
 
             for (int i = 0; i < dataRegistry.getNumScenarios(); i++) {
                 // Thread.sleep(500);
@@ -137,25 +135,6 @@ public class SubSolverWrapper {
             this.scenarioNum = scenarioNum;
             this.randomDelays = randomDelays;
             this.probability = probability;
-        }
-
-        public void updatePaths(Tail t, ArrayList<Path> arrT) {
-            if (hmPaths.containsKey(this.scenarioNum)) {
-                HashMap<Integer, ArrayList<Path>> pAll = hmPaths.get(this.scenarioNum);
-                ArrayList<Path> arrPath;
-
-                if (pAll.containsKey(t.getId()))
-                    arrPath = pAll.get(t.getId());
-                else
-                    arrPath = new ArrayList<>();
-
-                arrPath.addAll(arrT);
-            } else {
-                HashMap<Integer, ArrayList<Path>> pAll = new HashMap<>();
-                ArrayList<Path> arrPath = new ArrayList<>(arrT);
-                pAll.put(t.getId(), arrPath);
-                hmPaths.put(this.scenarioNum, pAll);
-            }
         }
 
         private HashMap<Integer, ArrayList<Path>> getInitialPaths(HashMap<Integer, Integer> legDelayMap) {
@@ -223,9 +202,8 @@ public class SubSolverWrapper {
         }
 
         private void solveWithLabeling() throws IloException, OptException {
-            SubSolver ss = new SubSolver(probability);
-            HashMap<Integer, Integer> legDelayMap = getLegDelays(dataRegistry.getLegs(),
-                    Parameters.getDurations(), xValues);
+            SubSolver ss = new SubSolver(dataRegistry.getTails(), dataRegistry.getLegs(), reschedules, probability);
+            HashMap<Integer, Integer> legDelayMap = getTotalDelays();
 
             // Load on-plan paths with propagated delays.
             HashMap<Integer, ArrayList<Path>> pathsAll = getInitialPaths(legDelayMap);
@@ -241,7 +219,7 @@ public class SubSolverWrapper {
             int columnGenIter = 0;
             while (!optimal) {
                 // Solve second-stage RMP (Restricted Master Problem)
-                ss.constructSecondStage(xValues, dataRegistry, scenarioNum, iter, pathsAll);
+                ss.constructSecondStage(pathsAll);
 
                 if (Parameters.isDebugVerbose())
                     ss.writeLPFile("logs/", iter, columnGenIter, this.scenarioNum);
@@ -296,27 +274,24 @@ public class SubSolverWrapper {
                 logger.debug("number of paths: " + numPaths);
                 logger.debug("completed column-gen iteration " + columnGenIter);
 
-                // Re-initialize the SubSolver object to ensure that its data doesn't get stale.
-                if (!optimal) {
+                // Cleanup CPLEX continers of the SubSolver object.
+                if (!optimal)
                     ss.end();
-                    ss = new SubSolver(probability);
-                }
                 ++columnGenIter;
             }
 
             // Update master problem data
             logger.info("reached sub-problem optimality");
-            calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(), ss.getDualsBnd(),
-                    ss.getDualsRisk());
-            calculateBeta(ss.getDualsDelay(), ss.getDualsRisk());
+            calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(), ss.getDualsBound(),
+                    ss.getDualRisk());
+            calculateBeta(ss.getDualsDelay(), ss.getDualRisk());
             uBound += ss.getObjValue();
         }
 
         private void solveWithFullEnumeration() throws IloException {
             try {
                 // Enumerate all paths for each tail.
-                HashMap<Integer, Integer> legDelayMap = getLegDelays(
-                        dataRegistry.getLegs(), Parameters.getDurations(), xValues);
+                HashMap<Integer, Integer> legDelayMap = getTotalDelays();
 
                 ArrayList<Path> allPaths = dataRegistry.getNetwork().enumeratePathsForTails(
                         dataRegistry.getTails(), legDelayMap, dataRegistry.getMaxEndTime());
@@ -329,23 +304,22 @@ public class SubSolverWrapper {
                 for(Path p : allPaths)
                     tailPathsMap.get(p.getTail().getId()).add(p);
 
-                // beta x + theta >= alpha - Benders cut
-                SubSolver ss = new SubSolver(probability);
-                ss.constructSecondStage(xValues, dataRegistry, scenarioNum, iter, tailPathsMap);
+                SubSolver ss = new SubSolver(dataRegistry.getTails(), dataRegistry.getLegs(), reschedules, probability);
+                ss.constructSecondStage(tailPathsMap);
 
                 if (Parameters.isDebugVerbose())
                     ss.writeLPFile("logs/", iter, -1, this.scenarioNum);
 
                 ss.solve();
                 ss.collectDuals();
+                ss.end();
 
                 if (Parameters.isDebugVerbose())
                     ss.writeCplexSolution("logs/", iter, -1, this.scenarioNum);
 
-                calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(), ss.getDualsBnd(),
-                        ss.getDualsRisk());
-                calculateBeta(ss.getDualsDelay(), ss.getDualsRisk());
-                ss.end();
+                calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(), ss.getDualsBound(),
+                        ss.getDualRisk());
+                calculateBeta(ss.getDualsDelay(), ss.getDualRisk());
 
                 uBound += ss.getObjValue();
             } catch (OptException oe) {
@@ -355,20 +329,15 @@ public class SubSolverWrapper {
             }
         }
 
-        private HashMap<Integer, Integer> getLegDelays(ArrayList<Leg> legs, ArrayList<Integer> durations,
-                                                      double[][] xValues) {
-            // Collect planned delays from first stage solution.
-            HashMap<Integer, Integer> plannedDelays = new HashMap<>();
-            for(int i = 0; i < durations.size(); ++i) {
-                for(int j = 0; j < legs.size(); ++j) {
-                    if(xValues[i][j] >= eps)
-                        plannedDelays.put(legs.get(j).getIndex(), durations.get(i));
-                }
-            }
-
-            // Combine planned and delay maps into a single one.
+        /**
+         * Return the total delay time in minutes of each leg for the second stage.
+         *
+         * Total delay is the maximum of rescheduled time from first stage and random delay of second-stage scenario.
+         * @return map with leg indices as keys, total delay times as corresponding values.
+         */
+        private HashMap<Integer, Integer> getTotalDelays() {
             HashMap<Integer, Integer> combinedDelayMap = new HashMap<>();
-            for(Leg leg : legs) {
+            for(Leg leg : dataRegistry.getLegs()) {
                 int delayTime = 0;
                 boolean updated = false;
 
@@ -377,8 +346,8 @@ public class SubSolverWrapper {
                     updated = true;
                 }
 
-                if(plannedDelays.containsKey(leg.getIndex())) {
-                    delayTime = Math.max(delayTime, plannedDelays.get(leg.getIndex()));
+                if (reschedules[leg.getIndex()] > 0)  {
+                    delayTime = Math.max(delayTime, reschedules[leg.getIndex()]);
                     updated = true;
                 }
 
@@ -390,15 +359,15 @@ public class SubSolverWrapper {
         }
     }
 
-    public static double getuBound() {
+    public double getuBound() {
         return uBound;
     }
 
-    public static double getAlpha() {
+    public double getAlpha() {
         return alpha;
     }
 
-    public static double[][] getBeta() {
+    public double[][] getBeta() {
         return beta;
     }
 }
