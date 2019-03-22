@@ -5,6 +5,7 @@ import com.stochastic.domain.Tail;
 import com.stochastic.registry.Parameters;
 import com.stochastic.utility.Constants;
 import com.stochastic.utility.OptException;
+import com.stochastic.utility.Utility;
 import ilog.concert.*;
 import ilog.cplex.IloCplex;
 
@@ -182,12 +183,12 @@ public class MasterSolver {
             for (int i = 0; i < durations.size(); i++)
                 for (int j = 0; j < legs.size(); j++)
                     if (Math.abs(betaValue[i][j]) >= Constants.EPS)
-                        cons.addTerm(X[i][j], betaValue[i][j]);
+                        cons.addTerm(X[i][j], Utility.roundUp(betaValue[i][j], 3));
 
             cons.addTerm(thetaVar, 1);
 
             double rhs = Math.abs(alphaValue) >= Constants.EPS ? alphaValue : 0.0;
-            IloRange r = masterCplex.addGe(cons, rhs);
+            IloRange r = masterCplex.addGe(cons, Utility.roundDown(rhs, 3));
             r.setName("benders_cut_" + cutcounter);
             ++cutcounter;
 

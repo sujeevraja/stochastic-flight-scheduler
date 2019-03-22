@@ -12,9 +12,9 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 
-class LabelPathGenerator {
+class PricingProblemSolver {
     /**
-     * LabelPathGenerator uses label setting and partial path pruning to generate routes for the second-stage
+     * PricingProblemSolver uses label setting and partial path pruning to generate routes for the second-stage
      * model.
      */
     private final static Logger logger = LogManager.getLogger(SubSolverWrapper.class);
@@ -33,8 +33,8 @@ class LabelPathGenerator {
     private ArrayList<ArrayList<Label>> labels; // labels[i] are labels ending at legs[i].
     private ArrayList<Label> sinkLabels; // labels ending at sink node.
 
-    LabelPathGenerator(Tail tail, ArrayList<Leg> legs, Network network, int[] delays,
-                       double tailDual, double[] legCoverDuals, double[] delayLinkDuals) {
+    PricingProblemSolver(Tail tail, ArrayList<Leg> legs, Network network, int[] delays,
+                         double tailDual, double[] legCoverDuals, double[] delayLinkDuals) {
         this.tail = tail;
         this.legs = legs;
         this.numLegs = legs.size();
@@ -54,7 +54,7 @@ class LabelPathGenerator {
 
     /**
      * Given a list of paths that have already been generated, this function builds labels by following the legs and
-     * delay times on each path and populates the sinkLabels container with them. This helps prune out * dominated
+     * delay times on each path and populates the sinkLabels container with them. This helps prune out dominated
      * (especially duplicate) paths.
      *
      * @param paths list of paths that have already been generated.

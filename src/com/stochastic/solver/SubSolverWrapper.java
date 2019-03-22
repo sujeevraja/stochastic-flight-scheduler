@@ -36,20 +36,14 @@ public class SubSolverWrapper {
     private static double[][] xValues;
     private static double uBound;
 
-    public static void SubSolverWrapperInit(DataRegistry dataRegistry, double[][] xValues, int iter)
-            throws OptException {
-        try {
-            SubSolverWrapper.dataRegistry = dataRegistry;
-            SubSolverWrapper.xValues = xValues;
-            SubSolverWrapper.iter = iter;
+    public static void SubSolverWrapperInit(DataRegistry dataRegistry, double[][] xValues, int iter) {
+        SubSolverWrapper.dataRegistry = dataRegistry;
+        SubSolverWrapper.xValues = xValues;
+        SubSolverWrapper.iter = iter;
 
-            alpha = 0;
-            uBound = MasterSolver.getFSObjValue();
-            beta = new double[Parameters.getNumDurations()][dataRegistry.getLegs().size()];
-        } catch (Exception e) {
-            logger.error(e.getStackTrace());
-            throw new OptException("error at SubSolverWrapperInit");
-        }
+        alpha = 0;
+        uBound = MasterSolver.getFSObjValue();
+        beta = new double[Parameters.getNumDurations()][dataRegistry.getLegs().size()];
     }
 
     private synchronized static void calculateAlpha(double[] dualsLegs, double[] dualsTail, double[] dualsDelay,
@@ -216,8 +210,7 @@ public class SubSolverWrapper {
                 if (Parameters.isFullEnumeration())
                     solveWithFullEnumeration();
                 else
-                    solveWithNewLabeling();
-                    // solveWithLabeling();
+                    solveWithLabeling();
             } catch (IloException ie) {
                 logger.error(ie);
                 logger.error("CPLEX error solving subproblem");
@@ -229,7 +222,7 @@ public class SubSolverWrapper {
             }
         }
 
-        private void solveWithNewLabeling() throws IloException, OptException {
+        private void solveWithLabeling() throws IloException, OptException {
             SubSolver ss = new SubSolver(probability);
             HashMap<Integer, Integer> legDelayMap = getLegDelays(dataRegistry.getLegs(),
                     Parameters.getDurations(), xValues);
@@ -269,7 +262,7 @@ public class SubSolverWrapper {
                 for (int i = 0; i < tails.size(); ++i) {
                     Tail tail = tails.get(i);
 
-                    LabelPathGenerator lpg = new LabelPathGenerator(tail, legs, dataRegistry.getNetwork(),
+                    PricingProblemSolver lpg = new PricingProblemSolver(tail, legs, dataRegistry.getNetwork(),
                             delays, tailDuals[i], ss.getDualsLeg(), ss.getDualsDelay());
 
                     // Build sink labels for paths that have already been generated and add them to the labeling
@@ -317,84 +310,6 @@ public class SubSolverWrapper {
                     ss.getDualsRisk());
             calculateBeta(ss.getDualsDelay(), ss.getDualsRisk());
             uBound += ss.getObjValue();
-        }
-
-        private void solveWithLabeling() throws IloException, OptException {
-            HashMap<Integer, ArrayList<Path>> pathsAll;
-
-            SubSolver s1 = new SubSolver(probability);
-            HashMap<Integer, Integer> legDelayMap = getLegDelays( dataRegistry.getLegs(),
-                    Parameters.getDurations(), xValues);
-
-            if (hmPaths.containsKey(this.scenarioNum))
-                pathsAll = hmPaths.get(this.scenarioNum);
-            else {
-                // load on-plan paths with propagated delays into the container that will be provided to SubSolver.
-                pathsAll = getInitialPaths(legDelayMap);
-            }
-
-            boolean solveAgain = true;
-            double uBoundValue = 0;
-
-            double[] dualsLeg;
-            double[] dualsTail;
-            double[] dualsDelay;
-
-            int wCnt = -1;
-            while (solveAgain) {
-                wCnt++;
-                // beta x + theta >= alpha - Benders cut
-                SubSolver s = new SubSolver(probability);
-                s.constructSecondStage(xValues, dataRegistry, scenarioNum, iter, pathsAll);
-                s.solve();
-                s.collectDuals();
-                if (Parameters.isDebugVerbose())
-                    s.writeLPFile("logs/", iter, wCnt, this.scenarioNum);
-
-                uBoundValue = s.getObjValue();
-                calculateAlpha(s.getDualsLeg(), s.getDualsTail(), s.getDualsDelay(), s.getDualsBnd(), s.getDualsRisk());
-                calculateBeta(s.getDualsDelay(), s.getDualsRisk());
-
-                dualsLeg = s.getDualsLeg();
-                dualsTail = s.getDualsTail();
-                dualsDelay = s.getDualsDelay();
-
-                s.end();
-
-                boolean pathAdded = false;
-                int index = 0;
-                for (Tail t : dataRegistry.getTails()) {
-                    ArrayList<Path> arrT = new LabelingAlgorithm().getPaths(dataRegistry, dataRegistry.getTails(),
-                            legDelayMap, t, dualsLeg, dualsTail[index], dualsDelay, pathsAll.get(t.getId()));
-
-                    // add the paths to the master list
-                    if (arrT.size() > 0) {
-//                            updatePaths(t, arrT); dont add the paths since the list changes everytime based on the new xValue
-                        pathAdded = true;
-
-                        logger.debug(wCnt + " Label-Start: " + t.getId());
-                        for (Path p : arrT)
-                            logger.debug(p);
-                        logger.debug(wCnt + " Label-End: " + t.getId());
-                    }
-
-                    logger.debug(wCnt + " pathsAll-size: " + pathsAll.get(t.getId()).size());
-
-                    ArrayList<Path> paths = pathsAll.get(t.getId());
-                    paths.addAll(arrT);
-                    index++;
-
-                    logger.debug(wCnt + " PathsAll-Start: " + t.getId());
-                    for (Path p : paths)
-                        logger.debug(p);
-                    logger.debug(wCnt + " PathsAll-End: " + t.getId());
-                }
-
-                if (!pathAdded)
-                    solveAgain = false;
-            }
-
-            uBound += uBoundValue; // from last iteration
         }
 
         private void solveWithFullEnumeration() throws IloException {
@@ -486,124 +401,4 @@ public class SubSolverWrapper {
     public static double[][] getBeta() {
         return beta;
     }
-
-    public static class ScenarioData {
-        int sceNo;
-        int iter;
-        int pathIndex;
-        int tailIndex;
-        int legId;
-
-        public int getSceNo() {
-            return sceNo;
-        }
-
-        public int getIter() {
-            return iter;
-        }
-
-        public void setIter(int iter) {
-            this.iter = iter;
-        }
-
-        public void setSceNo(int sceNo) {
-            this.sceNo = sceNo;
-        }
-
-        public int getPathIndex() {
-            return pathIndex;
-        }
-
-        public void setPathIndex(int pathIndex) {
-            this.pathIndex = pathIndex;
-        }
-
-        public int getTailIndex() {
-            return tailIndex;
-        }
-
-        public void setTailIndex(int tailIndex) {
-            this.tailIndex = tailIndex;
-        }
-
-        public int getLegId() {
-            return legId;
-        }
-
-        public void setLegId(int legId) {
-            this.legId = legId;
-        }
-
-        public static HashMap<ScenarioData, Integer> dataStore = new HashMap<>();
-
-        public ScenarioData() {
-            super();
-        }
-
-        public ScenarioData(int sceNo, int iter, int pathIndex, int tailIndex, int legId) {
-            super();
-            this.sceNo = sceNo;
-            this.iter = iter;
-            this.pathIndex = pathIndex;
-            this.tailIndex = tailIndex;
-            this.legId = legId;
-        }
-
-        public static void addData(int sNo, int iter, int pIndex, int tIndex, int legId, int duration) {
-            ScenarioData sd = new ScenarioData(sNo, iter, pIndex, tIndex, legId);
-            dataStore.put(sd, duration);
-        }
-
-        public static void printData() {
-            logger.debug(" Prints the scenario data: ");
-            logger.debug("-----");
-            for (Map.Entry<ScenarioData, Integer> entry : dataStore.entrySet()) {
-                ScenarioData key = entry.getKey();
-                Integer value = entry.getValue();
-                logger.debug("iteration: " + key.iter);
-                logger.debug("scenario number: " + key.sceNo);
-                logger.debug("path index: " + key.pathIndex);
-                logger.debug("tail index: " + key.tailIndex);
-                logger.debug("leg id: " + key.legId);
-                logger.debug("value: " + value);
-                logger.debug("-----");
-            }
-        }
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + iter;
-            result = prime * result + legId;
-            result = prime * result + pathIndex;
-            result = prime * result + sceNo;
-            result = prime * result + tailIndex;
-            return result;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            ScenarioData other = (ScenarioData) obj;
-            if (iter != other.iter)
-                return false;
-            if (legId != other.legId)
-                return false;
-            if (pathIndex != other.pathIndex)
-                return false;
-            if (sceNo != other.sceNo)
-                return false;
-            if (tailIndex != other.tailIndex)
-                return false;
-            return true;
-        }
-
-    }
-
 }

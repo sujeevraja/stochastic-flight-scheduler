@@ -48,6 +48,7 @@ public class Controller {
         // Read leg data and remove unnecessary legs
         ArrayList<Leg> legs = new ScheduleDAO(instancePath + "\\Schedule.xml").getLegs();
         storeLegs(legs);
+        // limitNumTails();
         logger.info("Collected leg and tail data from Schedule.xml.");
 
         dataRegistry.buildConnectionNetwork();
@@ -128,15 +129,13 @@ public class Controller {
         MasterSolver.end();
         bounds.add(lBound);
         bounds.add(uBound);
-
-        // if (lBound - uBound > 1) {
-        //     logger.info("DATA PRINTED");
-        //     SubSolverWrapper.ScenarioData.printData();
-        // }
-
         logger.info("Algorithm ends.");
     }
 
+    /**
+     * This funciton is an alternative to generateScenarioDelays() and can be used to study a specific set of random
+     * delay scenarios.
+     */
     private void generateTestDelays() {
         scenarioDelays = new ArrayList<>(Collections.singletonList(45));
         scenarioProbabilities = new ArrayList<>(Collections.singletonList(1.0));
@@ -147,11 +146,15 @@ public class Controller {
         dataRegistry.setMaxLegDelayInMin(Collections.max(scenarioDelays));
     }
 
+    /**
+     * Generates random delays that will be applied to the first flight of each tail's original schedule.
+     * Also generates delay probabilites using frequency values. This function also updates the number of scenarios
+     * if delay times repeat.
+     *
+     * @param scale scale parameter of the lognormal distribution used to generate random delays
+     * @param shape shape parameter of the distribution
+     */
     private void generateScenarioDelays(double scale, double shape) {
-        // Generates random delays that will be applied to the first flight of each tail's original schedule.
-        // Also generates delay probabilities using frequency values.
-        // This function changes the number of scenarios as well if delay times repeat.
-
         int numSamples = Parameters.getNumScenarios();
         LogNormalDistribution logNormal = new LogNormalDistribution(scale, shape);
 
@@ -199,11 +202,15 @@ public class Controller {
             probStr.append(scenarioProbabilities.get(i));
             probStr.append(" ");
         }
-
         logger.info(delayStr);
         logger.info(probStr);
     }
 
+    /**
+     * Processes the parsed data to populate data registry containers like legs, tails and on-plan paths.
+     *
+     * @param inputLegs list of legs parsed from a Schedule.xml file.
+     */
     private void storeLegs(ArrayList<Leg> inputLegs) {
         ArrayList<Leg> legs = new ArrayList<>();
         HashMap<Integer, ArrayList<Leg>> tailHashMap = new HashMap<>();
@@ -251,7 +258,7 @@ public class Controller {
         dataRegistry.setTails(tails);
         logger.info("Number of tails: " + tails.size());
 
-        HashMap<Integer, Path> tailPaths = new HashMap<Integer, Path>();
+        HashMap<Integer, Path> tailPaths = new HashMap<>();
         for (Map.Entry<Integer, ArrayList<Leg>> entry : tailHashMap.entrySet()) {
             ArrayList<Leg> tailLegs = entry.getValue();
             tailLegs.sort(Comparator.comparing(Leg::getDepTime));
@@ -277,6 +284,58 @@ public class Controller {
             tailPaths.put(entry.getKey(), p);
         }
         dataRegistry.setTailHashMap(tailPaths);
+    }
+
+    /**
+     * This function helps reduce problem size for debugging/testing purposes.
+     */
+    private void limitNumTails() {
+        // limit the stored tails.
+        ArrayList<Tail> newTails = new ArrayList<>();
+        ArrayList<Tail> oldTails = dataRegistry.getTails();
+
+        int tailIndex = 0;
+
+        for (int i = 0; i < 60; ++i, ++tailIndex) { // this causes infeasible 2nd stage, check why
+        // for (int i = 10; i < 60; ++i, ++tailIndex) {
+        // for (int i = 20; i < 60; ++i, ++tailIndex) {
+        // for (int i = 30; i < 60; ++i, ++tailIndex) {
+        // for (int i = 40; i < 60; ++i, ++tailIndex) {
+        // for (int i = 43; i < 60; ++i, ++tailIndex) {
+        // for (int i = 44; i < 60; ++i, ++tailIndex) {
+        // for (int i = 44; i < 55; ++i, ++tailIndex) {
+        // for (int i = 44; i < 54; ++i, ++tailIndex) {
+        // for (int i = 45; i < 54; ++i, ++tailIndex) {
+            Tail tail = oldTails.get(i);
+            tail.setIndex(tailIndex);
+            newTails.add(tail);
+            logger.debug("selected tail " + tail.getId());
+        }
+        dataRegistry.setTails(newTails);
+
+        // cleanup tail paths.
+        HashMap<Integer, Path> tailHashMap = dataRegistry.getTailHashMap();
+        HashMap<Integer, Path> newTailPathMap = new HashMap<>();
+        for (Tail tail : newTails)
+            newTailPathMap.put(tail.getId(), tailHashMap.get(tail.getId()));
+        dataRegistry.setTailHashMap(newTailPathMap);
+
+        // cleanup legs.
+        LocalDateTime maxEndTime = null;
+        ArrayList<Leg> newLegs = new ArrayList<>();
+        int legIndex = 0;
+        for (Leg leg : dataRegistry.getLegs()) {
+            Integer tailId = leg.getOrigTailId();
+            if (newTailPathMap.containsKey(tailId)) {
+                leg.setIndex(legIndex);
+                newLegs.add(leg);
+                if (maxEndTime == null || leg.getArrTime().isAfter(maxEndTime))
+                    maxEndTime = leg.getArrTime();
+                ++legIndex;
+            }
+        }
+        dataRegistry.setLegs(newLegs);
+        dataRegistry.setMaxEndTime(maxEndTime);
     }
 
     public void generateDelays(int numTestScenarios) {
