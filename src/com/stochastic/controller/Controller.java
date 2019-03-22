@@ -62,14 +62,14 @@ public class Controller {
         int[] durations = Parameters.getDurations();
 
         int iter = -1;
-        MasterSolver.MasterSolverInit(legs, tails, durations);
-        MasterSolver.constructFirstStage();
+        MasterSolver masterSolver = new MasterSolver(legs, tails, durations);
+        masterSolver.constructFirstStage();
 
         if (Parameters.isDebugVerbose())
-            MasterSolver.writeLPFile("logs/before_cuts_master.lp");
+            masterSolver.writeLPFile("logs/before_cuts_master.lp");
 
-        MasterSolver.solve(iter);
-        MasterSolver.addColumn();
+        masterSolver.solve(iter);
+        masterSolver.addColumn();
 
         double lBound;
         double uBound = Double.MAX_VALUE;
@@ -93,21 +93,23 @@ public class Controller {
 
         do {
             iter++;
-            SubSolverWrapper ssWrapper = new SubSolverWrapper(dataRegistry, MasterSolver.getxValues(), iter);
+            SubSolverWrapper ssWrapper = new SubSolverWrapper(dataRegistry, masterSolver.getxValues(), iter,
+                    masterSolver.getFSObjValue());
+
             ssWrapper.solveSequential(scenarioDelays, scenarioProbabilities);
             // ssWrapper.solveParallel(scenarioDelays, scenarioProbabilities);
 
-            MasterSolver.constructBendersCut(ssWrapper.getAlpha(), ssWrapper.getBeta());
+            masterSolver.constructBendersCut(ssWrapper.getAlpha(), ssWrapper.getBeta());
 
             if (Parameters.isDebugVerbose())
-                MasterSolver.writeLPFile("logs/master_" + iter + ".lp");
+                masterSolver.writeLPFile("logs/master_" + iter + ".lp");
 
-            MasterSolver.solve(iter);
+            masterSolver.solve(iter);
 
             if (Parameters.isDebugVerbose())
-                MasterSolver.writeSolution("logs/master_" + iter + ".xml");
+                masterSolver.writeSolution("logs/master_" + iter + ".xml");
 
-            lBound = MasterSolver.getObjValue();
+            lBound = masterSolver.getObjValue();
 
             logger.info("----- LB: " + lBound + " UB: " + uBound + " Iter: " + iter
                     + " ssWrapper.getuBound(): " + ssWrapper.getuBound());
@@ -119,8 +121,8 @@ public class Controller {
         }
         while (uBound - lBound > 0.001); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
 
-        MasterSolver.printSolution();
-        MasterSolver.end();
+        masterSolver.printSolution();
+        masterSolver.end();
         bounds.add(lBound);
         bounds.add(uBound);
         logger.info("Algorithm ends.");

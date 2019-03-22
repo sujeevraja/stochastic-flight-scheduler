@@ -31,14 +31,15 @@ public class SubSolverWrapper {
     private double[][] beta;
     private int numThreads = 2;
 
-    private double[][] xValues;
     private int[] reschedules; // planned delays from first stage solution.
     private double uBound;
 
-    public SubSolverWrapper(DataRegistry dataRegistry, double[][] xValues, int iter) {
+    public SubSolverWrapper(DataRegistry dataRegistry, double[][] xValues, int iter, double uBound) {
         this.dataRegistry = dataRegistry;
-        this.xValues = xValues;
         this.iter = iter;
+        this.uBound = uBound;
+        this.alpha = 0;
+        this.beta = new double[Parameters.getNumDurations()][dataRegistry.getLegs().size()];
 
         // Collect planned delays from first stage solution.
         ArrayList<Leg> legs = dataRegistry.getLegs();
@@ -49,10 +50,6 @@ public class SubSolverWrapper {
             for (int j = 0; j < legs.size(); ++j)
                 if (xValues[i][j] >= Constants.EPS)
                     reschedules[j] = durations[i];
-
-        alpha = 0;
-        uBound = MasterSolver.getFSObjValue();
-        beta = new double[Parameters.getNumDurations()][dataRegistry.getLegs().size()];
     }
 
     private synchronized void calculateAlpha(double[] dualsLegs, double[] dualsTail, double[] dualsDelay,
