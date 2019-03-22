@@ -210,8 +210,7 @@ public class SubSolverWrapper {
                 if (Parameters.isFullEnumeration())
                     solveWithFullEnumeration();
                 else
-                    solveWithNewLabeling();
-                    // solveWithLabeling();
+                    solveWithLabeling();
             } catch (IloException ie) {
                 logger.error(ie);
                 logger.error("CPLEX error solving subproblem");
@@ -223,7 +222,7 @@ public class SubSolverWrapper {
             }
         }
 
-        private void solveWithNewLabeling() throws IloException, OptException {
+        private void solveWithLabeling() throws IloException, OptException {
             SubSolver ss = new SubSolver(probability);
             HashMap<Integer, Integer> legDelayMap = getLegDelays(dataRegistry.getLegs(),
                     Parameters.getDurations(), xValues);
@@ -263,7 +262,7 @@ public class SubSolverWrapper {
                 for (int i = 0; i < tails.size(); ++i) {
                     Tail tail = tails.get(i);
 
-                    LabelPathGenerator lpg = new LabelPathGenerator(tail, legs, dataRegistry.getNetwork(),
+                    PricingProblemSolver lpg = new PricingProblemSolver(tail, legs, dataRegistry.getNetwork(),
                             delays, tailDuals[i], ss.getDualsLeg(), ss.getDualsDelay());
 
                     // Build sink labels for paths that have already been generated and add them to the labeling
@@ -311,84 +310,6 @@ public class SubSolverWrapper {
                     ss.getDualsRisk());
             calculateBeta(ss.getDualsDelay(), ss.getDualsRisk());
             uBound += ss.getObjValue();
-        }
-
-        private void solveWithLabeling() throws IloException, OptException {
-            HashMap<Integer, ArrayList<Path>> pathsAll;
-
-            SubSolver s1 = new SubSolver(probability);
-            HashMap<Integer, Integer> legDelayMap = getLegDelays( dataRegistry.getLegs(),
-                    Parameters.getDurations(), xValues);
-
-            if (hmPaths.containsKey(this.scenarioNum))
-                pathsAll = hmPaths.get(this.scenarioNum);
-            else {
-                // load on-plan paths with propagated delays into the container that will be provided to SubSolver.
-                pathsAll = getInitialPaths(legDelayMap);
-            }
-
-            boolean solveAgain = true;
-            double uBoundValue = 0;
-
-            double[] dualsLeg;
-            double[] dualsTail;
-            double[] dualsDelay;
-
-            int wCnt = -1;
-            while (solveAgain) {
-                wCnt++;
-                // beta x + theta >= alpha - Benders cut
-                SubSolver s = new SubSolver(probability);
-                s.constructSecondStage(xValues, dataRegistry, scenarioNum, iter, pathsAll);
-                s.solve();
-                s.collectDuals();
-                if (Parameters.isDebugVerbose())
-                    s.writeLPFile("logs/", iter, wCnt, this.scenarioNum);
-
-                uBoundValue = s.getObjValue();
-                calculateAlpha(s.getDualsLeg(), s.getDualsTail(), s.getDualsDelay(), s.getDualsBnd(), s.getDualsRisk());
-                calculateBeta(s.getDualsDelay(), s.getDualsRisk());
-
-                dualsLeg = s.getDualsLeg();
-                dualsTail = s.getDualsTail();
-                dualsDelay = s.getDualsDelay();
-
-                s.end();
-
-                boolean pathAdded = false;
-                int index = 0;
-                for (Tail t : dataRegistry.getTails()) {
-                    ArrayList<Path> arrT = new LabelingAlgorithm().getPaths(dataRegistry, dataRegistry.getTails(),
-                            legDelayMap, t, dualsLeg, dualsTail[index], dualsDelay, pathsAll.get(t.getId()));
-
-                    // add the paths to the master list
-                    if (arrT.size() > 0) {
-//                            updatePaths(t, arrT); dont add the paths since the list changes everytime based on the new xValue
-                        pathAdded = true;
-
-                        logger.debug(wCnt + " Label-Start: " + t.getId());
-                        for (Path p : arrT)
-                            logger.debug(p);
-                        logger.debug(wCnt + " Label-End: " + t.getId());
-                    }
-
-                    logger.debug(wCnt + " pathsAll-size: " + pathsAll.get(t.getId()).size());
-
-                    ArrayList<Path> paths = pathsAll.get(t.getId());
-                    paths.addAll(arrT);
-                    index++;
-
-                    logger.debug(wCnt + " PathsAll-Start: " + t.getId());
-                    for (Path p : paths)
-                        logger.debug(p);
-                    logger.debug(wCnt + " PathsAll-End: " + t.getId());
-                }
-
-                if (!pathAdded)
-                    solveAgain = false;
-            }
-
-            uBound += uBoundValue; // from last iteration
         }
 
         private void solveWithFullEnumeration() throws IloException {
