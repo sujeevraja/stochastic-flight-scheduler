@@ -26,7 +26,6 @@ public class SubSolverWrapper {
      */
     private final static Logger logger = LogManager.getLogger(SubSolverWrapper.class);
     private DataRegistry dataRegistry;
-    private int numThreads = 2;
     private int[] reschedules; // planned delays from first stage solution.
     private int iter;
     private double uBound;
@@ -104,7 +103,7 @@ public class SubSolverWrapper {
 
     public void solveParallel(ArrayList<Integer> scenarioDelays, ArrayList<Double> probabilities) throws OptException {
         try {
-            ExecutorService exSrv = Executors.newFixedThreadPool(numThreads);
+            ExecutorService exSrv = Executors.newFixedThreadPool(Parameters.getNumThreadsForSecondStage());
 
             for (int i = 0; i < dataRegistry.getNumScenarios(); i++) {
                 // Thread.sleep(500);

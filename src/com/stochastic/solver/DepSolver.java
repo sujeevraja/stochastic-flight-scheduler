@@ -20,8 +20,10 @@ import org.apache.logging.log4j.LogManager;
 
 public class DepSolver {
     /**
-     * Class that is used to solve a set packing model with CPLEX using a given
-     * set of paths.
+     * DepSolver solves the Deterministic Equivalent Problem (DEP) for the 2-stage model.
+     *
+     * The DEP model contains variables and constraints from both the first and second stage. The DEP objective is the
+     * sum of the first stage objective and the expected value of the second stage objective.
      */
     private final Logger logger = LogManager.getLogger(DepSolver.class);
     private final double eps = 1.0e-5;
@@ -29,8 +31,7 @@ public class DepSolver {
     ArrayList<Tail> tails;
     ArrayList<Leg> legs;
     int[] durations;
-//    int[][] sceVal;
-    
+
     // cplex variables
     private IloIntVar[][] x;    
     private IloNumVar[][] y; // y[i] = 1 if path i is selected, 0 else.
@@ -41,20 +42,8 @@ public class DepSolver {
 
     private double objValue;
 
-    // private static IloNumVar neta; // = cplex.numVar(-Double.POSITIVE_INFINITY, 0, "neta");
     public DepSolver() {}
     
-    public void printAllPaths()
-    {
-    	for(Path p: paths)
-    	{
-    		logger.debug("Tail: " + p.getTail().getId());
-    		
-        	for(Leg l: p.getLegs())    		
-        		logger.debug("Leg: " + l.getId());
-    	}
-    }
-
     public void constructModel(DataRegistry dataRegistry) throws OptException {
         try {
             tails = dataRegistry.getTails();
@@ -71,8 +60,7 @@ public class DepSolver {
                         dataRegistry.getMaxEndTime());
 
     		logger.debug("Tail: " + tails.size() + " legs: " + legs.size() + " durations: " + durations.length);
-            printAllPaths();
-            
+
             // Create containers to build CPLEX model.
             subCplex = new IloCplex();
             final Integer numLegs = legs.size();

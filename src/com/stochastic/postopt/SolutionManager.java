@@ -80,7 +80,6 @@ public class SolutionManager {
         for(int i = 0; i < testDelays.size(); ++i) {
             Integer currDelay = testDelays.get(i);
             logger.info("Current test delay: " + currDelay);
-//            dataRegistry.setMaxLegDelayInMin(Math.max(dataRegistry.getMaxLegDelayInMin(), currDelay));
             DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getTails(), currDelay);
 
             // solve model without rescheduling legs

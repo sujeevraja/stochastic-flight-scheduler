@@ -71,9 +71,6 @@ public class Controller {
         masterSolver.solve(iter);
         masterSolver.addColumn();
 
-        double lBound;
-        double uBound = Double.MAX_VALUE;
-
         logger.info("Algorithm starts.");
 
         // generate random delays for 2nd stage scenarios.
@@ -91,6 +88,8 @@ public class Controller {
 
         logScenarioDelays();
 
+        double lBound;
+        double uBound = Double.MAX_VALUE;
         do {
             iter++;
             SubSolverWrapper ssWrapper = new SubSolverWrapper(dataRegistry, masterSolver.getReschedules(), iter,
