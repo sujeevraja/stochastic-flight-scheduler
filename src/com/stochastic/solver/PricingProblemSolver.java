@@ -105,38 +105,6 @@ class PricingProblemSolver {
         if (!limitReached())
             runLabelSettingAlgorithm();
 
-        /*
-        ArrayList<Path> paths = new ArrayList<>();
-        for (Label sinkLabel : sinkLabels) {
-            if (!sinkLabel.isPreExisting()) {
-                Path path = buildPathFromLabel(sinkLabel);
-                paths.add(path);
-            }
-        }
-        */
-
-        /*
-        ArrayList<Label> newLabels = new ArrayList<>();
-        for (Label sinkLabel : sinkLabels)
-            if (!sinkLabel.isPreExisting())
-                newLabels.add(sinkLabel);
-
-        newLabels.sort(Comparator.comparing(Label::getReducedCost));
-
-        ArrayList<Path> paths = new ArrayList<>();
-        int numPaths = Math.min(50, newLabels.size());
-        for (int i = 0;  i < numPaths; ++i)
-            paths.add(buildPathFromLabel(newLabels.get(i)));
-            */
-
-        /*
-        newSinkLabels.sort(Comparator.comparing(Label::getReducedCost));
-        int numPaths = Math.min(Parameters.getNumReducedCostPaths(), newSinkLabels.size());
-        ArrayList<Path> paths = new ArrayList<>();
-        for (int i = 0; i < numPaths;  ++i)
-            paths.add(buildPathFromLabel(newSinkLabels.get(i)));
-            */
-
         ArrayList<Path> paths = new ArrayList<>();
         for (Label label : newSinkLabels)
             paths.add(buildPathFromLabel(label));
