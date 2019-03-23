@@ -5,6 +5,7 @@ public class Parameters {
     private static double scale;
     private static double shape;
     private static int[] durations;
+    private static int numReducedCostPaths; // number of reduced cost paths to collect in second stage.
     private static boolean fullEnumeration;
     private static boolean debugVerbose; // generates additional logging, writes lP files and solutions.
 
@@ -50,6 +51,14 @@ public class Parameters {
 
     public static int getNumDurations() {
         return durations.length;
+    }
+
+    public static void setNumReducedCostPaths(int numReducedCostPaths) {
+        Parameters.numReducedCostPaths = numReducedCostPaths;
+    }
+
+    public static int getNumReducedCostPaths() {
+        return numReducedCostPaths;
     }
 
     public static void setFullEnumeration(boolean fullEnumeration) {
