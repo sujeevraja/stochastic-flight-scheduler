@@ -12,7 +12,6 @@ import org.apache.logging.log4j.Logger;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 
 class PricingProblemSolver {
@@ -21,6 +20,10 @@ class PricingProblemSolver {
      * model.
      */
     private final static Logger logger = LogManager.getLogger(SubSolverWrapper.class);
+
+    private Parameters.ReducedCostStrategy reducedCostStrategy;
+    private int numReducedCostPaths;
+
     private Tail tail;
     private ArrayList<Leg> legs;
     private int numLegs;
@@ -39,6 +42,9 @@ class PricingProblemSolver {
 
     PricingProblemSolver(Tail tail, ArrayList<Leg> legs, Network network, int[] delays,
                          double tailDual, double[] legCoverDuals, double[] delayLinkDuals) {
+        this.reducedCostStrategy = Parameters.getReducedCostStrategy();
+        this.numReducedCostPaths = Parameters.getNumReducedCostPaths();
+
         this.tail = tail;
         this.legs = legs;
         this.numLegs = legs.size();
@@ -106,8 +112,14 @@ class PricingProblemSolver {
             runLabelSettingAlgorithm();
 
         ArrayList<Path> paths = new ArrayList<>();
-        for (Label label : newSinkLabels)
-            paths.add(buildPathFromLabel(label));
+        int numPaths = newSinkLabels.size();
+        if (reducedCostStrategy == Parameters.ReducedCostStrategy.BEST_PATHS) {
+            newSinkLabels.sort(Comparator.comparing(Label::getReducedCost));
+            numPaths = Math.min(numPaths, numReducedCostPaths);
+        }
+
+        for (int i = 0; i < numPaths; ++i)
+            paths.add(buildPathFromLabel(newSinkLabels.get(i)));
 
         return paths;
     }
@@ -196,7 +208,7 @@ class PricingProblemSolver {
             if (canAddTo(copy, sinkLabels)) {
                 sinkLabels.add(copy);
                 newSinkLabels.add(copy);
-                if (limitReached())
+                if ( limitReached())
                     return;
             }
         }
@@ -308,6 +320,7 @@ class PricingProblemSolver {
     }
 
     private boolean limitReached() {
-        return newSinkLabels.size() > Parameters.getNumReducedCostPaths();
+        return reducedCostStrategy == Parameters.ReducedCostStrategy.FIRST_PATHS &&
+                newSinkLabels.size() > Parameters.getNumReducedCostPaths();
     }
 }

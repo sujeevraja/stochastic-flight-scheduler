@@ -32,7 +32,7 @@ public class Network {
             PathCounter pc = new PathCounter(tail, legs, adjacencyList);
             int numPathsForTail = pc.countPathsForTail();
             logger.info("number of paths for tail " + tail.getId() + "(" + tail.getSourcePort() + " -> "
-                    + tail.getSinkPort() + ": " + numPathsForTail);
+                    + tail.getSinkPort() + "): " + numPathsForTail);
             totalNumPaths += numPathsForTail;
         }
 
