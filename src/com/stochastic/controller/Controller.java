@@ -16,7 +16,6 @@ import org.apache.commons.math3.distribution.LogNormalDistribution;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.*;
 
 import org.apache.logging.log4j.Logger;
@@ -52,6 +51,7 @@ public class Controller {
         logger.info("Collected leg and tail data from Schedule.xml.");
 
         dataRegistry.buildConnectionNetwork();
+        dataRegistry.getNetwork().countPathsForTails(dataRegistry.getTails());
         logger.info("built connection network.");
         logger.info("Completed reading data.");
     }

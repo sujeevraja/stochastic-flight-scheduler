@@ -29,7 +29,10 @@ public class Main {
             Parameters.setScale(3.5);
             Parameters.setShape(0.25);
             Parameters.setDurations(new int[]{5, 10, 15, 20, 25, 30});
-            Parameters.setFullEnumeration(true);
+            Parameters.setFullEnumeration(false);
+
+            Parameters.setReducedCostStrategy(Parameters.ReducedCostStrategy.BEST_PATHS);
+            Parameters.setNumReducedCostPaths(10);
 
             Parameters.setRunSecondStageInParallel(false);
             Parameters.setNumThreadsForSecondStage(2);

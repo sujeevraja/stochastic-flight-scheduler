@@ -4,6 +4,7 @@ import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
 import com.stochastic.network.Network;
 import com.stochastic.network.Path;
+import com.stochastic.registry.Parameters;
 import com.stochastic.utility.Constants;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -11,6 +12,7 @@ import org.apache.logging.log4j.Logger;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 
 class PricingProblemSolver {
     /**
@@ -18,6 +20,10 @@ class PricingProblemSolver {
      * model.
      */
     private final static Logger logger = LogManager.getLogger(SubSolverWrapper.class);
+
+    private Parameters.ReducedCostStrategy reducedCostStrategy;
+    private int numReducedCostPaths;
+
     private Tail tail;
     private ArrayList<Leg> legs;
     private int numLegs;
@@ -32,9 +38,13 @@ class PricingProblemSolver {
     // containers utilized during labeling procedure
     private ArrayList<ArrayList<Label>> labels; // labels[i] are labels ending at legs[i].
     private ArrayList<Label> sinkLabels; // labels ending at sink node.
+    private ArrayList<Label> newSinkLabels; // labels ending at sink node for new paths.
 
     PricingProblemSolver(Tail tail, ArrayList<Leg> legs, Network network, int[] delays,
                          double tailDual, double[] legCoverDuals, double[] delayLinkDuals) {
+        this.reducedCostStrategy = Parameters.getReducedCostStrategy();
+        this.numReducedCostPaths = Parameters.getNumReducedCostPaths();
+
         this.tail = tail;
         this.legs = legs;
         this.numLegs = legs.size();
@@ -50,6 +60,7 @@ class PricingProblemSolver {
             labels.add(new ArrayList<>());
 
         this.sinkLabels = new ArrayList<>();
+        this.newSinkLabels = new ArrayList<>();
     }
 
     /**
@@ -97,15 +108,19 @@ class PricingProblemSolver {
      */
     ArrayList<Path> generatePathsForTail() {
         initSourceLabels();
-        runLabelSettingAlgorithm();
+        if (!limitReached())
+            runLabelSettingAlgorithm();
 
         ArrayList<Path> paths = new ArrayList<>();
-        for (Label sinkLabel : sinkLabels) {
-            if (!sinkLabel.isPreExisting()) {
-                Path path = buildPathFromLabel(sinkLabel);
-                paths.add(path);
-            }
+        int numPaths = newSinkLabels.size();
+        if (reducedCostStrategy == Parameters.ReducedCostStrategy.BEST_PATHS) {
+            newSinkLabels.sort(Comparator.comparing(Label::getReducedCost));
+            numPaths = Math.min(numPaths, numReducedCostPaths);
         }
+
+        for (int i = 0; i < numPaths; ++i)
+            paths.add(buildPathFromLabel(newSinkLabels.get(i)));
+
         return paths;
     }
 
@@ -133,40 +148,6 @@ class PricingProblemSolver {
     }
 
     /**
-     * Creates initial labels for flights that can connect to the given tail's source port. These labels will be used
-     * to build feasible extensions in "runLabelSettingAlgorithm()".
-     */
-    private void initSourceLabels() {
-        for (int i = 0; i < numLegs; ++i) {
-            Leg leg = legs.get(i);
-            if (!tail.getSourcePort().equals(leg.getDepPort()))
-                continue;
-
-            int totalDelay = delays[i];
-
-            double reducedCost = getReducedCostForLeg(i, totalDelay);
-            Label label = new Label(leg, null, totalDelay, reducedCost, legs.size());
-
-            ArrayList<Label> legLabels = labels.get(i);
-            if (canAddTo(label, legLabels)) {
-                legLabels.add(label);
-
-                // reduced cost for path = (sum of flight reduced costs) - \alpha_t
-                if (leg.getArrPort().equals(tail.getSinkPort())) {
-                    double pathReducedCost = label.getReducedCost() - tailDual;
-
-                    if (pathReducedCost <= -Constants.EPS) {
-                        Label copy = new Label(label);
-                        copy.setReducedCost(pathReducedCost);
-                        if (canAddTo(copy, sinkLabels))
-                            sinkLabels.add(copy);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
      * Runs the forward label setting algorithm to solve the pricing problem for the second-stage.
      *
      * Using the labels created in "initSourceLabels", this algorithm builds and adds feasible extensions for each
@@ -183,10 +164,53 @@ class PricingProblemSolver {
         while (label != null) {
             Integer legIndex = label.getVertex();
             ArrayList<Integer> neighbors = network.getNeighbors(legIndex);
-            if (neighbors != null)
+            if (neighbors != null) {
                 generateFeasibleExtensions(label, neighbors);
+                if (limitReached())
+                    return;
+            }
             label.setProcessed();
             label = getBestLabelToExtend();
+        }
+    }
+
+    /**
+     * Creates initial labels for flights that can connect to the given tail's source port. These labels will be used
+     * to build feasible extensions in "runLabelSettingAlgorithm()".
+     */
+    private void initSourceLabels() {
+        for (int i = 0; i < numLegs; ++i) {
+            Leg leg = legs.get(i);
+            if (!tail.getSourcePort().equals(leg.getDepPort()))
+                continue;
+
+            int totalDelay = delays[i];
+
+            double reducedCost = getReducedCostForLeg(i, totalDelay);
+            Label label = new Label(leg, null, totalDelay, reducedCost, legs.size());
+
+            ArrayList<Label> legLabels = labels.get(i);
+            if (!canAddTo(label, legLabels))
+                continue;
+
+            legLabels.add(label);
+
+            // reduced cost for path = (sum of flight reduced costs) - \alpha_t
+            if (!leg.getArrPort().equals(tail.getSinkPort()))
+                continue;
+
+            double pathReducedCost = label.getReducedCost() - tailDual;
+            if (pathReducedCost >= -Constants.EPS)
+                continue;
+
+            Label copy = new Label(label);
+            copy.setReducedCost(pathReducedCost);
+            if (canAddTo(copy, sinkLabels)) {
+                sinkLabels.add(copy);
+                newSinkLabels.add(copy);
+                if ( limitReached())
+                    return;
+            }
         }
     }
 
@@ -211,8 +235,12 @@ class PricingProblemSolver {
             double pathReducedCost = extension.getReducedCost() - tailDual;
             if (pathReducedCost <= -Constants.EPS) {
                 copy.setReducedCost(pathReducedCost);
-                if (canAddTo(copy, sinkLabels))
+                if (canAddTo(copy, sinkLabels)) {
                     sinkLabels.add(copy);
+                    newSinkLabels.add(copy);
+                    if (limitReached())
+                        return;
+                }
             }
         }
     }
@@ -289,5 +317,10 @@ class PricingProblemSolver {
     private double getReducedCostForLeg(int legIndex, int totalDelay) {
         // reduced cost for flight f = - \beta_f - (a_{rf} * \gamma_f)
         return -(legCoverDuals[legIndex] + (totalDelay * delayLinkDuals[legIndex]));
+    }
+
+    private boolean limitReached() {
+        return reducedCostStrategy == Parameters.ReducedCostStrategy.FIRST_PATHS &&
+                newSinkLabels.size() > Parameters.getNumReducedCostPaths();
     }
 }
