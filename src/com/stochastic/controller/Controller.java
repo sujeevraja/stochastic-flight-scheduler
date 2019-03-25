@@ -134,8 +134,12 @@ public class Controller {
         scenarioDelays = new ArrayList<>(Collections.singletonList(45));
         scenarioProbabilities = new ArrayList<>(Collections.singletonList(1.0));
 
+        // scenarioDelays = new ArrayList<>(Arrays.asList(45, 60));
+        // scenarioProbabilities = new ArrayList<>(Arrays.asList(0.5, 0.5));
+
         // scenarioDelays = new ArrayList<>(Arrays.asList(22, 23, 30, 32, 33, 34, 36, 46, 52));
         // scenarioProbabilities = new ArrayList<>(Arrays.asList(0.1, 0.1, 0.1, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1));
+
         dataRegistry.setNumScenarios(scenarioDelays.size());
         dataRegistry.setMaxLegDelayInMin(Collections.max(scenarioDelays));
     }
