@@ -13,6 +13,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.PriorityQueue;
 
 class PricingProblemSolver {
     /**
@@ -31,14 +32,14 @@ class PricingProblemSolver {
     private int[] delays; // delays[i] = total departure delay of legs[i] (a_{rf} in paper)
 
     // Dual values fromm latest solution of Second Stage Restricted Master Problem.
-    private double tailDual;
-    private double[] legCoverDuals; // \beta in paper, free
-    private double[] delayLinkDuals; // \gamma in paper, <= 0
+    private double tailDual; // \mu in paper, free
+    private double[] legCoverDuals; // \nu in paper, free
+    private double[] delayLinkDuals; // \pi in paper, <= 0
 
     // containers utilized during labeling procedure
     private ArrayList<ArrayList<Label>> labels; // labels[i] are labels ending at legs[i].
     private ArrayList<Label> sinkLabels; // labels ending at sink node.
-    private ArrayList<Label> newSinkLabels; // labels ending at sink node for new paths.
+    private PriorityQueue<Label> unprocessedLabels;
 
     PricingProblemSolver(Tail tail, ArrayList<Leg> legs, Network network, int[] delays,
                          double tailDual, double[] legCoverDuals, double[] delayLinkDuals) {
@@ -59,44 +60,8 @@ class PricingProblemSolver {
         for (int i = 0; i < numLegs; ++i)
             labels.add(new ArrayList<>());
 
+        this.unprocessedLabels = new PriorityQueue<>();
         this.sinkLabels = new ArrayList<>();
-        this.newSinkLabels = new ArrayList<>();
-    }
-
-    /**
-     * Given a list of paths that have already been generated, this function builds labels by following the legs and
-     * delay times on each path and populates the sinkLabels container with them. This helps prune out dominated
-     * (especially duplicate) paths.
-     *
-     * @param paths list of paths that have already been generated.
-     */
-    void initLabelsForExistingPaths(ArrayList<Path> paths) {
-        for (Path path : paths) {
-            ArrayList<Leg> pathLegs = path.getLegs();
-            if (pathLegs.isEmpty())
-                continue;
-
-            Leg srcLeg = pathLegs.get(0);
-            int srcIndex = srcLeg.getIndex();
-            int totalDelay = delays[srcIndex];
-            double reducedCost = getReducedCostForLeg(srcLeg.getIndex(), totalDelay);
-
-            Label label = new Label(srcLeg, null, totalDelay, reducedCost, legs.size());
-            labels.get(srcIndex).add(label);
-
-            // TODO check if we need to add only non-dominated labels from paths.
-            for (int i = 1; i < pathLegs.size(); ++i) {
-                Leg leg = pathLegs.get(i);
-                label = extend(label, leg.getIndex());
-                labels.get(leg.getIndex()).add(label);
-            }
-
-            // Add the last label as a sink label.
-            Label copy = new Label(label);
-            copy.setReducedCost(label.getReducedCost() - tailDual);
-            copy.setPreExisting();
-            sinkLabels.add(copy);
-        }
     }
 
     /**
@@ -112,14 +77,14 @@ class PricingProblemSolver {
             runLabelSettingAlgorithm();
 
         ArrayList<Path> paths = new ArrayList<>();
-        int numPaths = newSinkLabels.size();
+        int numPaths = sinkLabels.size();
         if (reducedCostStrategy == Parameters.ReducedCostStrategy.BEST_PATHS) {
-            newSinkLabels.sort(Comparator.comparing(Label::getReducedCost));
+            sinkLabels.sort(Comparator.comparing(Label::getReducedCost));
             numPaths = Math.min(numPaths, numReducedCostPaths);
         }
 
         for (int i = 0; i < numPaths; ++i)
-            paths.add(buildPathFromLabel(newSinkLabels.get(i)));
+            paths.add(buildPathFromLabel(sinkLabels.get(i)));
 
         return paths;
     }
@@ -160,8 +125,8 @@ class PricingProblemSolver {
      * the second-stage. We will reach optimality if we cannot find any sink label with a negative reduced cost.
      */
     private void runLabelSettingAlgorithm() {
-        Label label = getBestLabelToExtend();
-        while (label != null) {
+        while (!unprocessedLabels.isEmpty()) {
+            Label label = unprocessedLabels.remove();
             Integer legIndex = label.getVertex();
             ArrayList<Integer> neighbors = network.getNeighbors(legIndex);
             if (neighbors != null) {
@@ -169,8 +134,6 @@ class PricingProblemSolver {
                 if (limitReached())
                     return;
             }
-            label.setProcessed();
-            label = getBestLabelToExtend();
         }
     }
 
@@ -194,6 +157,7 @@ class PricingProblemSolver {
                 continue;
 
             legLabels.add(label);
+            unprocessedLabels.add(label);
 
             // reduced cost for path = (sum of flight reduced costs) - \alpha_t
             if (!leg.getArrPort().equals(tail.getSinkPort()))
@@ -207,8 +171,7 @@ class PricingProblemSolver {
             copy.setReducedCost(pathReducedCost);
             if (canAddTo(copy, sinkLabels)) {
                 sinkLabels.add(copy);
-                newSinkLabels.add(copy);
-                if ( limitReached())
+                if (limitReached())
                     return;
             }
         }
@@ -227,6 +190,7 @@ class PricingProblemSolver {
                 continue;
 
             labels.get(nextIndex).add(extension);
+            unprocessedLabels.add(extension);
             Leg nextLeg = legs.get(nextIndex);
             if (!nextLeg.getArrPort().equals(tail.getSinkPort()))
                 continue;
@@ -237,31 +201,11 @@ class PricingProblemSolver {
                 copy.setReducedCost(pathReducedCost);
                 if (canAddTo(copy, sinkLabels)) {
                     sinkLabels.add(copy);
-                    newSinkLabels.add(copy);
                     if (limitReached())
                         return;
                 }
             }
         }
-    }
-
-    /**
-     * Finds the least reduced cost label among all vertices.
-     *
-     * @return the found label.
-     */
-    private Label getBestLabelToExtend() {
-        double minReducedCost = Constants.INFINITY;
-        Label bestLabel = null;
-        for (ArrayList<Label> legLabels : labels) {
-            for (Label label : legLabels) {
-                if (!label.isProcessed() && label.getReducedCost() <= minReducedCost - Constants.EPS) {
-                    minReducedCost = label.getReducedCost();
-                    bestLabel = label;
-                }
-            }
-        }
-        return bestLabel;
     }
 
     /**
@@ -321,6 +265,6 @@ class PricingProblemSolver {
 
     private boolean limitReached() {
         return reducedCostStrategy == Parameters.ReducedCostStrategy.FIRST_PATHS &&
-                newSinkLabels.size() > Parameters.getNumReducedCostPaths();
+                sinkLabels.size() > Parameters.getNumReducedCostPaths();
     }
 }

@@ -5,7 +5,7 @@ import com.stochastic.utility.Constants;
 
 import java.util.Arrays;
 
-class Label {
+class Label implements Comparable<Label> {
     /**
      * This class is used to track and prune partial paths in a label-setting algorithm.
      */
@@ -14,9 +14,6 @@ class Label {
     private Label predecessor;
     private int totalDelay;
     private double reducedCost;
-    private boolean processed;
-    private boolean preExisting;
-    private boolean[] visited;
 
     Label(Leg leg, Label predecessor, int totalDelay, double reducedCost, int numLegs) {
         this.leg = leg;
@@ -24,12 +21,6 @@ class Label {
         this.predecessor = predecessor;
         this.totalDelay = totalDelay;
         this.reducedCost = reducedCost;
-        this.processed = false;
-        this.preExisting = false; // true if Label got built with a pre-existing path, false otherwise.
-
-        visited = new boolean[numLegs];
-        Arrays.fill(visited, false);
-        visited[vertex] = true;
     }
 
     Label(Label other) {
@@ -38,9 +29,6 @@ class Label {
         this.predecessor = other.predecessor;
         this.totalDelay = other.totalDelay;
         this.reducedCost = other.reducedCost;
-        this.processed = other.processed;
-        this.preExisting = other.preExisting;
-        this.visited = other.visited.clone();
     }
 
     @Override
@@ -72,22 +60,6 @@ class Label {
         return reducedCost;
     }
 
-    void setProcessed() {
-        this.processed = true;
-    }
-
-    boolean isProcessed() {
-        return processed;
-    }
-
-    void setPreExisting() {
-        this.preExisting = true;
-    }
-
-    boolean isPreExisting() {
-        return preExisting;
-    }
-
     /**
      * The dominance condition here is valid only if the graph is a DAG (Directed Acyclic Graph).
      * Reason is the following:
@@ -117,7 +89,7 @@ class Label {
             return false;
 
         // TODO check if the inequalities should be the other way around.
-        if (reducedCost > other.reducedCost)
+        if (reducedCost > other.reducedCost - Constants.EPS)
             return false;
 
         boolean strict = reducedCost <= other.reducedCost - Constants.EPS;
@@ -127,7 +99,7 @@ class Label {
         if (!strict && totalDelay < other.totalDelay)
             strict = true;
 
-        return strict || Arrays.equals(visited, other.visited);
+        return strict;
     }
 
     Label extend(Leg nextLeg, int totalDelay, double reducedCost) {
@@ -137,7 +109,24 @@ class Label {
         extension.predecessor = this;
         extension.totalDelay = totalDelay;
         extension.reducedCost = reducedCost;
-        extension.visited[nextLeg.getIndex()] = true;
         return extension;
+    }
+
+    /**
+     * "compareTo" is used only to populate a priority queue of unprocessed labels such that we always get the least
+     * reduced cost label.
+     *
+     * @param other label to compare "this" with.
+     * @return 1 if this has a lower reduced cost than other, 0 if equal and 1 otherwise.
+     */
+    @Override
+    public int compareTo(Label other) {
+        if (reducedCost >= other.reducedCost + Constants.EPS)
+            return 1;
+
+        if (reducedCost <= other.reducedCost - Constants.EPS)
+            return -1;
+
+        return 0;
     }
 }
