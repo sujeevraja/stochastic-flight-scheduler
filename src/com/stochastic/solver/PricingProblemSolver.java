@@ -99,7 +99,6 @@ class PricingProblemSolver {
             // Add the last label as a sink label.
             Label copy = new Label(label);
             copy.setReducedCost(label.getReducedCost() - tailDual);
-            copy.setPreExisting();
             sinkLabels.add(copy);
         }
     }
@@ -174,7 +173,6 @@ class PricingProblemSolver {
                 if (limitReached())
                     return;
             }
-            label.setProcessed();
         }
     }
 

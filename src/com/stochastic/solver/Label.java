@@ -14,8 +14,6 @@ class Label implements Comparable<Label> {
     private Label predecessor;
     private int totalDelay;
     private double reducedCost;
-    private boolean processed;
-    private boolean preExisting;
     private boolean[] visited;
 
     Label(Leg leg, Label predecessor, int totalDelay, double reducedCost, int numLegs) {
@@ -24,8 +22,6 @@ class Label implements Comparable<Label> {
         this.predecessor = predecessor;
         this.totalDelay = totalDelay;
         this.reducedCost = reducedCost;
-        this.processed = false;
-        this.preExisting = false; // true if Label got built with a pre-existing path, false otherwise.
 
         visited = new boolean[numLegs];
         Arrays.fill(visited, false);
@@ -38,8 +34,6 @@ class Label implements Comparable<Label> {
         this.predecessor = other.predecessor;
         this.totalDelay = other.totalDelay;
         this.reducedCost = other.reducedCost;
-        this.processed = other.processed;
-        this.preExisting = other.preExisting;
         this.visited = other.visited.clone();
     }
 
@@ -70,22 +64,6 @@ class Label implements Comparable<Label> {
 
     double getReducedCost() {
         return reducedCost;
-    }
-
-    void setProcessed() {
-        this.processed = true;
-    }
-
-    boolean isProcessed() {
-        return processed;
-    }
-
-    void setPreExisting() {
-        this.preExisting = true;
-    }
-
-    boolean isPreExisting() {
-        return preExisting;
     }
 
     /**
