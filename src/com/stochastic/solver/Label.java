@@ -5,7 +5,7 @@ import com.stochastic.utility.Constants;
 
 import java.util.Arrays;
 
-class Label {
+class Label implements Comparable<Label> {
     /**
      * This class is used to track and prune partial paths in a label-setting algorithm.
      */
@@ -139,5 +139,23 @@ class Label {
         extension.reducedCost = reducedCost;
         extension.visited[nextLeg.getIndex()] = true;
         return extension;
+    }
+
+    /**
+     * "compareTo" is used only to populate a priority queue of unprocessed labels such that we always get the least
+     * reduced cost label.
+     *
+     * @param other label to compare "this" with.
+     * @return 1 if this has a lower reduced cost than other, 0 if equal and 1 otherwise.
+     */
+    @Override
+    public int compareTo(Label other) {
+        if (reducedCost >= other.reducedCost + Constants.EPS)
+            return 1;
+
+        if (reducedCost <= other.reducedCost - Constants.EPS)
+            return -1;
+
+        return 0;
     }
 }

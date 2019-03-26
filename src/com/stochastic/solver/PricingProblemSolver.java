@@ -13,6 +13,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.PriorityQueue;
 
 class PricingProblemSolver {
     /**
@@ -38,6 +39,7 @@ class PricingProblemSolver {
     // containers utilized during labeling procedure
     private ArrayList<ArrayList<Label>> labels; // labels[i] are labels ending at legs[i].
     private ArrayList<Label> sinkLabels; // labels ending at sink node.
+    private PriorityQueue<Label> unprocessedLabels;
     private ArrayList<Label> newSinkLabels; // labels ending at sink node for new paths.
 
     PricingProblemSolver(Tail tail, ArrayList<Leg> legs, Network network, int[] delays,
@@ -59,6 +61,7 @@ class PricingProblemSolver {
         for (int i = 0; i < numLegs; ++i)
             labels.add(new ArrayList<>());
 
+        this.unprocessedLabels = new PriorityQueue<>();
         this.sinkLabels = new ArrayList<>();
         this.newSinkLabels = new ArrayList<>();
     }
@@ -83,12 +86,14 @@ class PricingProblemSolver {
 
             Label label = new Label(srcLeg, null, totalDelay, reducedCost, legs.size());
             labels.get(srcIndex).add(label);
+            unprocessedLabels.add(label);
 
             // TODO check if we need to add only non-dominated labels from paths.
             for (int i = 1; i < pathLegs.size(); ++i) {
                 Leg leg = pathLegs.get(i);
                 label = extend(label, leg.getIndex());
                 labels.get(leg.getIndex()).add(label);
+                unprocessedLabels.add(label);
             }
 
             // Add the last label as a sink label.
@@ -160,8 +165,8 @@ class PricingProblemSolver {
      * the second-stage. We will reach optimality if we cannot find any sink label with a negative reduced cost.
      */
     private void runLabelSettingAlgorithm() {
-        Label label = getBestLabelToExtend();
-        while (label != null) {
+        while (!unprocessedLabels.isEmpty()) {
+            Label label = unprocessedLabels.remove();
             Integer legIndex = label.getVertex();
             ArrayList<Integer> neighbors = network.getNeighbors(legIndex);
             if (neighbors != null) {
@@ -170,7 +175,6 @@ class PricingProblemSolver {
                     return;
             }
             label.setProcessed();
-            label = getBestLabelToExtend();
         }
     }
 
@@ -194,6 +198,7 @@ class PricingProblemSolver {
                 continue;
 
             legLabels.add(label);
+            unprocessedLabels.add(label);
 
             // reduced cost for path = (sum of flight reduced costs) - \alpha_t
             if (!leg.getArrPort().equals(tail.getSinkPort()))
@@ -227,6 +232,7 @@ class PricingProblemSolver {
                 continue;
 
             labels.get(nextIndex).add(extension);
+            unprocessedLabels.add(extension);
             Leg nextLeg = legs.get(nextIndex);
             if (!nextLeg.getArrPort().equals(tail.getSinkPort()))
                 continue;
@@ -243,25 +249,6 @@ class PricingProblemSolver {
                 }
             }
         }
-    }
-
-    /**
-     * Finds the least reduced cost label among all vertices.
-     *
-     * @return the found label.
-     */
-    private Label getBestLabelToExtend() {
-        double minReducedCost = Constants.INFINITY;
-        Label bestLabel = null;
-        for (ArrayList<Label> legLabels : labels) {
-            for (Label label : legLabels) {
-                if (!label.isProcessed() && label.getReducedCost() <= minReducedCost - Constants.EPS) {
-                    minReducedCost = label.getReducedCost();
-                    bestLabel = label;
-                }
-            }
-        }
-        return bestLabel;
     }
 
     /**
