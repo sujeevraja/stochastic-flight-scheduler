@@ -14,7 +14,6 @@ class Label implements Comparable<Label> {
     private Label predecessor;
     private int totalDelay;
     private double reducedCost;
-    private boolean[] visited;
 
     Label(Leg leg, Label predecessor, int totalDelay, double reducedCost, int numLegs) {
         this.leg = leg;
@@ -22,10 +21,6 @@ class Label implements Comparable<Label> {
         this.predecessor = predecessor;
         this.totalDelay = totalDelay;
         this.reducedCost = reducedCost;
-
-        visited = new boolean[numLegs];
-        Arrays.fill(visited, false);
-        visited[vertex] = true;
     }
 
     Label(Label other) {
@@ -34,7 +29,6 @@ class Label implements Comparable<Label> {
         this.predecessor = other.predecessor;
         this.totalDelay = other.totalDelay;
         this.reducedCost = other.reducedCost;
-        this.visited = other.visited.clone();
     }
 
     @Override
@@ -95,7 +89,7 @@ class Label implements Comparable<Label> {
             return false;
 
         // TODO check if the inequalities should be the other way around.
-        if (reducedCost > other.reducedCost)
+        if (reducedCost > other.reducedCost - Constants.EPS)
             return false;
 
         boolean strict = reducedCost <= other.reducedCost - Constants.EPS;
@@ -105,7 +99,7 @@ class Label implements Comparable<Label> {
         if (!strict && totalDelay < other.totalDelay)
             strict = true;
 
-        return strict || Arrays.equals(visited, other.visited);
+        return strict;
     }
 
     Label extend(Leg nextLeg, int totalDelay, double reducedCost) {
@@ -115,7 +109,6 @@ class Label implements Comparable<Label> {
         extension.predecessor = this;
         extension.totalDelay = totalDelay;
         extension.reducedCost = reducedCost;
-        extension.visited[nextLeg.getIndex()] = true;
         return extension;
     }
 

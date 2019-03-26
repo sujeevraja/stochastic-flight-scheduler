@@ -253,8 +253,10 @@ public class SubSolverWrapper {
                     // Build sink labels for paths that have already been generated and add them to the labeling
                     // path generator.
                     ArrayList<Path> existingPaths = pathsAll.get(tail.getId());
-                    lpg.initLabelsForExistingPaths(existingPaths);
 
+                    // Note: it is possible for a path already in existingPaths to be generated again and be present
+                    // in tailPaths, causing duplicates. However, we found empirically that the number of duplicates
+                    // is not big enough to impact CPLEX run-times. So, we ignore duplicate checking here.
                     ArrayList<Path> tailPaths = lpg.generatePathsForTail();
                     if (!tailPaths.isEmpty()) {
                         if (optimal)
@@ -265,7 +267,7 @@ public class SubSolverWrapper {
                 }
                 logger.info("completed labeling procedure.");
 
-                // Verify optimality using the feasibility of \gamma_f + b_f >= 0 for all flights.
+                // Verify optimality using the feasibility of \pi_f + b_f >= 0 for all flights.
                 double[] delayDuals = ss.getDualsDelay();
                 for (int i = 0; i < legs.size(); ++i) {
                     if (delayDuals[i] + legs.get(i).getDelayCostPerMin() <= -Constants.EPS) {
