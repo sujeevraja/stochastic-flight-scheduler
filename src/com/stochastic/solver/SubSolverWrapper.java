@@ -93,6 +93,10 @@ public class SubSolverWrapper {
         }
     }
 
+    private synchronized void updateUpperBound(double objValue, double probability) {
+        uBound += (objValue * probability);
+    }
+
     public void solveSequential(ArrayList<Integer> scenarioDelays, ArrayList<Double> probabilities) {
         final int numScenarios = dataRegistry.getNumScenarios();
         for (int i = 0; i < numScenarios; i++) {
@@ -288,7 +292,7 @@ public class SubSolverWrapper {
             calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(), ss.getDualsBound(),
                     ss.getDualRisk(), probability);
             calculateBeta(ss.getDualsDelay(), ss.getDualRisk(), probability);
-            uBound += ss.getObjValue();
+            updateUpperBound(ss.getObjValue(), probability);
         }
 
         private void solveWithFullEnumeration() throws IloException {
@@ -324,8 +328,7 @@ public class SubSolverWrapper {
                 calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(), ss.getDualsBound(),
                         ss.getDualRisk(), probability);
                 calculateBeta(ss.getDualsDelay(), ss.getDualRisk(), probability);
-
-                uBound += ss.getObjValue();
+                updateUpperBound(ss.getObjValue(), probability);
             } catch (OptException oe) {
                 logger.error("submodel run for scenario " + scenarioNum + " failed.");
                 logger.error(oe);
