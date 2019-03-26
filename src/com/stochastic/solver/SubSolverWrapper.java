@@ -332,7 +332,7 @@ public class SubSolverWrapper {
             } catch (OptException oe) {
                 logger.error("submodel run for scenario " + scenarioNum + " failed.");
                 logger.error(oe);
-                System.exit(17);
+                System.exit(Constants.ERROR_CODE);
             }
         }
 

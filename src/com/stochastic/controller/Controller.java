@@ -9,6 +9,7 @@ import com.stochastic.registry.DataRegistry;
 import com.stochastic.registry.Parameters;
 import com.stochastic.solver.MasterSolver;
 import com.stochastic.solver.SubSolverWrapper;
+import com.stochastic.utility.Constants;
 import com.stochastic.utility.OptException;
 import ilog.concert.IloException;
 import org.apache.commons.math3.distribution.LogNormalDistribution;
@@ -117,7 +118,7 @@ public class Controller {
                 uBound = ssWrapper.getuBound();
 
             logger.info("----- LB: " + lBound + " UB: " + uBound + " Iter: " + iter);
-        } while (uBound - lBound > 0.001); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
+        } while (uBound - lBound >= Constants.BENDERS_TOLERANCE); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
 
         masterSolver.printSolution();
         masterSolver.end();
