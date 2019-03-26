@@ -45,49 +45,56 @@ public class SubSolverWrapper {
     }
 
     private synchronized void calculateAlpha(double[] dualsLegs, double[] dualsTail, double[] dualsDelay,
-                                                    double[][] dualsBnd, double dualRisk) {
+                                                    double[][] dualsBnd, double dualRisk, double probability) {
         ArrayList<Leg> legs = dataRegistry.getLegs();
 
         logger.debug("initial alpha value: " + alpha);
 
+        double scenAlpha = 0;
+
         for (int j = 0; j < legs.size(); j++)
             if (Math.abs(dualsLegs[j]) >= Constants.EPS)
-                alpha += dualsLegs[j]; //*prb);
+                scenAlpha += dualsLegs[j];
 
         for (int j = 0; j < dataRegistry.getTails().size(); j++)
             if (Math.abs(dualsTail[j]) >= Constants.EPS)
-                alpha += dualsTail[j]; //*prb);
+                scenAlpha += dualsTail[j];
 
         for (int j = 0; j < legs.size(); j++)
             if (Math.abs(dualsDelay[j]) >= Constants.EPS)
-                alpha += (dualsDelay[j] * 14); //prb*14);
+                scenAlpha += (dualsDelay[j] * Constants.OTP_TIME_LIMIT_IN_MINUTES);
 
         for (double[] dualBnd : dualsBnd)
             if (dualBnd != null)
                 for (double j : dualBnd)
                     if (Math.abs(j) >= Constants.EPS)
-                        alpha += j; //*prb);
+                        scenAlpha += j;
 
         if (Parameters.isExpectedExcess())
             if (Math.abs(dualRisk) >= Constants.EPS)
-                alpha += (dualRisk * Parameters.getExcessTarget()); //*prb);
+                scenAlpha += (dualRisk * Parameters.getExcessTarget());
 
+        alpha += (scenAlpha * probability);
         logger.debug("final alpha value: " + alpha);
     }
 
-    private synchronized void calculateBeta(double[] dualsDelay, double dualRisk) {
+    private synchronized void calculateBeta(double[] dualsDelay, double dualRisk, double probability) {
         int[] durations = Parameters.getDurations();
         ArrayList<Leg> legs = dataRegistry.getLegs();
 
         for (int i = 0; i < durations.length; i++) {
             for (int j = 0; j < legs.size(); j++) {
                 if (Math.abs(dualsDelay[j]) >= Constants.EPS)
-                    beta[i][j] += dualsDelay[j] * -durations[i]; // * prb;
+                    beta[i][j] += (dualsDelay[j] * -durations[i] * probability);
 
                 if (Parameters.isExpectedExcess() && Math.abs(dualRisk) >= Constants.EPS)
-                    beta[i][j] += dualRisk * durations[i]; // * prb;
+                    beta[i][j] += (dualRisk * durations[i] * probability);
             }
         }
+    }
+
+    private synchronized void updateUpperBound(double objValue, double probability) {
+        uBound += (objValue * probability);
     }
 
     public void solveSequential(ArrayList<Integer> scenarioDelays, ArrayList<Double> probabilities) {
@@ -283,9 +290,9 @@ public class SubSolverWrapper {
             // Update master problem data
             logger.info("reached sub-problem optimality");
             calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(), ss.getDualsBound(),
-                    ss.getDualRisk());
-            calculateBeta(ss.getDualsDelay(), ss.getDualRisk());
-            uBound += ss.getObjValue();
+                    ss.getDualRisk(), probability);
+            calculateBeta(ss.getDualsDelay(), ss.getDualRisk(), probability);
+            updateUpperBound(ss.getObjValue(), probability);
         }
 
         private void solveWithFullEnumeration() throws IloException {
@@ -319,14 +326,13 @@ public class SubSolverWrapper {
                 ss.end();
 
                 calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(), ss.getDualsBound(),
-                        ss.getDualRisk());
-                calculateBeta(ss.getDualsDelay(), ss.getDualRisk());
-
-                uBound += ss.getObjValue();
+                        ss.getDualRisk(), probability);
+                calculateBeta(ss.getDualsDelay(), ss.getDualRisk(), probability);
+                updateUpperBound(ss.getObjValue(), probability);
             } catch (OptException oe) {
                 logger.error("submodel run for scenario " + scenarioNum + " failed.");
                 logger.error(oe);
-                System.exit(17);
+                System.exit(Constants.ERROR_CODE);
             }
         }
 
