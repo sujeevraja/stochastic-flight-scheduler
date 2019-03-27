@@ -17,7 +17,6 @@ import org.apache.commons.math3.distribution.LogNormalDistribution;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.reflect.Parameter;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.time.Duration;
@@ -35,14 +34,20 @@ public class Controller {
     private ArrayList<Integer> scenarioDelays;
     private ArrayList<Double> scenarioProbabilities;
     private String instancePath;
+    private BufferedWriter cutWriter;
+    private BufferedWriter slnWriter;
     private static ArrayList<Double> bounds = new ArrayList<>();
 
     public static ArrayList<Double> delayResults = new ArrayList<>();
 
     public static int[][] sceVal;
 
-    public Controller() {
+    public Controller() throws IOException {
         dataRegistry = new DataRegistry();
+        if (Parameters.isDebugVerbose()) {
+            cutWriter = new BufferedWriter(new FileWriter("logs/master__cuts.csv"));
+            slnWriter = new BufferedWriter(new FileWriter("logs/master__solutions.csv"));
+        }
     }
 
     public final void readData(String instancePath) throws OptException {
@@ -70,13 +75,15 @@ public class Controller {
         MasterSolver masterSolver = new MasterSolver(legs, tails, durations);
         masterSolver.constructFirstStage();
 
-        if (Parameters.isDebugVerbose())
+        if (Parameters.isDebugVerbose()) {
+            writeCsvHeaders();
             masterSolver.writeLPFile("logs/master__before_cuts.lp");
+        }
 
         masterSolver.solve(iter);
 
         if (Parameters.isDebugVerbose())
-            masterSolver.writeSolutionCSV("logs/master_solution__before_cuts.csv");
+            writeMasterSolution(iter, masterSolver.getxValues());
 
         masterSolver.addColumn();
 
@@ -116,14 +123,14 @@ public class Controller {
 
             if (Parameters.isDebugVerbose()) {
                 masterSolver.writeLPFile("logs/master_" + iter + ".lp");
-                writeBendersCut("logs/master_" + iter + "_cut.csv", ssWrapper.getBeta(), ssWrapper.getAlpha());
+                writeBendersCut(iter, ssWrapper.getBeta(), ssWrapper.getAlpha());
             }
 
             masterSolver.solve(iter);
 
             if (Parameters.isDebugVerbose()) {
                 masterSolver.writeSolution("logs/master_" + iter + ".xml");
-                masterSolver.writeSolutionCSV("logs/master_" + iter + "_solution.csv");
+                writeMasterSolution(iter, masterSolver.getxValues());
             }
 
             lBound = masterSolver.getObjValue();
@@ -145,24 +152,70 @@ public class Controller {
         bounds.add(lBound);
         bounds.add(uBound);
         logger.info("Algorithm ends.");
+
+        if (Parameters.isDebugVerbose()) {
+            cutWriter.close();
+            slnWriter.close();
+        }
     }
 
-    private void writeBendersCut(String name, double[][] beta, double alpha) throws IOException {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(name));
-        writer.write("name,value,rhs\n");
-        writer.write(",," + alpha + "\n");
-
+    private void writeCsvHeaders() throws IOException {
+        StringBuilder row = new StringBuilder();
+        row.append("iter");
         int[] durations = Parameters.getDurations();
         ArrayList<Leg> legs = dataRegistry.getLegs();
-
-        for (int i = 0; i < durations.length; ++i) {
-            for (int j = 0; j < legs.size(); ++j) {
-                String varName = "x_" + durations[i] + "_" + legs.get(j).getId();
-                writer.write(varName + "," + beta[i][j] + "\n");
+        for (int duration : durations) {
+            for (Leg leg : legs) {
+                row.append(",x_");
+                row.append(duration);
+                row.append("_");
+                row.append(leg.getId());
             }
         }
 
-        writer.close();
+        slnWriter.write(row.toString());
+        slnWriter.write("\n");
+        cutWriter.write(row.toString());
+        cutWriter.write(",rhs\n");
+    }
+
+    private void writeBendersCut(int iter, double[][] beta, double alpha) throws IOException {
+        int[] durations = Parameters.getDurations();
+        ArrayList<Leg> legs = dataRegistry.getLegs();
+
+        StringBuilder row = new StringBuilder();
+        row.append(iter);
+
+        for (int i = 0; i < durations.length; ++i) {
+            for (int j = 0; j < legs.size(); ++j) {
+                row.append(",");
+                row.append(beta[i][j]);
+            }
+    }
+
+        row.append(",");
+        row.append(alpha);
+        row.append("\n");
+
+        cutWriter.write(row.toString());
+    }
+
+    private void writeMasterSolution(int iter, double[][] xValues) throws IOException {
+        int[] durations = Parameters.getDurations();
+        ArrayList<Leg> legs = dataRegistry.getLegs();
+
+        StringBuilder row = new StringBuilder();
+        row.append(iter);
+
+        for (int i = 0; i < durations.length; ++i) {
+            for (int j = 0; j < legs.size(); ++j) {
+                row.append(",");
+                row.append(xValues[i][j]);
+            }
+        }
+
+        row.append("\n");
+        slnWriter.write(row.toString());
     }
 
     /**
