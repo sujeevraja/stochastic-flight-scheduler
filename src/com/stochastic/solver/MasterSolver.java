@@ -28,7 +28,7 @@ public class MasterSolver {
     // CPLEX variables
     private IloCplex cplex;
     private IloIntVar[][] x; // x[i][j] = 1 if durations[i] selected for leg[j] reschedule, 0 otherwise.
-    private IloNumVar thetaVar;
+    private IloNumVar theta;
     private IloObjective obj;
 
     private double objValue;
@@ -52,7 +52,7 @@ public class MasterSolver {
     }
 
     public void addColumn() throws IloException {
-        cplex.setLinearCoef(obj, thetaVar, 1);
+        cplex.setLinearCoef(obj, theta, 1);
     }
 
     public void solve(int iter) throws IloException {
@@ -71,7 +71,7 @@ public class MasterSolver {
         }
 
         if(iter > -1)
-            thetaValue =  cplex.getValue(thetaVar);
+            thetaValue =  cplex.getValue(theta);
     }
     
     public double getFirstStageObjValue()
@@ -90,11 +90,11 @@ public class MasterSolver {
     public void constructFirstStage() throws IloException {
         for (int i = 0; i < durations.length; i++)
             for (int j = 0; j < legs.size(); j++) {
-                String varName = "X_" + durations[i] + "_" + legs.get(j).getId();
+                String varName = "x_" + durations[i] + "_" + legs.get(j).getId();
                 x[i][j] = cplex.boolVar(varName);
             }
 
-        thetaVar = cplex.numVar(-Double.MAX_VALUE, Double.MAX_VALUE, "thetaValue");
+        theta = cplex.numVar(-Double.MAX_VALUE, Double.MAX_VALUE, "theta");
 
         addObjective();
         addDurationCoverConstraints();
@@ -111,8 +111,6 @@ public class MasterSolver {
             for (int j = 0; j < legs.size(); j++)
                 cons.addTerm(x[i][j], durations[i] * legs.get(i).getRescheduleCostPerMin());
 
-        // cons.addTerm(thetaVar, 0);
-        // cons.addTerm(thetaVar, 1);
         obj = cplex.addMinimize(cons);
     }
 
@@ -163,7 +161,7 @@ public class MasterSolver {
                     if (Math.abs(betaValue[i][j]) >= Constants.EPS)
                         cons.addTerm(x[i][j], Utility.roundUp(betaValue[i][j], 3));
 
-            cons.addTerm(thetaVar, 1);
+            cons.addTerm(theta, 1);
 
             double rhs = Math.abs(alphaValue) >= Constants.EPS ? alphaValue : 0.0;
             IloRange r = cplex.addGe(cons, Utility.roundDown(rhs, 3));
@@ -175,8 +173,7 @@ public class MasterSolver {
             throw new OptException("CPLEX error solving first stage MIP");
         }
     }
-    
-    
+
     public void printSolution() {
         for(int i=0; i< durations.length; i++)
             for(int j=0; j< legs.size(); j++)
@@ -186,10 +183,13 @@ public class MasterSolver {
 
         logger.debug(" thetaValue: " + thetaValue);
     }
-    
 
     public double getObjValue() {
         return objValue;
+    }
+
+    public double[][] getxValues() {
+        return xValues;
     }
 
     public int[] getReschedules() {
@@ -199,7 +199,7 @@ public class MasterSolver {
     public void end() {
         // CPLEX variables
         x = null;
-        thetaVar = null;
+        theta = null;
         obj      = null;        
         cplex.end();
     }
