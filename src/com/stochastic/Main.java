@@ -31,7 +31,7 @@ public class Main {
             Parameters.setDurations(new int[]{5, 10, 15, 20, 25, 30});
             Parameters.setFullEnumeration(false);
 
-            Parameters.setReducedCostStrategy(Parameters.ReducedCostStrategy.BEST_PATHS);
+            Parameters.setReducedCostStrategy(Parameters.ReducedCostStrategy.FIRST_PATHS);
             Parameters.setNumReducedCostPaths(10);
 
             Parameters.setRunSecondStageInParallel(false);

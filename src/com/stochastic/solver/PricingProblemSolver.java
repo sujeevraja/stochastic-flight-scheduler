@@ -195,9 +195,9 @@ class PricingProblemSolver {
             if (!nextLeg.getArrPort().equals(tail.getSinkPort()))
                 continue;
 
-            Label copy = new Label(extension);
             double pathReducedCost = extension.getReducedCost() - tailDual;
             if (pathReducedCost <= -Constants.EPS) {
+                Label copy = new Label(extension);
                 copy.setReducedCost(pathReducedCost);
                 if (canAddTo(copy, sinkLabels)) {
                     sinkLabels.add(copy);
@@ -229,10 +229,7 @@ class PricingProblemSolver {
 
         int totalDelay = (int) Duration.between(nextLeg.getDepTime(), nextLegDepTime).toMinutes();
 
-        // reduced cost for flight f = - \beta_f - (a_{rf} * \gamma_f)
-        double reducedCost = (label.getReducedCost() - legCoverDuals[legIndex] -
-                (totalDelay * delayLinkDuals[legIndex]));
-
+        double reducedCost = label.getReducedCost() + getReducedCostForLeg(legIndex, totalDelay);
         return label.extend(nextLeg, totalDelay, reducedCost);
     }
 
