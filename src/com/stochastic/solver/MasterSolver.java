@@ -9,6 +9,9 @@ import com.stochastic.utility.Utility;
 import ilog.concert.*;
 import ilog.cplex.IloCplex;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -90,7 +93,7 @@ public class MasterSolver {
     public void constructFirstStage() throws IloException {
         for (int i = 0; i < durations.length; i++)
             for (int j = 0; j < legs.size(); j++) {
-                String varName = "X_" + durations[i] + "_" + legs.get(j).getId();
+                String varName = "x_" + durations[i] + "_" + legs.get(j).getId();
                 x[i][j] = cplex.boolVar(varName);
             }
 
@@ -175,8 +178,18 @@ public class MasterSolver {
             throw new OptException("CPLEX error solving first stage MIP");
         }
     }
-    
-    
+
+    public void writeSolutionCSV(String fname) throws IOException {
+        BufferedWriter writer = new BufferedWriter(new FileWriter(fname));
+        writer.write("name,value\n");
+
+        for (int i = 0; i < durations.length; i++)
+            for (int j = 0; j < legs.size(); j++)
+                writer.write(x[i][j].getName() + "," + xValues[i][j] + "\n");
+
+        writer.close();
+    }
+
     public void printSolution() {
         for(int i=0; i< durations.length; i++)
             for(int j=0; j< legs.size(); j++)

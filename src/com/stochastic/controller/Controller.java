@@ -14,6 +14,10 @@ import com.stochastic.utility.OptException;
 import ilog.concert.IloException;
 import org.apache.commons.math3.distribution.LogNormalDistribution;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.lang.reflect.Parameter;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.time.Duration;
@@ -57,7 +61,7 @@ public class Controller {
         logger.info("Completed reading data.");
     }
 
-    public final void solve() throws IloException, OptException {
+    public final void solve() throws IOException, IloException, OptException {
         ArrayList<Leg> legs = dataRegistry.getLegs();
         ArrayList<Tail> tails = dataRegistry.getTails();
         int[] durations = Parameters.getDurations();
@@ -67,12 +71,20 @@ public class Controller {
         masterSolver.constructFirstStage();
 
         if (Parameters.isDebugVerbose())
-            masterSolver.writeLPFile("logs/before_cuts_master.lp");
+            masterSolver.writeLPFile("logs/master__before_cuts.lp");
 
         masterSolver.solve(iter);
+
+        if (Parameters.isDebugVerbose())
+            masterSolver.writeSolutionCSV("logs/master_solution__before_cuts.csv");
+
         masterSolver.addColumn();
 
         logger.info("Algorithm starts.");
+        if (Parameters.isFullEnumeration())
+            logger.info("Pricing problem strategy: full enumeration");
+        else
+            logger.info("Pricing problem strategy: labeling, " + Parameters.getReducedCostStrategy());
 
         // generate random delays for 2nd stage scenarios.
         // generateScenarioDelays(Parameters.getScale(), Parameters.getShape());
@@ -89,7 +101,7 @@ public class Controller {
 
         double lBound;
         double uBound = Double.MAX_VALUE;
-        boolean stoppingCondition = false;
+        boolean stoppingCondition;
         do {
             iter++;
             SubSolverWrapper ssWrapper = new SubSolverWrapper(dataRegistry, masterSolver.getReschedules(), iter,
@@ -102,13 +114,17 @@ public class Controller {
 
             masterSolver.constructBendersCut(ssWrapper.getAlpha(), ssWrapper.getBeta());
 
-            if (Parameters.isDebugVerbose())
+            if (Parameters.isDebugVerbose()) {
                 masterSolver.writeLPFile("logs/master_" + iter + ".lp");
+                writeBendersCut("logs/master_" + iter + "_cut.csv", ssWrapper.getBeta(), ssWrapper.getAlpha());
+            }
 
             masterSolver.solve(iter);
 
-            if (Parameters.isDebugVerbose())
+            if (Parameters.isDebugVerbose()) {
                 masterSolver.writeSolution("logs/master_" + iter + ".xml");
+                masterSolver.writeSolutionCSV("logs/master_" + iter + "_solution.csv");
+            }
 
             lBound = masterSolver.getObjValue();
 
@@ -129,6 +145,24 @@ public class Controller {
         bounds.add(lBound);
         bounds.add(uBound);
         logger.info("Algorithm ends.");
+    }
+
+    private void writeBendersCut(String name, double[][] beta, double alpha) throws IOException {
+        BufferedWriter writer = new BufferedWriter(new FileWriter(name));
+        writer.write("name,value,rhs\n");
+        writer.write(",," + alpha + "\n");
+
+        int[] durations = Parameters.getDurations();
+        ArrayList<Leg> legs = dataRegistry.getLegs();
+
+        for (int i = 0; i < durations.length; ++i) {
+            for (int j = 0; j < legs.size(); ++j) {
+                String varName = "x_" + durations[i] + "_" + legs.get(j).getId();
+                writer.write(varName + "," + beta[i][j] + "\n");
+            }
+        }
+
+        writer.close();
     }
 
     /**

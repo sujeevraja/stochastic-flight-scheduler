@@ -8,6 +8,7 @@ import ilog.concert.IloException;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -80,7 +81,7 @@ public class Main {
             // ---- SECTION END ----
 
             logger.info("Completed optimization.");
-        } catch (IloException | OptException ex) {
+        } catch (IOException | IloException | OptException ex) {
             logger.error(ex);
         }
     }
