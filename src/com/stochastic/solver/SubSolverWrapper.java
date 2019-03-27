@@ -233,6 +233,7 @@ public class SubSolverWrapper {
 
                 ss.solve();
                 ss.collectDuals();
+                logger.debug("Iter " + iter + ": subproblem objective value: " + ss.getObjValue());
 
                 if (Parameters.isDebugVerbose())
                     ss.writeCplexSolution("logs/", iter, columnGenIter, this.scenarioNum);
@@ -243,7 +244,6 @@ public class SubSolverWrapper {
                 double[] tailDuals = ss.getDualsTail();
                 optimal = true;
 
-                logger.info("starting labeling procedure...");
                 for (int i = 0; i < tails.size(); ++i) {
                     Tail tail = tails.get(i);
 
@@ -265,7 +265,6 @@ public class SubSolverWrapper {
                         existingPaths.addAll(tailPaths);
                     }
                 }
-                logger.info("completed labeling procedure.");
 
                 // Verify optimality using the feasibility of \pi_f + b_f >= 0 for all flights.
                 double[] delayDuals = ss.getDualsDelay();
@@ -280,8 +279,8 @@ public class SubSolverWrapper {
                 for (Map.Entry<Integer, ArrayList<Path>> entry : pathsAll.entrySet())
                     numPaths += entry.getValue().size();
 
-                logger.debug("number of paths: " + numPaths);
-                logger.debug("completed column-gen iteration " + columnGenIter);
+                logger.debug("Iter " + iter + ": number of paths: " + numPaths);
+                logger.debug("Iter " + iter + ": completed column-gen iteration " + columnGenIter);
 
                 // Cleanup CPLEX continers of the SubSolver object.
                 if (!optimal)
@@ -290,7 +289,7 @@ public class SubSolverWrapper {
             }
 
             // Update master problem data
-            logger.info("reached sub-problem optimality");
+            logger.info( "Iter " + iter + ": reached sub-problem optimality");
             calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(), ss.getDualsBound(),
                     ss.getDualRisk(), probability);
             calculateBeta(ss.getDualsDelay(), ss.getDualRisk(), probability);
@@ -321,6 +320,7 @@ public class SubSolverWrapper {
 
                 ss.solve();
                 ss.collectDuals();
+                logger.debug("Iter " + iter + ": subproblem objective value: " + ss.getObjValue());
 
                 if (Parameters.isDebugVerbose())
                     ss.writeCplexSolution("logs/", iter, -1, this.scenarioNum);

@@ -89,6 +89,7 @@ public class Controller {
 
         double lBound;
         double uBound = Double.MAX_VALUE;
+        boolean stoppingCondition = false;
         do {
             iter++;
             SubSolverWrapper ssWrapper = new SubSolverWrapper(dataRegistry, masterSolver.getReschedules(), iter,
@@ -111,14 +112,17 @@ public class Controller {
 
             lBound = masterSolver.getObjValue();
 
-            logger.info("----- LB: " + lBound + " UB: " + uBound + " Iter: " + iter
-                    + " ssWrapper.getuBound(): " + ssWrapper.getuBound());
-
             if (ssWrapper.getuBound() < uBound)
                 uBound = ssWrapper.getuBound();
 
-            logger.info("----- LB: " + lBound + " UB: " + uBound + " Iter: " + iter);
-        } while (uBound - lBound >= Constants.BENDERS_TOLERANCE); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
+            logger.info("----- LB: " + lBound + " UB: " + uBound + " Iter: " + iter
+                    + " ssWrapper.getuBound(): " + ssWrapper.getuBound());
+
+            double diff = uBound - lBound;
+            double tolerance = Constants.EPS * Math.abs(uBound);
+            stoppingCondition = diff <= tolerance;
+            logger.info("----- diff: " + diff + " tolerance: " + tolerance + " stop: " + stoppingCondition);
+        } while (!stoppingCondition); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
 
         masterSolver.printSolution();
         masterSolver.end();

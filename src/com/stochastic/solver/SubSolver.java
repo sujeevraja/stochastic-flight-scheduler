@@ -197,7 +197,6 @@ public class SubSolver {
                 throw new OptException("optimal solution not found for sub-problem");
             }
             objValue = cplex.getObjValue();
-            logger.debug("subproblem objective value: " + objValue);
         } catch (IloException ie) {
             logger.error(ie);
             throw new OptException("error solving subproblem");
@@ -216,9 +215,6 @@ public class SubSolver {
 
             for (int i = 0; i < boundConstraints.length; i++)
                 dualsBound[i] = cplex.getDuals(boundConstraints[i]);
-
-            logger.debug(" legDelayLinkConstraints: " + legDelayLinkConstraints.length);
-            logger.debug(" dualsBound: " + dualsBound.length);
 
             if (Parameters.isExpectedExcess())
                 dualRisk = cplex.getDual(riskConstraint);
@@ -281,7 +277,6 @@ public class SubSolver {
     }
 
     public double[][] getDualsBound() {
-        logger.debug(" xxx-dualsBound: " + dualsBound.length);
         return dualsBound;
     }
 
