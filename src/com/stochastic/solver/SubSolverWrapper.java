@@ -73,15 +73,7 @@ public class SubSolverWrapper {
         }
     }
 
-    public double getuBound() {
-        return bendersData.getUpperBound();
-    }
-
-    public double getAlpha() {
-        return bendersData.getAlpha();
-    }
-
-    public double[][] getBeta() {
-        return bendersData.getBeta();
+    public BendersData getBendersData() {
+        return bendersData;
     }
 }
