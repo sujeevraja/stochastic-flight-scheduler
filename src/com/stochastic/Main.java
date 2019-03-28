@@ -30,7 +30,7 @@ public class Main {
             Parameters.setScale(3.5);
             Parameters.setShape(0.25);
             Parameters.setDurations(new int[]{5, 10, 15, 20, 25, 30});
-            Parameters.setBendersTolerance(1e-3);
+            Parameters.setBendersTolerance(1e-4);
 
             // Second-stage parameters
             Parameters.setFullEnumeration(false);

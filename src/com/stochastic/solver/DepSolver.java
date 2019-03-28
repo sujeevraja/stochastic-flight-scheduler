@@ -13,6 +13,7 @@ import ilog.concert.*;
 import ilog.cplex.IloCplex;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 import org.apache.logging.log4j.Logger;
@@ -53,10 +54,10 @@ public class DepSolver {
             double[][] xValues = new double[legs.size()][durations.length];
             
             // get delay data using planned delays from first stage and random delays from second stage.
-            HashMap<Integer, Integer> legDelayMap = getLegDelays(tails, legs, durations, xValues);
+            int[] delays = getLegDelays(tails, legs, durations, xValues);
 
             // Later, the full enumeration algorithm in enumerateAllPaths() will be replaced a labeling algorithm.
-            paths = dataRegistry.getNetwork().enumeratePathsForTails(tails, legDelayMap);
+            paths = dataRegistry.getNetwork().enumeratePathsForTails(tails, delays);
 
     		logger.debug("Tail: " + tails.size() + " legs: " + legs.size() + " durations: " + durations.length);
 
@@ -208,50 +209,33 @@ public class DepSolver {
         }
     }
 
-    
-    private HashMap<Integer, Integer> getLegDelays(ArrayList<Tail> tails, ArrayList<Leg> legs,
-            int[] durations, double[][] xValues) {
+    private int[] getLegDelays(ArrayList<Tail> tails, ArrayList<Leg> legs, int[] durations, double[][] xValues) {
         // Generate random delays using a delay generator.
         DelayGenerator dgen = new FirstFlightDelayGenerator(tails, 20);
         HashMap<Integer, Integer> randomDelays = dgen.generateDelays();
 
         // Collect planned delays from first stage solution.
-        HashMap<Integer, Integer> plannedDelays = new HashMap<>();
-
-        for (int i = 0; i < durations.length; ++i) {
-            for (int j = 0; j < legs.size(); ++j) {
+        int[] delays = new int[legs.size()];
+        Arrays.fill(delays, 0);
+        for (int i = 0; i < durations.length; ++i)
+            for (int j = 0; j < legs.size(); ++j)
                 if (xValues[j][i] >= eps)
-                    plannedDelays.put(legs.get(j).getIndex(), durations.length);
+                    delays[j] = durations.length;
+
+        // Combine the delays into a single value.
+        for (int i = 0; i < legs.size(); ++i) {
+            Leg leg = legs.get(i);
+            if (randomDelays.containsKey(i)) {
+                delays[i] = Math.max(delays[i], randomDelays.get(i));
             }
         }
 
-        // Combine the delay maps into a single one.
-        HashMap<Integer, Integer> combinedDelayMap = new HashMap<>();
-        for (Leg leg : legs) {
-            int delayTime = 0;
-            boolean updated = false;
-
-            if (randomDelays.containsKey(leg.getIndex())) {
-                delayTime = randomDelays.get(leg.getIndex());
-                updated = true;
-            }
-
-            if (plannedDelays.containsKey(leg.getIndex())) {
-                delayTime = Math.max(delayTime, plannedDelays.get(leg.getIndex()));
-                updated = true;
-            }
-
-            if (updated)
-                combinedDelayMap.put(leg.getIndex(), delayTime);
-        }
-
-        return combinedDelayMap;
+        return delays;
     }
-
 
     public void solve() {
         try {
-//			Master.mastCplex.addMaximize();
+			// Master.mastCplex.addMaximize();
             subCplex.solve();
             objValue = subCplex.getObjValue();
             logger.debug("Objective value: " + objValue);

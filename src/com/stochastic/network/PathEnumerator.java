@@ -15,7 +15,7 @@ public class PathEnumerator {
      */
     private Tail tail;
     private ArrayList<Leg> legs;
-    private HashMap<Integer, Integer> legDelayMap;
+    private int[] delays;
     private HashMap<Integer, ArrayList<Integer>> adjacencyList;
 
     private ArrayList<Path> paths;
@@ -32,11 +32,10 @@ public class PathEnumerator {
 		super();
 	}
 
-	PathEnumerator(Tail tail, ArrayList<Leg> legs, HashMap<Integer, Integer> legDelayMap,
-                   HashMap<Integer, ArrayList<Integer>> adjacencyList)  {
+	PathEnumerator(Tail tail, ArrayList<Leg> legs, int[] delays, HashMap<Integer, ArrayList<Integer>> adjacencyList) {
         this.tail = tail;
         this.legs = legs;
-        this.legDelayMap = legDelayMap;
+        this.delays = delays;
         this.adjacencyList = adjacencyList;
 
         paths = new ArrayList<>();
@@ -123,17 +122,11 @@ public class PathEnumerator {
     }
 
     private LocalDateTime getNewDepTime(Leg leg)  {
-        if(!legDelayMap.containsKey(leg.getIndex()))
-            return leg.getDepTime();
-
-        return leg.getDepTime().plusMinutes(legDelayMap.get(leg.getIndex()));
+        return leg.getDepTime().plusMinutes(delays[leg.getIndex()]);
     }
 
     private LocalDateTime getNewArrTime(Leg leg) {
-        if(!legDelayMap.containsKey(leg.getIndex()))
-            return leg.getArrTime();
-
-        return leg.getArrTime().plusMinutes(legDelayMap.get(leg.getIndex()));
+        return leg.getArrTime().plusMinutes(delays[leg.getIndex()]);
     }
     
     public ArrayList<Path> addPaths(DataRegistry dataRegistry)

@@ -13,10 +13,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 class SubSolverRunnable implements Runnable {
     private final static Logger logger = LogManager.getLogger(SubSolverWrapper.class);
@@ -39,7 +36,7 @@ class SubSolverRunnable implements Runnable {
         this.bendersData = bendersData;
     }
 
-    private HashMap<Integer, ArrayList<Path>> getInitialPaths(HashMap<Integer, Integer> legDelayMap) {
+    private HashMap<Integer, ArrayList<Path>> getInitialPaths(int[] delays) {
         HashMap<Integer, ArrayList<Path>> initialPaths = new HashMap<>();
 
         for (Map.Entry<Integer, Path> entry : dataRegistry.getTailHashMap().entrySet()) {
@@ -61,7 +58,7 @@ class SubSolverRunnable implements Runnable {
             LocalDateTime currentTime = null;
             for (Leg leg : origPath.getLegs()) {
                 // find delayed departure time due to original delay (planned 1st stange + random 2nd stage)
-                Integer legDelay = legDelayMap.getOrDefault(leg.getIndex(), 0);
+                int legDelay = delays[leg.getIndex()];
                 LocalDateTime delayedDepTime = leg.getDepTime().plusMinutes(legDelay);
 
                 // find delayed departure time due to propagated delay
@@ -105,17 +102,13 @@ class SubSolverRunnable implements Runnable {
 
     private void solveWithLabeling() throws IloException, OptException {
         SubSolver ss = new SubSolver(dataRegistry.getTails(), dataRegistry.getLegs(), reschedules, probability);
-        HashMap<Integer, Integer> legDelayMap = getTotalDelays();
+        int[] delays = getTotalDelays();
 
         // Load on-plan paths with propagated delays.
-        HashMap<Integer, ArrayList<Path>> pathsAll = getInitialPaths(legDelayMap);
+        HashMap<Integer, ArrayList<Path>> pathsAll = getInitialPaths(delays);
 
         // Run the column generation procedure.
         ArrayList<Leg> legs = dataRegistry.getLegs();
-        int numLegs = legs.size();
-        int[] delays = new int[numLegs];
-        for (int i = 0; i < numLegs; ++i)
-            delays[i] = legDelayMap.getOrDefault(legs.get(i).getIndex(), 0);
 
         boolean optimal = false;
         int columnGenIter = 0;
@@ -196,10 +189,10 @@ class SubSolverRunnable implements Runnable {
     private void solveWithFullEnumeration() throws IloException {
         try {
             // Enumerate all paths for each tail.
-            HashMap<Integer, Integer> legDelayMap = getTotalDelays();
+            int[] delays = getTotalDelays();
 
             ArrayList<Path> allPaths = dataRegistry.getNetwork().enumeratePathsForTails(
-                    dataRegistry.getTails(), legDelayMap);
+                    dataRegistry.getTails(), delays);
 
             // Store paths for each tail separately. Also add empty paths for each tail.
             HashMap<Integer, ArrayList<Path>> tailPathsMap = new HashMap<>();
@@ -243,27 +236,20 @@ class SubSolverRunnable implements Runnable {
      * Total delay is the maximum of rescheduled time from first stage and random delay of second-stage scenario.
      * @return map with leg indices as keys, total delay times as corresponding values.
      */
-    private HashMap<Integer, Integer> getTotalDelays() {
-        HashMap<Integer, Integer> combinedDelayMap = new HashMap<>();
-        for(Leg leg : dataRegistry.getLegs()) {
-            int delayTime = 0;
-            boolean updated = false;
+    private int[] getTotalDelays() {
+        ArrayList<Leg> legs = dataRegistry.getLegs();
+        int[] delays = new int[legs.size()];
+        for (int i = 0; i < legs.size(); ++i) {
+            delays[i] = 0;
 
-            if(randomDelays.containsKey(leg.getIndex())) {
-                delayTime = randomDelays.get(leg.getIndex());
-                updated = true;
-            }
+            if(randomDelays.containsKey(i))
+                delays[i] = randomDelays.get(i);
 
-            if (reschedules[leg.getIndex()] > 0)  {
-                delayTime = Math.max(delayTime, reschedules[leg.getIndex()]);
-                updated = true;
-            }
-
-            if(updated)
-                combinedDelayMap.put(leg.getIndex(), delayTime);
+            if (reschedules[i] > 0 && delays[i] < reschedules[i])
+                delays[i] = reschedules[i];
         }
 
-        return combinedDelayMap;
+        return delays;
     }
 
     private double calculateAlpha(double[] dualsLegs, double[] dualsTail, double[] dualsDelay, double[][] dualsBnd,
