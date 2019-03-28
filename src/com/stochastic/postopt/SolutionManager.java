@@ -7,6 +7,7 @@ import com.stochastic.domain.Leg;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.registry.Parameters;
 import com.stochastic.solver.SubSolver;
+import com.stochastic.utility.Constants;
 import com.stochastic.utility.OptException;
 import org.apache.commons.math3.distribution.LogNormalDistribution;
 import org.apache.logging.log4j.Logger;
@@ -27,7 +28,6 @@ public class SolutionManager {
      * and writing final output to a text file.
      */
     private final static Logger logger = LogManager.getLogger(SolutionManager.class);
-    private final static double eps = 1.0e-5;
     private String instancePath;
     private DataRegistry dataRegistry;
     private ArrayList<Integer> scenarioDelays;
@@ -57,7 +57,7 @@ public class SolutionManager {
         ArrayList<Leg> legs = dataRegistry.getLegs();
         for(int i = 0; i < durations.length; ++i) {
             for(int j = 0; j < legs.size(); ++j) {
-                if(xValues[i][j] >= eps) {
+                if(xValues[i][j] >= Constants.EPS) {
                     rescheduleLegIndices.add(j);
                     rescheduleTimes.add(durations[i]);
                 }

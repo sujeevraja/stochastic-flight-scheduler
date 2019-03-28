@@ -143,7 +143,7 @@ public class Controller {
                     + " bendersData.getUpperBound(): " + bendersData.getUpperBound());
 
             double diff = uBound - lBound;
-            double tolerance = Constants.BENDERS_TOLERANCE * Math.abs(uBound);
+            double tolerance = Parameters.getBendersTolerance() * Math.abs(uBound);
             stoppingCondition = diff <= tolerance;
             logger.info("----- diff: " + diff + " tolerance: " + tolerance + " stop: " + stoppingCondition);
         } while (!stoppingCondition); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);

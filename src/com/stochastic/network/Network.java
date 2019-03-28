@@ -39,10 +39,10 @@ public class Network {
         logger.info("total number of paths: " + totalNumPaths);
     }
 
-    public ArrayList<Path> enumeratePathsForTails(ArrayList<Tail> tails, HashMap<Integer, Integer> legDelayMap) {
+    public ArrayList<Path> enumeratePathsForTails(ArrayList<Tail> tails, int[] delays) {
         ArrayList<Path> paths = new ArrayList<>();
         for(Tail tail : tails) {
-            PathEnumerator pe = new PathEnumerator(tail, legs, legDelayMap, adjacencyList);
+            PathEnumerator pe = new PathEnumerator(tail, legs, delays, adjacencyList);
             ArrayList<Path> tailPaths = pe.generatePaths();
             paths.addAll(tailPaths);
         }

@@ -30,16 +30,19 @@ public class Main {
             Parameters.setScale(3.5);
             Parameters.setShape(0.25);
             Parameters.setDurations(new int[]{5, 10, 15, 20, 25, 30});
-            Parameters.setFullEnumeration(false);
+            Parameters.setBendersTolerance(1e-4);
 
+            // Second-stage parameters
+            Parameters.setFullEnumeration(false);
             Parameters.setReducedCostStrategy(Parameters.ReducedCostStrategy.FIRST_PATHS);
             Parameters.setNumReducedCostPaths(10);
 
+            // Debugging parameter
+            Parameters.setDebugVerbose(false); // Set to true to see CPLEX logs, lp files and solution xml files.
+
+            // Multi-threading parameters
             Parameters.setRunSecondStageInParallel(false);
             Parameters.setNumThreadsForSecondStage(2);
-
-            // Change setDebugVerbose to true to see CPLEX logs, lp files and solution xml files.
-            Parameters.setDebugVerbose(false);
 
             // Expected excess parameters
             Parameters.setExpectedExcess(false);
