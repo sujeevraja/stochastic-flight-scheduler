@@ -28,73 +28,13 @@ public class SubSolverWrapper {
     private DataRegistry dataRegistry;
     private int[] reschedules; // planned delays from first stage solution.
     private int iter;
-    private double uBound;
-
-    // Values used to consstruct Bender's cut using the sub-problem solution.
-    // Benders cut: beta x + theta >= alpha
-    private double alpha;
-    private double[][] beta;
+    private BendersData bendersData;
 
     public SubSolverWrapper(DataRegistry dataRegistry, int[] reschedules, int iter, double uBound) {
         this.dataRegistry = dataRegistry;
         this.reschedules = reschedules;
         this.iter = iter;
-        this.uBound = uBound;
-        this.alpha = 0;
-        this.beta = new double[Parameters.getNumDurations()][dataRegistry.getLegs().size()];
-    }
-
-    private synchronized void calculateAlpha(double[] dualsLegs, double[] dualsTail, double[] dualsDelay,
-                                                    double[][] dualsBnd, double dualRisk, double probability) {
-        ArrayList<Leg> legs = dataRegistry.getLegs();
-
-        logger.debug("initial alpha value: " + alpha);
-
-        double scenAlpha = 0;
-
-        for (int j = 0; j < legs.size(); j++)
-            if (Math.abs(dualsLegs[j]) >= Constants.EPS)
-                scenAlpha += dualsLegs[j];
-
-        for (int j = 0; j < dataRegistry.getTails().size(); j++)
-            if (Math.abs(dualsTail[j]) >= Constants.EPS)
-                scenAlpha += dualsTail[j];
-
-        for (int j = 0; j < legs.size(); j++)
-            if (Math.abs(dualsDelay[j]) >= Constants.EPS)
-                scenAlpha += (dualsDelay[j] * Constants.OTP_TIME_LIMIT_IN_MINUTES);
-
-        for (double[] dualBnd : dualsBnd)
-            if (dualBnd != null)
-                for (double j : dualBnd)
-                    if (Math.abs(j) >= Constants.EPS)
-                        scenAlpha += j;
-
-        if (Parameters.isExpectedExcess())
-            if (Math.abs(dualRisk) >= Constants.EPS)
-                scenAlpha += (dualRisk * Parameters.getExcessTarget());
-
-        alpha += (scenAlpha * probability);
-        logger.debug("final alpha value: " + alpha);
-    }
-
-    private synchronized void calculateBeta(double[] dualsDelay, double dualRisk, double probability) {
-        int[] durations = Parameters.getDurations();
-        ArrayList<Leg> legs = dataRegistry.getLegs();
-
-        for (int i = 0; i < durations.length; i++) {
-            for (int j = 0; j < legs.size(); j++) {
-                if (Math.abs(dualsDelay[j]) >= Constants.EPS)
-                    beta[i][j] += (dualsDelay[j] * -durations[i] * probability);
-
-                if (Parameters.isExpectedExcess() && Math.abs(dualRisk) >= Constants.EPS)
-                    beta[i][j] += (dualRisk * durations[i] * probability);
-            }
-        }
-    }
-
-    private synchronized void updateUpperBound(double objValue, double probability) {
-        uBound += (objValue * probability);
+        this.bendersData = new BendersData(uBound, 0, new double[Parameters.getNumDurations()][dataRegistry.getLegs().size()]);
     }
 
     public void solveSequential(ArrayList<Integer> scenarioDelays, ArrayList<Double> probabilities) {
@@ -366,17 +306,71 @@ public class SubSolverWrapper {
 
             return combinedDelayMap;
         }
+
+        private synchronized void calculateAlpha(double[] dualsLegs, double[] dualsTail, double[] dualsDelay,
+                                                 double[][] dualsBnd, double dualRisk, double probability) {
+            ArrayList<Leg> legs = dataRegistry.getLegs();
+
+            logger.debug("initial alpha value: " + bendersData.getAlpha());
+
+            double scenAlpha = 0;
+
+            for (int j = 0; j < legs.size(); j++)
+                if (Math.abs(dualsLegs[j]) >= Constants.EPS)
+                    scenAlpha += dualsLegs[j];
+
+            for (int j = 0; j < dataRegistry.getTails().size(); j++)
+                if (Math.abs(dualsTail[j]) >= Constants.EPS)
+                    scenAlpha += dualsTail[j];
+
+            for (int j = 0; j < legs.size(); j++)
+                if (Math.abs(dualsDelay[j]) >= Constants.EPS)
+                    scenAlpha += (dualsDelay[j] * Constants.OTP_TIME_LIMIT_IN_MINUTES);
+
+            for (double[] dualBnd : dualsBnd)
+                if (dualBnd != null)
+                    for (double j : dualBnd)
+                        if (Math.abs(j) >= Constants.EPS)
+                            scenAlpha += j;
+
+            if (Parameters.isExpectedExcess())
+                if (Math.abs(dualRisk) >= Constants.EPS)
+                    scenAlpha += (dualRisk * Parameters.getExcessTarget());
+
+            bendersData.setAlpha(bendersData.getAlpha() + (scenAlpha * probability));
+            logger.debug("final alpha value: " + bendersData.getAlpha());
+        }
+
+        private synchronized void calculateBeta(double[] dualsDelay, double dualRisk, double probability) {
+            int[] durations = Parameters.getDurations();
+            ArrayList<Leg> legs = dataRegistry.getLegs();
+            double[][] beta = bendersData.getBeta();
+
+            for (int i = 0; i < durations.length; i++) {
+                for (int j = 0; j < legs.size(); j++) {
+                    if (Math.abs(dualsDelay[j]) >= Constants.EPS)
+                        beta[i][j] += (dualsDelay[j] * -durations[i] * probability);
+
+                    if (Parameters.isExpectedExcess() && Math.abs(dualRisk) >= Constants.EPS)
+                        beta[i][j] += (dualRisk * durations[i] * probability);
+                }
+            }
+        }
+
+        private synchronized void updateUpperBound(double objValue, double probability) {
+            bendersData.setUpperBound(bendersData.getUpperBound() + (objValue * probability));
+        }
     }
 
     public double getuBound() {
-        return uBound;
+        return bendersData.getUpperBound();
     }
 
     public double getAlpha() {
-        return alpha;
+        return bendersData.getAlpha();
     }
 
     public double[][] getBeta() {
-        return beta;
+        return bendersData.getBeta();
     }
 }
