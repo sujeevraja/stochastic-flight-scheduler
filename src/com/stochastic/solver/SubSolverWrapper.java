@@ -34,7 +34,8 @@ public class SubSolverWrapper {
         this.dataRegistry = dataRegistry;
         this.reschedules = reschedules;
         this.iter = iter;
-        this.bendersData = new BendersData(uBound, 0, new double[Parameters.getNumDurations()][dataRegistry.getLegs().size()]);
+        this.bendersData = new BendersData(uBound, 0,
+                new double[Parameters.getNumDurations()][dataRegistry.getLegs().size()]);
     }
 
     public void solveSequential(ArrayList<Integer> scenarioDelays, ArrayList<Double> probabilities) {

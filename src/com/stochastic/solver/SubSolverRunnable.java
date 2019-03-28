@@ -185,10 +185,12 @@ class SubSolverRunnable implements Runnable {
 
         // Update master problem data
         logger.info( "Iter " + iter + ": reached sub-problem optimality");
-        calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(), ss.getDualsBound(),
-                ss.getDualRisk(), probability);
-        calculateBeta(ss.getDualsDelay(), ss.getDualRisk(), probability);
-        updateUpperBound(ss.getObjValue(), probability);
+        double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(), ss.getDualsBound(),
+                ss.getDualRisk());
+
+        updateAlpha(scenAlpha);
+        updateBeta(ss.getDualsDelay(), ss.getDualRisk());
+        updateUpperBound(ss.getObjValue());
     }
 
     private void solveWithFullEnumeration() throws IloException {
@@ -222,10 +224,12 @@ class SubSolverRunnable implements Runnable {
 
             ss.end();
 
-            calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(), ss.getDualsBound(),
-                    ss.getDualRisk(), probability);
-            calculateBeta(ss.getDualsDelay(), ss.getDualRisk(), probability);
-            updateUpperBound(ss.getObjValue(), probability);
+            double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(),
+                    ss.getDualsBound(), ss.getDualRisk());
+
+            updateAlpha(scenAlpha);
+            updateBeta(ss.getDualsDelay(), ss.getDualRisk());
+            updateUpperBound(ss.getObjValue());
         } catch (OptException oe) {
             logger.error("submodel run for scenario " + scenarioNum + " failed.");
             logger.error(oe);
@@ -262,11 +266,9 @@ class SubSolverRunnable implements Runnable {
         return combinedDelayMap;
     }
 
-    private synchronized void calculateAlpha(double[] dualsLegs, double[] dualsTail, double[] dualsDelay,
-                                             double[][] dualsBnd, double dualRisk, double probability) {
+    private double calculateAlpha(double[] dualsLegs, double[] dualsTail, double[] dualsDelay, double[][] dualsBnd,
+                                  double dualRisk) {
         ArrayList<Leg> legs = dataRegistry.getLegs();
-
-        logger.debug("initial alpha value: " + bendersData.getAlpha());
 
         double scenAlpha = 0;
 
@@ -292,11 +294,14 @@ class SubSolverRunnable implements Runnable {
             if (Math.abs(dualRisk) >= Constants.EPS)
                 scenAlpha += (dualRisk * Parameters.getExcessTarget());
 
-        bendersData.setAlpha(bendersData.getAlpha() + (scenAlpha * probability));
-        logger.debug("final alpha value: " + bendersData.getAlpha());
+        return scenAlpha;
     }
 
-    private synchronized void calculateBeta(double[] dualsDelay, double dualRisk, double probability) {
+    private synchronized void updateAlpha(double scenAlpha) {
+        bendersData.setAlpha(bendersData.getAlpha() + (scenAlpha * probability));
+    }
+
+    private synchronized void updateBeta(double[] dualsDelay, double dualRisk) {
         int[] durations = Parameters.getDurations();
         ArrayList<Leg> legs = dataRegistry.getLegs();
         double[][] beta = bendersData.getBeta();
@@ -312,7 +317,7 @@ class SubSolverRunnable implements Runnable {
         }
     }
 
-    private synchronized void updateUpperBound(double objValue, double probability) {
+    private synchronized void updateUpperBound(double objValue) {
         bendersData.setUpperBound(bendersData.getUpperBound() + (objValue * probability));
     }
 }
