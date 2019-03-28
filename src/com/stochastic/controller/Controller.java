@@ -37,7 +37,6 @@ public class Controller {
     private String instancePath;
     private BufferedWriter cutWriter;
     private BufferedWriter slnWriter;
-    private static ArrayList<Double> bounds = new ArrayList<>();
 
     public static ArrayList<Double> delayResults = new ArrayList<>();
 
@@ -151,8 +150,6 @@ public class Controller {
 
         masterSolver.printSolution();
         masterSolver.end();
-        bounds.add(lBound);
-        bounds.add(uBound);
         logger.info("Algorithm ends.");
 
         if (Parameters.isDebugVerbose()) {
@@ -193,7 +190,7 @@ public class Controller {
                 row.append(",");
                 row.append(beta[i][j]);
             }
-    }
+        }
 
         row.append(",");
         row.append(alpha);
