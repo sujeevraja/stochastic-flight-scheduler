@@ -28,7 +28,7 @@ public class SubSolverWrapper {
     private DataRegistry dataRegistry;
     private int[] reschedules; // planned delays from first stage solution.
     private int iter;
-    private BendersData bendersData;
+    private BendersData bendersData; // this object will be shared across threads by SubSolverRunnable.
 
     public SubSolverWrapper(DataRegistry dataRegistry, int[] reschedules, int iter, double uBound) {
         this.dataRegistry = dataRegistry;
