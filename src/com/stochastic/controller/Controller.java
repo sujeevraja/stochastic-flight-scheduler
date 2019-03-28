@@ -7,6 +7,7 @@ import com.stochastic.network.Path;
 import com.stochastic.postopt.SolutionManager;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.registry.Parameters;
+import com.stochastic.solver.BendersData;
 import com.stochastic.solver.MasterSolver;
 import com.stochastic.solver.SubSolverWrapper;
 import com.stochastic.utility.Constants;
@@ -36,7 +37,6 @@ public class Controller {
     private String instancePath;
     private BufferedWriter cutWriter;
     private BufferedWriter slnWriter;
-    private static ArrayList<Double> bounds = new ArrayList<>();
 
     public static ArrayList<Double> delayResults = new ArrayList<>();
 
@@ -119,11 +119,12 @@ public class Controller {
             else
                 ssWrapper.solveSequential(scenarioDelays, scenarioProbabilities);
 
-            masterSolver.constructBendersCut(ssWrapper.getAlpha(), ssWrapper.getBeta());
+            BendersData bendersData = ssWrapper.getBendersData();
+            masterSolver.constructBendersCut(bendersData.getAlpha(), bendersData.getBeta());
 
             if (Parameters.isDebugVerbose()) {
                 masterSolver.writeLPFile("logs/master_" + iter + ".lp");
-                writeBendersCut(iter, ssWrapper.getBeta(), ssWrapper.getAlpha());
+                writeBendersCut(iter, bendersData.getBeta(), bendersData.getAlpha());
             }
 
             masterSolver.solve(iter);
@@ -135,22 +136,20 @@ public class Controller {
 
             lBound = masterSolver.getObjValue();
 
-            if (ssWrapper.getuBound() < uBound)
-                uBound = ssWrapper.getuBound();
+            if (bendersData.getUpperBound() < uBound)
+                uBound = bendersData.getUpperBound();
 
             logger.info("----- LB: " + lBound + " UB: " + uBound + " Iter: " + iter
-                    + " ssWrapper.getuBound(): " + ssWrapper.getuBound());
+                    + " bendersData.getUpperBound(): " + bendersData.getUpperBound());
 
             double diff = uBound - lBound;
-            double tolerance = Constants.EPS * Math.abs(uBound);
+            double tolerance = Constants.BENDERS_TOLERANCE * Math.abs(uBound);
             stoppingCondition = diff <= tolerance;
             logger.info("----- diff: " + diff + " tolerance: " + tolerance + " stop: " + stoppingCondition);
         } while (!stoppingCondition); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
 
         masterSolver.printSolution();
         masterSolver.end();
-        bounds.add(lBound);
-        bounds.add(uBound);
         logger.info("Algorithm ends.");
 
         if (Parameters.isDebugVerbose()) {
@@ -191,7 +190,7 @@ public class Controller {
                 row.append(",");
                 row.append(beta[i][j]);
             }
-    }
+        }
 
         row.append(",");
         row.append(alpha);
