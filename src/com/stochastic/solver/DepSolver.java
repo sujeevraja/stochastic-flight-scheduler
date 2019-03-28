@@ -13,7 +13,6 @@ import ilog.concert.*;
 import ilog.cplex.IloCplex;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 
 import org.apache.logging.log4j.Logger;
@@ -26,19 +25,16 @@ public class DepSolver {
      * The DEP model contains variables and constraints from both the first and second stage. The DEP objective is the
      * sum of the first stage objective and the expected value of the second stage objective.
      */
-    private final Logger logger = LogManager.getLogger(DepSolver.class);
-    private final double eps = 1.0e-5;
+    private final static Logger logger = LogManager.getLogger(DepSolver.class);
     private ArrayList<Path> paths; // subproblem columns
-    ArrayList<Tail> tails;
-    ArrayList<Leg> legs;
-    int[] durations;
+    private ArrayList<Leg> legs;
+    private int[] durations;
 
     // cplex variables
     private IloIntVar[][] x;    
     private IloNumVar[][] y; // y[i] = 1 if path i is selected, 0 else.
     private IloNumVar[][] d; // d[i] >= 0 is the total delay of leg i.
-    private IloNumVar[]   v; // d[i] >= 0 is the total delay of leg i.    
-    
+
     private IloCplex subCplex;
 
     private double objValue;
@@ -47,19 +43,19 @@ public class DepSolver {
     
     public void constructModel(DataRegistry dataRegistry) throws OptException {
         try {
-            tails = dataRegistry.getTails();
+            ArrayList<Tail> tails = dataRegistry.getTails();
             legs = dataRegistry.getLegs();
             durations = Parameters.getDurations();
 
-            double[][] xValues = new double[legs.size()][durations.length];
-            
-            // get delay data using planned delays from first stage and random delays from second stage.
-            int[] delays = getLegDelays(tails, legs, durations, xValues);
+            // Generate random delays using a delay generator.
+            DelayGenerator dgen = new FirstFlightDelayGenerator(tails, 20);
+            HashMap<Integer, Integer> randomDelays = dgen.generateDelays();
+            int[] delays = new int[legs.size()];
+            for (Leg leg : legs)
+                delays[leg.getIndex()] = randomDelays.getOrDefault(leg.getIndex(), 0);
 
             // Later, the full enumeration algorithm in enumerateAllPaths() will be replaced a labeling algorithm.
             paths = dataRegistry.getNetwork().enumeratePathsForTails(tails, delays);
-
-    		logger.debug("Tail: " + tails.size() + " legs: " + legs.size() + " durations: " + durations.length);
 
             // Create containers to build CPLEX model.
             subCplex = new IloCplex();
@@ -88,7 +84,7 @@ public class DepSolver {
             
             y = new IloNumVar[paths.size()][5];
             d = new IloNumVar[numLegs][5];
-            v = new IloNumVar[5];            
+            IloNumVar[] v = new IloNumVar[5];
 
             IloLinearNumExpr[][] legCoverExprs = new IloLinearNumExpr[numLegs][5];
             IloLinearNumExpr[][] tailCoverExprs = new IloLinearNumExpr[numTails][5];
@@ -120,16 +116,14 @@ public class DepSolver {
 	                    delayExprs[i][j].addTerm(x[i][j1], -durations[j1]);
 	            }            
 
-            if(Parameters.isExpectedExcess())
-            {
+            if(Parameters.isExpectedExcess()) {
                 for (int j = 0; j < 5; j++)
 	                v[j] = subCplex.numVar(0, Double.MAX_VALUE, "v_" + j);
                 
                 for (int j = 0; j < 5; j++)                
                 	objExpr.addTerm(v[j], Parameters.getRho()*0.20);
                 
-                for (int s = 0; s < 5; s++)
-                {
+                for (int s = 0; s < 5; s++) {
                     IloLinearNumExpr riskExpr = subCplex.linearNumExpr();
 
                     for (int i = 0; i < legs.size(); i++)
@@ -209,30 +203,6 @@ public class DepSolver {
         }
     }
 
-    private int[] getLegDelays(ArrayList<Tail> tails, ArrayList<Leg> legs, int[] durations, double[][] xValues) {
-        // Generate random delays using a delay generator.
-        DelayGenerator dgen = new FirstFlightDelayGenerator(tails, 20);
-        HashMap<Integer, Integer> randomDelays = dgen.generateDelays();
-
-        // Collect planned delays from first stage solution.
-        int[] delays = new int[legs.size()];
-        Arrays.fill(delays, 0);
-        for (int i = 0; i < durations.length; ++i)
-            for (int j = 0; j < legs.size(); ++j)
-                if (xValues[j][i] >= eps)
-                    delays[j] = durations.length;
-
-        // Combine the delays into a single value.
-        for (int i = 0; i < legs.size(); ++i) {
-            Leg leg = legs.get(i);
-            if (randomDelays.containsKey(i)) {
-                delays[i] = Math.max(delays[i], randomDelays.get(i));
-            }
-        }
-
-        return delays;
-    }
-
     public void solve() {
         try {
 			// Master.mastCplex.addMaximize();
@@ -289,10 +259,8 @@ public class DepSolver {
         }
     }
 
-    public void writeLPFile(String fName, int iter)
-    {
-        try
-        {
+    public void writeLPFile(String fName, int iter) {
+        try {
             subCplex.exportModel(fName + "sub" + iter + ".lp");
         } catch (IloException e) {
             // TODO Auto-generated catch block
@@ -304,7 +272,6 @@ public class DepSolver {
     public void end() {
         y = null;
         d = null;
-        
         subCplex.end();
     }
 
