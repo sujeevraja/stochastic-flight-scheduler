@@ -89,7 +89,7 @@ class SubSolverRunnable implements Runnable {
                 solveWithFullEnumeration();
             else
                 solveWithLabeling();
-            logger.info("Solved scenario " + scenarioNum);
+            logger.info("solved scenario " + scenarioNum);
         } catch (IloException ie) {
             logger.error(ie);
             logger.error("CPLEX error solving subproblem");

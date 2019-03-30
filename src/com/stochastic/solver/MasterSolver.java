@@ -74,8 +74,7 @@ public class MasterSolver {
             thetaValue =  cplex.getValue(theta);
     }
     
-    public double getFirstStageObjValue()
-    {
+    public double getFirstStageObjValue() {
     	return objValue - thetaValue;
     }
 
@@ -173,16 +172,6 @@ public class MasterSolver {
         }
     }
 
-    public void printSolution() {
-        for(int i=0; i< durations.length; i++)
-            for(int j=0; j< legs.size(); j++)
-                if(xValues[i][j] > 0)
-                    logger.debug(" xValues: " + " i: " + i + " j: " + j + " : " + x[i][j].getName() + " : "
-                            + xValues[i][j] + " , " + durations[i]);
-
-        logger.debug(" thetaValue: " + thetaValue);
-    }
-
     public double getObjValue() {
         return objValue;
     }
@@ -193,6 +182,10 @@ public class MasterSolver {
 
     public int[] getReschedules() {
         return reschedules;
+    }
+
+    public double getThetaValue() {
+        return thetaValue;
     }
 
     public void end() {

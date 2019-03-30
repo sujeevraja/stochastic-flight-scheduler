@@ -22,9 +22,6 @@ public class Main {
         try {
             logger.info("Started optimization...");
 
-            // Two-stage
-            long t1 = System.currentTimeMillis();
-
             // ----- PARAMETER SETTINGS SECTION START -----
             Parameters.setNumScenarios(10);
             Parameters.setScale(3.5);
@@ -55,10 +52,14 @@ public class Main {
 
             Controller controller = new Controller();
             controller.readData(path);
+
+            long t1 = System.currentTimeMillis();
             controller.solve(); //BD
-            
-            long tsRuntime  = (System.currentTimeMillis() - t1)/1000;
-            logger.info("tsRuntime: " + tsRuntime + " seconds");
+            long solutionTime  = (System.currentTimeMillis() - t1)/1000;
+
+            logger.info("solution time: " + solutionTime + " seconds");
+
+            controller.newProcessSolution();
 
             /*
             // ---- SECTION START ----
@@ -83,7 +84,7 @@ public class Main {
             // ds.solve();      
             // ---- SECTION END ----
 
-            logger.info("Completed optimization.");
+            logger.info("completed optimization.");
         } catch (IOException | IloException | OptException ex) {
             logger.error(ex);
         }

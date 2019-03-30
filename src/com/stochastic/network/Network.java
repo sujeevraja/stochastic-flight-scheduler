@@ -53,7 +53,7 @@ public class Network {
 
     private void buildAdjacencyList() {
         // Builds leg adjacency list by evaluating connections including delays.
-        logger.info("Started building adjacency list...");
+        logger.info("started building adjacency list...");
         adjacencyList = new HashMap<>();
         final Integer numLegs = legs.size();
         for(int i = 0; i < numLegs - 1; ++i) {
@@ -68,7 +68,7 @@ public class Network {
                     addNeighbor(j, i);
             }
         }
-        logger.info("Completed building adjacency list.");
+        logger.info("completed building adjacency list.");
     }
 
     public HashMap<Integer, ArrayList<Integer>> getAdjacencyList() {

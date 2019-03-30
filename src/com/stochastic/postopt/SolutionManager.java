@@ -216,7 +216,7 @@ public class SolutionManager {
                 writer.write("average excess delay with rescheduling (min): " + meanStochDelay + "\n");
                 
                 Controller.delayResults.add(meanDetermDelay);
-                Controller.delayResults.add(meanStochDelay);                
+                Controller.delayResults.add(meanStochDelay);
             }
 
             writer.close();

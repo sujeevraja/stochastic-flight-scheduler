@@ -4,6 +4,8 @@ import com.stochastic.domain.Leg;
 import com.stochastic.dao.ScheduleDAO;
 import com.stochastic.domain.Tail;
 import com.stochastic.network.Path;
+import com.stochastic.postopt.NewSolutionManager;
+import com.stochastic.postopt.Solution;
 import com.stochastic.postopt.SolutionManager;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.registry.Parameters;
@@ -41,6 +43,9 @@ public class Controller {
 
     public static int[][] sceVal;
 
+    // Members to process solution and output
+    private Solution bendersSolution;
+
     public Controller() throws IOException {
         dataRegistry = new DataRegistry();
         if (Parameters.isDebugVerbose()) {
@@ -58,11 +63,12 @@ public class Controller {
         storeLegs(legs);
         // limitNumTails();
         logger.info("Collected leg and tail data from Schedule.xml.");
+        logger.info("completed reading data.");
 
+        logger.info("started building connection network...");
         dataRegistry.buildConnectionNetwork();
         dataRegistry.getNetwork().countPathsForTails(dataRegistry.getTails());
         logger.info("built connection network.");
-        logger.info("Completed reading data.");
     }
 
     public final void solve() throws IOException, IloException, OptException {
@@ -86,11 +92,11 @@ public class Controller {
 
         masterSolver.addColumn();
 
-        logger.info("Algorithm starts.");
+        logger.info("algorithm starts.");
         if (Parameters.isFullEnumeration())
-            logger.info("Pricing problem strategy: full enumeration");
+            logger.info("pricing problem strategy: full enumeration");
         else
-            logger.info("Pricing problem strategy: labeling, " + Parameters.getReducedCostStrategy());
+            logger.info("pricing problem strategy: labeling, " + Parameters.getReducedCostStrategy());
 
         // generate random delays for 2nd stage scenarios.
         // generateScenarioDelays(Parameters.getScale(), Parameters.getShape());
@@ -147,9 +153,13 @@ public class Controller {
             logger.info("----- diff: " + diff + " tolerance: " + tolerance + " stop: " + stoppingCondition);
         } while (!stoppingCondition); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
 
-        masterSolver.printSolution();
+        // store final solution
+        bendersSolution = new Solution(masterSolver.getFirstStageObjValue(), dataRegistry.getLegs(),
+                masterSolver.getReschedules());
+        bendersSolution.setThetaValue(masterSolver.getThetaValue());
+
         masterSolver.end();
-        logger.info("Algorithm ends.");
+        logger.info("algorithm ends.");
 
         if (Parameters.isDebugVerbose()) {
             cutWriter.close();
@@ -426,5 +436,10 @@ public class Controller {
         if (qualifySolution)
             sm.compareSolutions(numTestScenarios);
         sm.writeOutput();
+    }
+
+    public void newProcessSolution() throws IOException {
+        NewSolutionManager nsm = new NewSolutionManager(bendersSolution);
+        nsm.writeOutput();
     }
 }
