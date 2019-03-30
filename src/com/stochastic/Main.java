@@ -23,12 +23,7 @@ public class Main {
             Controller controller = new Controller();
             controller.readData();
             controller.buildScenarios();
-
-            long startTime = System.currentTimeMillis();
-            controller.solve(); //BD
-            long solutionTime  = (System.currentTimeMillis() - startTime)/1000;
-            logger.info("solution time: " + solutionTime + " seconds");
-
+            controller.solve(); // Benders Decomposition
             controller.newProcessSolution();
 
             /*

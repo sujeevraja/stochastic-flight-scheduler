@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 
 import org.apache.logging.log4j.Logger;
@@ -41,23 +42,7 @@ public class Controller {
     public static int[][] sceVal;
 
     // Members to process solution and output
-    private Solution bendersSolution;
-
-    class Scenarios {
-        /**
-         * Class that holds generate delays and probabilities of second-stage scenarios.
-         *
-         * This class is only for use within Controller. After scenario generation and aggregation of equal probability
-         * scenarios, the updated data will be stored in the dataRegistry.
-         */
-        ArrayList<Integer> delays;
-        ArrayList<Double> probabilities;
-
-        Scenarios(ArrayList<Integer> delays, ArrayList<Double> probabilities) {
-            this.delays = delays;
-            this.probabilities = probabilities;
-        }
-    }
+    private NewSolutionManager newSolutionManager;
 
     public Controller() throws IOException {
         dataRegistry = new DataRegistry();
@@ -65,6 +50,7 @@ public class Controller {
             cutWriter = new BufferedWriter(new FileWriter("logs/master__cuts.csv"));
             slnWriter = new BufferedWriter(new FileWriter("logs/master__solutions.csv"));
         }
+        newSolutionManager = new NewSolutionManager(dataRegistry);
     }
 
     public final void readData() throws OptException {
@@ -107,6 +93,7 @@ public class Controller {
     }
 
     public final void solve() throws IOException, IloException, OptException {
+        Instant start = Instant.now();
         ArrayList<Leg> legs = dataRegistry.getLegs();
         ArrayList<Tail> tails = dataRegistry.getTails();
         int[] durations = Parameters.getDurations();
@@ -175,8 +162,12 @@ public class Controller {
             logger.info("----- diff: " + diff + " tolerance: " + tolerance + " stop: " + stoppingCondition);
         } while (!stoppingCondition); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
 
+        Instant end = Instant.now();
+        double bendersSolutionTime = Duration.between(start, end).toMillis() / 1000.0;
+        logger.info("solution time: " + bendersSolutionTime + " seconds");
+
         // store final solution
-        bendersSolution = new Solution(masterSolver.getFirstStageObjValue(), dataRegistry.getLegs(),
+        Solution bendersSolution = new Solution(masterSolver.getFirstStageObjValue(), dataRegistry.getLegs(),
                 masterSolver.getReschedules());
         bendersSolution.setThetaValue(masterSolver.getThetaValue());
 
@@ -187,6 +178,9 @@ public class Controller {
             cutWriter.close();
             slnWriter.close();
         }
+
+        newSolutionManager.setBendersSolution(bendersSolution);
+        newSolutionManager.setBendersSolutionTime(bendersSolutionTime);
     }
 
     private void writeCsvHeaders() throws IOException {
@@ -469,7 +463,22 @@ public class Controller {
     }
 
     public void newProcessSolution() throws IOException {
-        NewSolutionManager nsm = new NewSolutionManager(bendersSolution);
-        nsm.writeOutput();
+        newSolutionManager.writeOutput();
+    }
+
+    class Scenarios {
+        /**
+         * Class that holds generate delays and probabilities of second-stage scenarios.
+         *
+         * This class is only for use within Controller. After scenario generation and aggregation of equal probability
+         * scenarios, the updated data will be stored in the dataRegistry.
+         */
+        ArrayList<Integer> delays;
+        ArrayList<Double> probabilities;
+
+        Scenarios(ArrayList<Integer> delays, ArrayList<Double> probabilities) {
+            this.delays = delays;
+            this.probabilities = probabilities;
+        }
     }
 }
