@@ -2,56 +2,30 @@ package com.stochastic;
 
 import com.stochastic.controller.Controller;
 import com.stochastic.registry.Parameters;
-import com.stochastic.solver.MasterSolver;
 import com.stochastic.utility.OptException;
 import ilog.concert.IloException;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 
 public class Main {
     /**
-     * Only responsibility is to own main().
+     * Class that owns main().
      */
     private final static Logger logger = LogManager.getLogger(Main.class);
 
     public static void main(String[] args) {
         try {
             logger.info("Started optimization...");
+            setParameters();
 
-            // ----- PARAMETER SETTINGS SECTION START -----
-            Parameters.setNumScenarios(10);
-            Parameters.setScale(3.5);
-            Parameters.setShape(0.25);
-            Parameters.setDurations(new int[]{5, 10, 15, 20, 25, 30});
-            Parameters.setBendersTolerance(1e-3);
-
-            // Second-stage parameters
-            Parameters.setFullEnumeration(false);
-            Parameters.setReducedCostStrategy(Parameters.ReducedCostStrategy.FIRST_PATHS);
-            Parameters.setNumReducedCostPaths(10);
-
-            // Debugging parameter
-            Parameters.setDebugVerbose(false); // Set to true to see CPLEX logs, lp files and solution xml files.
-
-            // Multi-threading parameters
-            Parameters.setRunSecondStageInParallel(false);
-            Parameters.setNumThreadsForSecondStage(2);
-
-            // Expected excess parameters
-            Parameters.setExpectedExcess(false);
-            Parameters.setRho(0.9);
-            Parameters.setExcessTarget(40);
-
-            String path = "data\\20171115022840-v2";
-            // String path = "data\\instance1";
-            // ----- PARAMETER SETTINGS SECTION END -----
+            // String path = "data\\20171115022840-v2";
+            String path = "data\\instance1";
 
             Controller controller = new Controller();
             controller.readData(path);
+            controller.buildScenarios();
 
             long t1 = System.currentTimeMillis();
             controller.solve(); //BD
@@ -88,6 +62,32 @@ public class Main {
         } catch (IOException | IloException | OptException ex) {
             logger.error(ex);
         }
+    }
+
+    private static void setParameters() {
+        Parameters.setNumScenariosToGenerate(10);
+        Parameters.setScale(3.5);
+        Parameters.setShape(0.25);
+        Parameters.setDurations(new int[]{5, 10, 15, 20, 25, 30});
+        // Parameters.setDurations(new int[]{5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60});
+        Parameters.setBendersTolerance(1e-3);
+
+        // Second-stage parameters
+        Parameters.setFullEnumeration(false);
+        Parameters.setReducedCostStrategy(Parameters.ReducedCostStrategy.FIRST_PATHS);
+        Parameters.setNumReducedCostPaths(10);
+
+        // Debugging parameter
+        Parameters.setDebugVerbose(false); // Set to true to see CPLEX logs, lp files and solution xml files.
+
+        // Multi-threading parameters
+        Parameters.setRunSecondStageInParallel(false);
+        Parameters.setNumThreadsForSecondStage(2);
+
+        // Expected excess parameters
+        Parameters.setExpectedExcess(false);
+        Parameters.setRho(0.9);
+        Parameters.setExcessTarget(40);
     }
 }
 

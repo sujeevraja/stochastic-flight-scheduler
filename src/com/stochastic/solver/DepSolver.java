@@ -63,8 +63,7 @@ public class DepSolver {
             final Integer numLegs = legs.size();
             final Integer numTails = tails.size();
             final Integer numDurations = durations.length;
-            final Integer maxDelay = dataRegistry.getMaxLegDelayInMin();
-            
+
             x = new IloIntVar[numLegs][durations.length];
 
             for (int i = 0; i < legs.size(); i++)            

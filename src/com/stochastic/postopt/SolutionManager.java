@@ -30,8 +30,8 @@ public class SolutionManager {
     private final static Logger logger = LogManager.getLogger(SolutionManager.class);
     private String instancePath;
     private DataRegistry dataRegistry;
-    private ArrayList<Integer> scenarioDelays;
-    private ArrayList<Double> scenarioProbabilities;
+    private int[] scenarioDelays;
+    private double[] scenarioProbabilities;
     private double[][] xValues; // xValues[i][j] = 1 if durations[i] is selected for legs[j], 0 otherwise.
     private boolean solutionsCompared;
 
@@ -41,12 +41,11 @@ public class SolutionManager {
     private int[] deterministicObjs;
     private int[] stochasticObjs;
 
-    public SolutionManager(String instancePath, DataRegistry dataRegistry, ArrayList<Integer> scenarioDelays,
-                           ArrayList<Double> scenarioProbabilities, double[][] xValues) {
+    public SolutionManager(String instancePath, DataRegistry dataRegistry, double[][] xValues) {
         this.instancePath = instancePath;
         this.dataRegistry = dataRegistry;
-        this.scenarioDelays = scenarioDelays;
-        this.scenarioProbabilities = scenarioProbabilities;
+        this.scenarioDelays = dataRegistry.getScenarioDelays();
+        this.scenarioProbabilities = dataRegistry.getScenarioProbabilities();
         this.xValues = xValues;
         solutionsCompared = false;
 
@@ -75,8 +74,6 @@ public class SolutionManager {
         int[] zeroes = new int[dataRegistry.getLegs().size()];
         Arrays.fill(zeroes, 0);
 
-        dataRegistry.setMaxLegDelayInMin(Math.max(dataRegistry.getMaxLegDelayInMin(), 100));
-        
         for(int i = 0; i < testDelays.size(); ++i) {
             Integer currDelay = testDelays.get(i);
             logger.info("Current test delay: " + currDelay);
@@ -155,19 +152,19 @@ public class SolutionManager {
             writer.write("instance name: " + instancePath + "\n");
             writer.write("number of tails: " + dataRegistry.getTails().size() + "\n");
             writer.write("number of legs: " + dataRegistry.getLegs().size() + "\n");
-            writer.write("number of scenarios: " + scenarioDelays.size() + "\n");
+            writer.write("number of scenarios: " + scenarioDelays.length + "\n");
             StringBuilder delayStr = new StringBuilder();
             StringBuilder probStr = new StringBuilder();
             delayStr.append("scenario delays: ");
-            delayStr.append(scenarioDelays.get(0));
+            delayStr.append(scenarioDelays[0]);
             probStr.append("scenario probabilities: ");
-            probStr.append(scenarioProbabilities.get(0));
+            probStr.append(scenarioProbabilities[0]);
 
-            for(int i = 1; i < scenarioDelays.size(); ++i) {
+            for(int i = 1; i < scenarioDelays.length; ++i) {
                 delayStr.append(",");
-                delayStr.append(scenarioDelays.get(i));
+                delayStr.append(scenarioDelays[i]);
                 probStr.append(",");
-                probStr.append(scenarioProbabilities.get(i));
+                probStr.append(scenarioProbabilities[i]);
             }
 
             writer.write(delayStr.toString());

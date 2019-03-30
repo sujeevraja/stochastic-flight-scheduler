@@ -10,17 +10,16 @@ import java.util.HashMap;
 
 public class DataRegistry {
     /**
-     * Holds all airline objects built from input data.
+     * Holds input data.
      */
-
-    private Integer maxLegDelayInMin;
     private ArrayList<Leg> legs;
     private ArrayList<Tail> tails;
     private HashMap<Integer, Path> tailHashMap;
     private Network network;
 
-    // This is the updated number of scenarios after duplicate random delays have been removed.
     private Integer numScenarios;
+    private int[] scenarioDelays;
+    private double[] scenarioProbabilities;
 
     public DataRegistry() {
         legs = new ArrayList<>();
@@ -37,14 +36,6 @@ public class DataRegistry {
 
 	public ArrayList<Leg> getLegs() {
         return legs;
-    }
-
-    public void setMaxLegDelayInMin(Integer maxLegDelayInMin) {
-        this.maxLegDelayInMin = maxLegDelayInMin;
-    }
-
-    public Integer getMaxLegDelayInMin() {
-        return maxLegDelayInMin;
     }
 
     public void setLegs(ArrayList<Leg> legs) {
@@ -67,6 +58,14 @@ public class DataRegistry {
         return null;
     }
 
+    public void buildConnectionNetwork() {
+        network = new Network(legs);
+    }
+
+    public Network getNetwork() {
+        return network;
+    }
+
     public void setNumScenarios(Integer numScenarios) {
         this.numScenarios = numScenarios;
     }
@@ -75,12 +74,20 @@ public class DataRegistry {
         return numScenarios;
     }
 
-    public void buildConnectionNetwork() {
-        network = new Network(legs);
+    public void setScenarioDelays(int[] scenarioDelays) {
+        this.scenarioDelays = scenarioDelays;
     }
 
-    public Network getNetwork() {
-        return network;
+    public int[] getScenarioDelays() {
+        return scenarioDelays;
+    }
+
+    public void setScenarioProbabilities(double[] scenarioProbabilities) {
+        this.scenarioProbabilities = scenarioProbabilities;
+    }
+
+    public double[] getScenarioProbabilities() {
+        return scenarioProbabilities;
     }
 }
 
