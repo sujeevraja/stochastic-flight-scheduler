@@ -46,7 +46,6 @@ public class SubSolverWrapper {
             SubSolverRunnable subSolverRunnable = new SubSolverRunnable(dataRegistry, iter, i, probabilities.get(i),
                     reschedules, legDelays, bendersData);
             subSolverRunnable.run();
-            logger.info("Solved scenario " + i + " numScenarios: " + numScenarios);
         }
     }
 
@@ -61,7 +60,6 @@ public class SubSolverWrapper {
                 SubSolverRunnable subSolverRunnable = new SubSolverRunnable(dataRegistry, iter, i,
                         probabilities.get(i), reschedules, legDelays, bendersData);
                 exSrv.execute(subSolverRunnable); // this calls SubSolverRunnable.run()
-                logger.info("Solved scenario " + i);
             }
 
             exSrv.shutdown();

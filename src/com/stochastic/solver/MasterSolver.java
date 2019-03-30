@@ -83,7 +83,7 @@ public class MasterSolver {
         cplex.exportModel(fName);
     }
 
-    public void writeSolution(String fName) throws IloException {
+    public void writeCPLEXSolution(String fName) throws IloException {
         cplex.writeSolution(fName);
     }
 
@@ -102,14 +102,13 @@ public class MasterSolver {
     }
 
     private void addObjective() throws IloException {
-        // multiplied delay times by 0.5 as it should be cheaper to reschedule flights in the first stage
-        // rather than delaying them in the second stage. Otherwise, there is no difference between planning
-        // (first stage) and recourse (second stage).
+        // Ensure that reschedule costing is cheaper than delay costing. Otherwise, there is no difference between
+        // planning (first stage) and recourse (second stage).
 
         IloLinearNumExpr cons = cplex.linearNumExpr();
         for (int i = 0; i < durations.length; i++)
             for (int j = 0; j < legs.size(); j++)
-                cons.addTerm(x[i][j], durations[i] * legs.get(i).getRescheduleCostPerMin());
+                cons.addTerm(x[i][j], durations[i] * legs.get(j).getRescheduleCostPerMin());
 
         obj = cplex.addMinimize(cons);
     }

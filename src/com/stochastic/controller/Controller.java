@@ -10,7 +10,6 @@ import com.stochastic.registry.Parameters;
 import com.stochastic.solver.BendersData;
 import com.stochastic.solver.MasterSolver;
 import com.stochastic.solver.SubSolverWrapper;
-import com.stochastic.utility.Constants;
 import com.stochastic.utility.OptException;
 import ilog.concert.IloException;
 import org.apache.commons.math3.distribution.LogNormalDistribution;
@@ -130,7 +129,7 @@ public class Controller {
             masterSolver.solve(iter);
 
             if (Parameters.isDebugVerbose()) {
-                masterSolver.writeSolution("logs/master_" + iter + ".xml");
+                masterSolver.writeCPLEXSolution("logs/master_" + iter + ".xml");
                 writeMasterSolution(iter, masterSolver.getxValues());
             }
 
