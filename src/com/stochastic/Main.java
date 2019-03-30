@@ -20,17 +20,13 @@ public class Main {
             logger.info("Started optimization...");
             setParameters();
 
-            // String path = "data\\20171115022840-v2";
-            String path = "data\\instance1";
-
             Controller controller = new Controller();
-            controller.readData(path);
+            controller.readData();
             controller.buildScenarios();
 
-            long t1 = System.currentTimeMillis();
+            long startTime = System.currentTimeMillis();
             controller.solve(); //BD
-            long solutionTime  = (System.currentTimeMillis() - t1)/1000;
-
+            long solutionTime  = (System.currentTimeMillis() - startTime)/1000;
             logger.info("solution time: " + solutionTime + " seconds");
 
             controller.newProcessSolution();
@@ -65,6 +61,10 @@ public class Main {
     }
 
     private static void setParameters() {
+        // String path = "data\\20171115022840-v2";
+        String path = "data\\instance1";
+
+        Parameters.setInstancePath(path);
         Parameters.setNumScenariosToGenerate(10);
         Parameters.setScale(3.5);
         Parameters.setShape(0.25);

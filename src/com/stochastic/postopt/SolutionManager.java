@@ -41,8 +41,8 @@ public class SolutionManager {
     private int[] deterministicObjs;
     private int[] stochasticObjs;
 
-    public SolutionManager(String instancePath, DataRegistry dataRegistry, double[][] xValues) {
-        this.instancePath = instancePath;
+    public SolutionManager(DataRegistry dataRegistry, double[][] xValues) {
+        this.instancePath = Parameters.getInstancePath();
         this.dataRegistry = dataRegistry;
         this.scenarioDelays = dataRegistry.getScenarioDelays();
         this.scenarioProbabilities = dataRegistry.getScenarioProbabilities();

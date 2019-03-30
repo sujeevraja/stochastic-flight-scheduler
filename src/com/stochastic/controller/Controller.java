@@ -33,7 +33,6 @@ public class Controller {
      */
     private final static Logger logger = LogManager.getLogger(Controller.class);
     private DataRegistry dataRegistry;
-    private String instancePath;
     private BufferedWriter cutWriter;
     private BufferedWriter slnWriter;
 
@@ -68,11 +67,11 @@ public class Controller {
         }
     }
 
-    public final void readData(String instancePath) throws OptException {
+    public final void readData() throws OptException {
         logger.info("Started reading data...");
-        this.instancePath = instancePath;
 
         // Read leg data and remove unnecessary legs
+        String instancePath = Parameters.getInstancePath();
         ArrayList<Leg> legs = new ScheduleDAO(instancePath + "\\Schedule.xml").getLegs();
         storeLegs(legs);
         // limitNumTails();
@@ -463,7 +462,7 @@ public class Controller {
 
     public void processSolution(boolean qualifySolution, double[][] xValues,
                                 int numTestScenarios) throws OptException {
-        SolutionManager sm = new SolutionManager(instancePath, dataRegistry, xValues);
+        SolutionManager sm = new SolutionManager(dataRegistry, xValues);
         if (qualifySolution)
             sm.compareSolutions(numTestScenarios);
         sm.writeOutput();
