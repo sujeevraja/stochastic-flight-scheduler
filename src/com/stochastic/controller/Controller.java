@@ -5,24 +5,18 @@ import com.stochastic.dao.ScheduleDAO;
 import com.stochastic.domain.Tail;
 import com.stochastic.network.Path;
 import com.stochastic.postopt.NewSolutionManager;
-import com.stochastic.postopt.Solution;
 import com.stochastic.postopt.SolutionManager;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.registry.Parameters;
-import com.stochastic.solver.BendersData;
-import com.stochastic.solver.MasterSolver;
-import com.stochastic.solver.SubSolverWrapper;
+import com.stochastic.solver.BendersSolver;
 import com.stochastic.utility.OptException;
 import ilog.concert.IloException;
 import org.apache.commons.math3.distribution.LogNormalDistribution;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
 
 import org.apache.logging.log4j.Logger;
@@ -34,8 +28,6 @@ public class Controller {
      */
     private final static Logger logger = LogManager.getLogger(Controller.class);
     private DataRegistry dataRegistry;
-    private BufferedWriter cutWriter;
-    private BufferedWriter slnWriter;
 
     public static ArrayList<Double> delayResults = new ArrayList<>();
 
@@ -44,12 +36,8 @@ public class Controller {
     // Members to process solution and output
     private NewSolutionManager newSolutionManager;
 
-    public Controller() throws IOException {
+    public Controller() {
         dataRegistry = new DataRegistry();
-        if (Parameters.isDebugVerbose()) {
-            cutWriter = new BufferedWriter(new FileWriter("logs/master__cuts.csv"));
-            slnWriter = new BufferedWriter(new FileWriter("logs/master__solutions.csv"));
-        }
         newSolutionManager = new NewSolutionManager(dataRegistry);
     }
 
@@ -93,153 +81,10 @@ public class Controller {
     }
 
     public final void solve() throws IOException, IloException, OptException {
-        Instant start = Instant.now();
-        ArrayList<Leg> legs = dataRegistry.getLegs();
-        ArrayList<Tail> tails = dataRegistry.getTails();
-        int[] durations = Parameters.getDurations();
-
-        int iter = -1;
-        MasterSolver masterSolver = new MasterSolver(legs, tails, durations);
-        masterSolver.constructFirstStage();
-
-        if (Parameters.isDebugVerbose()) {
-            writeCsvHeaders();
-            masterSolver.writeLPFile("logs/master__before_cuts.lp");
-        }
-
-        masterSolver.solve(iter);
-
-        if (Parameters.isDebugVerbose())
-            writeMasterSolution(iter, masterSolver.getxValues());
-
-        masterSolver.addColumn();
-
-        logger.info("algorithm starts.");
-        if (Parameters.isFullEnumeration())
-            logger.info("pricing problem strategy: full enumeration");
-        else
-            logger.info("pricing problem strategy: labeling, " + Parameters.getReducedCostStrategy());
-
-        double lBound;
-        double uBound = Double.MAX_VALUE;
-        boolean stoppingCondition;
-        do {
-            iter++;
-            SubSolverWrapper ssWrapper = new SubSolverWrapper(dataRegistry, masterSolver.getReschedules(), iter,
-                    masterSolver.getFirstStageObjValue());
-
-            if (Parameters.isRunSecondStageInParallel())
-                ssWrapper.solveParallel();
-            else
-                ssWrapper.solveSequential();
-
-            BendersData bendersData = ssWrapper.getBendersData();
-            masterSolver.constructBendersCut(bendersData.getAlpha(), bendersData.getBeta());
-
-            if (Parameters.isDebugVerbose()) {
-                masterSolver.writeLPFile("logs/master_" + iter + ".lp");
-                writeBendersCut(iter, bendersData.getBeta(), bendersData.getAlpha());
-            }
-
-            masterSolver.solve(iter);
-
-            if (Parameters.isDebugVerbose()) {
-                masterSolver.writeCPLEXSolution("logs/master_" + iter + ".xml");
-                writeMasterSolution(iter, masterSolver.getxValues());
-            }
-
-            lBound = masterSolver.getObjValue();
-
-            if (bendersData.getUpperBound() < uBound)
-                uBound = bendersData.getUpperBound();
-
-            logger.info("----- LB: " + lBound + " UB: " + uBound + " Iter: " + iter
-                    + " bendersData.getUpperBound(): " + bendersData.getUpperBound());
-
-            double diff = uBound - lBound;
-            double tolerance = Parameters.getBendersTolerance() * Math.abs(uBound);
-            stoppingCondition = diff <= tolerance;
-            logger.info("----- diff: " + diff + " tolerance: " + tolerance + " stop: " + stoppingCondition);
-        } while (!stoppingCondition); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
-
-        Instant end = Instant.now();
-        double bendersSolutionTime = Duration.between(start, end).toMillis() / 1000.0;
-        logger.info("solution time: " + bendersSolutionTime + " seconds");
-
-        // store final solution
-        Solution bendersSolution = new Solution(masterSolver.getFirstStageObjValue(), dataRegistry.getLegs(),
-                masterSolver.getReschedules());
-        bendersSolution.setThetaValue(masterSolver.getThetaValue());
-
-        masterSolver.end();
-        logger.info("algorithm ends.");
-
-        if (Parameters.isDebugVerbose()) {
-            cutWriter.close();
-            slnWriter.close();
-        }
-
-        newSolutionManager.setBendersSolution(bendersSolution);
-        newSolutionManager.setBendersSolutionTime(bendersSolutionTime);
-    }
-
-    private void writeCsvHeaders() throws IOException {
-        StringBuilder row = new StringBuilder();
-        row.append("iter");
-        int[] durations = Parameters.getDurations();
-        ArrayList<Leg> legs = dataRegistry.getLegs();
-        for (int duration : durations) {
-            for (Leg leg : legs) {
-                row.append(",x_");
-                row.append(duration);
-                row.append("_");
-                row.append(leg.getId());
-            }
-        }
-
-        slnWriter.write(row.toString());
-        slnWriter.write("\n");
-        cutWriter.write(row.toString());
-        cutWriter.write(",rhs\n");
-    }
-
-    private void writeBendersCut(int iter, double[][] beta, double alpha) throws IOException {
-        int[] durations = Parameters.getDurations();
-        ArrayList<Leg> legs = dataRegistry.getLegs();
-
-        StringBuilder row = new StringBuilder();
-        row.append(iter);
-
-        for (int i = 0; i < durations.length; ++i) {
-            for (int j = 0; j < legs.size(); ++j) {
-                row.append(",");
-                row.append(beta[i][j]);
-            }
-        }
-
-        row.append(",");
-        row.append(alpha);
-        row.append("\n");
-
-        cutWriter.write(row.toString());
-    }
-
-    private void writeMasterSolution(int iter, double[][] xValues) throws IOException {
-        int[] durations = Parameters.getDurations();
-        ArrayList<Leg> legs = dataRegistry.getLegs();
-
-        StringBuilder row = new StringBuilder();
-        row.append(iter);
-
-        for (int i = 0; i < durations.length; ++i) {
-            for (int j = 0; j < legs.size(); ++j) {
-                row.append(",");
-                row.append(xValues[i][j]);
-            }
-        }
-
-        row.append("\n");
-        slnWriter.write(row.toString());
+        BendersSolver bendersSolver = new BendersSolver(dataRegistry);
+        bendersSolver.solve();
+        newSolutionManager.setBendersSolution(bendersSolver.getFinalSolution());
+        newSolutionManager.setBendersSolutionTime(bendersSolver.getSolutionTime());
     }
 
     /**
