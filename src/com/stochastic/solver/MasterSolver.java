@@ -98,6 +98,7 @@ public class MasterSolver {
         addObjective();
         addDurationCoverConstraints();
         addOriginalRoutingConstraints();
+        addBudgetConstraint();
     }
 
     private void addObjective() throws IloException {
@@ -148,6 +149,16 @@ public class MasterSolver {
                 r.setName("connect_" + currLeg.getId() + "_" + nextLeg.getId());
             }
         }
+    }
+
+    private void addBudgetConstraint() throws IloException {
+        IloLinearNumExpr budgetExpr = cplex.linearNumExpr();
+        for (int i = 0; i < durations.length; ++i)
+            for (int j = 0; j < legs.size(); ++j)
+                budgetExpr.addTerm(x[i][j], durations[i]);
+
+        IloRange budgetConstraint = cplex.addLe(budgetExpr, (double) Parameters.getRescheduleTimeBudget());
+        budgetConstraint.setName("reschedule_time_budget");
     }
 
     public void constructBendersCut(double alphaValue, double[][] betaValue) throws OptException {

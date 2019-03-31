@@ -2,6 +2,7 @@ package com.stochastic.registry;
 
 public class Parameters {
     private static String instancePath;
+    private static int rescheduleTimeBudget;
     private static int numScenariosToGenerate;
     private static double scale;
     private static double shape;
@@ -42,6 +43,14 @@ public class Parameters {
 
     public static String getInstancePath() {
         return instancePath;
+    }
+
+    public static void setRescheduleTimeBudget(int rescheduleTimeBudget) {
+        Parameters.rescheduleTimeBudget = rescheduleTimeBudget;
+    }
+
+    public static int getRescheduleTimeBudget() {
+        return rescheduleTimeBudget;
     }
 
     public static void setNumScenariosToGenerate(int numScenariosToGenerate) {

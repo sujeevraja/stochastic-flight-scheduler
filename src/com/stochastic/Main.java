@@ -61,6 +61,7 @@ public class Main {
         String path = "data\\instance1";
 
         Parameters.setInstancePath(path);
+        Parameters.setRescheduleTimeBudget(300);
         Parameters.setNumScenariosToGenerate(10);
         Parameters.setScale(3.5);
         Parameters.setShape(0.25);
