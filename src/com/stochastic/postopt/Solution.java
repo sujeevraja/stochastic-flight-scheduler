@@ -12,13 +12,11 @@ public class Solution {
      * Solution objects store solutions of the master problem.
      */
     private double objective;
-    private ArrayList<Leg> legs;
     private int[] reschedules;
     private Double thetaValue; // only applies to Benders solutions.
 
-    public Solution(double objective, ArrayList<Leg> legs, int[] reschedules) {
+    public Solution(double objective, int[] reschedules) {
         this.objective = objective;
-        this.legs = legs;
         this.reschedules = reschedules;
         this.thetaValue = null;
     }
@@ -27,7 +25,7 @@ public class Solution {
      * Writes stored solution to a file with the given path.
      * @param path path to file (assumed to be csv).
      */
-    public void writeCSV(String path) throws IOException {
+    public void writeCSV(String path, ArrayList<Leg> legs) throws IOException {
         BufferedWriter writer = new BufferedWriter(new FileWriter(path));
         writer.write("leg_id,flt_num,reschedule\n");
         for (int i = 0; i < reschedules.length; ++i) {

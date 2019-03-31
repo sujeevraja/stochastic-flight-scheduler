@@ -39,7 +39,7 @@ class SubSolverRunnable implements Runnable {
     private HashMap<Integer, ArrayList<Path>> getInitialPaths(int[] delays) {
         HashMap<Integer, ArrayList<Path>> initialPaths = new HashMap<>();
 
-        for (Map.Entry<Integer, Path> entry : dataRegistry.getTailHashMap().entrySet()) {
+        for (Map.Entry<Integer, Path> entry : dataRegistry.getTailOrigPathMap().entrySet()) {
             int tailId = entry.getKey();
             Tail tail = dataRegistry.getTail(tailId);
 

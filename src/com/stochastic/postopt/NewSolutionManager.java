@@ -20,6 +20,7 @@ public class NewSolutionManager {
     private DataRegistry dataRegistry;
     private Solution bendersSolution;
     private double bendersSolutionTime;
+    private Solution naiveSolution;
 
     public NewSolutionManager(DataRegistry dataRegistry) {
         timeStamp = new SimpleDateFormat("yyyy_MM_dd'T'HH_mm_ss").format(new Date());
@@ -34,10 +35,20 @@ public class NewSolutionManager {
         this.bendersSolutionTime = bendersSolutionTime;
     }
 
+    public void setNaiveSolution(Solution naiveSolution) {
+        this.naiveSolution = naiveSolution;
+    }
+
     public void writeOutput() throws IOException {
         String bendersOutputPath = "solution/" + timeStamp + "_benders_solution.csv";
-        bendersSolution.writeCSV(bendersOutputPath);
+        bendersSolution.writeCSV(bendersOutputPath, dataRegistry.getLegs());
         logger.info("wrote benders output to " + bendersOutputPath);
+
+        if (naiveSolution != null) {
+            String naiveOutputPath = "solution/" + timeStamp + "_naive_solution.csv";
+            naiveSolution.writeCSV(naiveOutputPath, dataRegistry.getLegs());
+            logger.info("wrote naive output to " + naiveOutputPath);
+        }
 
         // write KPIs
         BufferedWriter kpiWriter = new BufferedWriter(new FileWriter("solution/" + timeStamp + "_kpis.yaml"));
@@ -46,6 +57,10 @@ public class NewSolutionManager {
         kpiWriter.write("Benders objective: " + bendersSolution.getObjective() + "\n");
         kpiWriter.write("Benders theta: " + bendersSolution.getThetaValue() + "\n");
         kpiWriter.write("Benders solution time (seconds): " + bendersSolutionTime + "\n");
+        if (naiveSolution != null)
+            kpiWriter.write("Naive objective: " + naiveSolution.getObjective() + "\n");
+        else
+            kpiWriter.write("Naive objective: N/A\n");
         kpiWriter.write("...\n");
         kpiWriter.close();
         logger.info("wrote KPIs");

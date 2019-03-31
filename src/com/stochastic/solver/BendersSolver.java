@@ -148,8 +148,7 @@ public class BendersSolver {
     }
 
     private void storeFinalSolution() {
-        finalSolution = new Solution(masterSolver.getFirstStageObjValue(), dataRegistry.getLegs(),
-                masterSolver.getReschedules());
+        finalSolution = new Solution(masterSolver.getFirstStageObjValue(), masterSolver.getReschedules());
         finalSolution.setThetaValue(masterSolver.getThetaValue());
     }
 

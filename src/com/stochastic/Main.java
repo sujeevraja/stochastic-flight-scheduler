@@ -23,7 +23,8 @@ public class Main {
             Controller controller = new Controller();
             controller.readData();
             controller.buildScenarios();
-            controller.solve(); // Benders Decomposition
+            controller.solveWithNaiveApproach();
+            controller.solveWithBenders();
             controller.newProcessSolution();
 
             /*

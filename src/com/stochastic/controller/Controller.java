@@ -9,6 +9,7 @@ import com.stochastic.postopt.SolutionManager;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.registry.Parameters;
 import com.stochastic.solver.BendersSolver;
+import com.stochastic.solver.NaiveSolver;
 import com.stochastic.utility.OptException;
 import ilog.concert.IloException;
 import org.apache.commons.math3.distribution.LogNormalDistribution;
@@ -80,11 +81,17 @@ public class Controller {
         logScenarioDelays();
     }
 
-    public final void solve() throws IOException, IloException, OptException {
+    public final void solveWithBenders() throws IOException, IloException, OptException {
         BendersSolver bendersSolver = new BendersSolver(dataRegistry);
         bendersSolver.solve();
         newSolutionManager.setBendersSolution(bendersSolver.getFinalSolution());
         newSolutionManager.setBendersSolutionTime(bendersSolver.getSolutionTime());
+    }
+
+    public final void solveWithNaiveApproach() {
+        NaiveSolver naiveSolver = new NaiveSolver(dataRegistry);
+        naiveSolver.solve();
+        newSolutionManager.setNaiveSolution(naiveSolver.getFinalSolution());
     }
 
     /**
@@ -244,7 +251,7 @@ public class Controller {
 
             tailPaths.put(entry.getKey(), p);
         }
-        dataRegistry.setTailHashMap(tailPaths);
+        dataRegistry.setTailOrigPathMap(tailPaths);
     }
 
     /**
@@ -275,11 +282,11 @@ public class Controller {
         dataRegistry.setTails(newTails);
 
         // cleanup tail paths.
-        HashMap<Integer, Path> tailHashMap = dataRegistry.getTailHashMap();
+        HashMap<Integer, Path> tailHashMap = dataRegistry.getTailOrigPathMap();
         HashMap<Integer, Path> newTailPathMap = new HashMap<>();
         for (Tail tail : newTails)
             newTailPathMap.put(tail.getId(), tailHashMap.get(tail.getId()));
-        dataRegistry.setTailHashMap(newTailPathMap);
+        dataRegistry.setTailOrigPathMap(newTailPathMap);
 
         // cleanup legs.
         ArrayList<Leg> newLegs = new ArrayList<>();
