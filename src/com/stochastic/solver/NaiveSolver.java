@@ -23,7 +23,7 @@ public class NaiveSolver {
      * For each leg with a primary delay, it reschedules the leg by the biggest amount less than or equal to the delay.
      * These delays are then propagated downstream in the original routes.
      */
-    private final static Logger logger = LogManager.getLogger(MasterSolver.class);
+    private final static Logger logger = LogManager.getLogger(NaiveSolver.class);
     private DataRegistry dataRegistry;
     private double[] expectedDelays;
     private Solution finalSolution;
@@ -56,6 +56,7 @@ public class NaiveSolver {
                 objective += (reschedules[i] * legs.get(i).getRescheduleCostPerMin());
         }
 
+        logger.info("naive solver objective: " + objective);
         finalSolution = new Solution(objective, reschedules);
     }
 

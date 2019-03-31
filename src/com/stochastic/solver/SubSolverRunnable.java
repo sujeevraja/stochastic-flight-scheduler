@@ -234,20 +234,16 @@ class SubSolverRunnable implements Runnable {
     /**
      * Return the total delay time in minutes of each leg for the second stage.
      *
-     * Total delay is the maximum of rescheduled time from first stage and random delay of second-stage scenario.
      * @return map with leg indices as keys, total delay times as corresponding values.
      */
     private int[] getTotalDelays() {
         ArrayList<Leg> legs = dataRegistry.getLegs();
         int[] delays = new int[legs.size()];
         for (int i = 0; i < legs.size(); ++i) {
-            delays[i] = 0;
+            delays[i] = randomDelays.getOrDefault(i, 0);
 
-            if(randomDelays.containsKey(i))
-                delays[i] = randomDelays.get(i);
-
-            if (reschedules[i] > 0 && delays[i] < reschedules[i])
-                delays[i] = reschedules[i];
+            // if (reschedules[i] > 0 && delays[i] < reschedules[i])
+            //    delays[i] = reschedules[i];
         }
 
         return delays;
