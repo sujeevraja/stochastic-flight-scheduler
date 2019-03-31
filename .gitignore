@@ -1,11 +1,11 @@
 *.lp
 *.txt
-# lib/*
-# !lib/.gitkeep
 logs/
 !logs/.gitkeep
 out/
 pucks.xml
+solution/
+!solution.gitkeep
 
 # Idea ignores
 .idea/

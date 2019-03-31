@@ -8,6 +8,7 @@ import com.stochastic.domain.Tail;
 import com.stochastic.network.Path;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.registry.Parameters;
+import com.stochastic.utility.Constants;
 import com.stochastic.utility.OptException;
 import ilog.concert.*;
 import ilog.cplex.IloCplex;
@@ -62,8 +63,7 @@ public class DepSolver {
             final Integer numLegs = legs.size();
             final Integer numTails = tails.size();
             final Integer numDurations = durations.length;
-            final Integer maxDelay = dataRegistry.getMaxLegDelayInMin();
-            
+
             x = new IloIntVar[numLegs][durations.length];
 
             for (int i = 0; i < legs.size(); i++)            
@@ -105,7 +105,7 @@ public class DepSolver {
 	                d[i][j] = subCplex.numVar(0, Double.MAX_VALUE, "d_" + legs.get(i).getId() + "_" + j);
 	                // boolVarArray(Data.nD + Data.nT);
 	
-	                delayRHS[i][j] = 14.0; // OTP time limit
+	                delayRHS[i][j] = Constants.OTP_TIME_LIMIT_IN_MINUTES;
 	
 	                objExpr.addTerm(d[i][j], 0.20*1.5);
 	                legCoverExprs[i][j] = subCplex.linearNumExpr();

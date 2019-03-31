@@ -30,8 +30,8 @@ public class SolutionManager {
     private final static Logger logger = LogManager.getLogger(SolutionManager.class);
     private String instancePath;
     private DataRegistry dataRegistry;
-    private ArrayList<Integer> scenarioDelays;
-    private ArrayList<Double> scenarioProbabilities;
+    private int[] scenarioDelays;
+    private double[] scenarioProbabilities;
     private double[][] xValues; // xValues[i][j] = 1 if durations[i] is selected for legs[j], 0 otherwise.
     private boolean solutionsCompared;
 
@@ -41,12 +41,11 @@ public class SolutionManager {
     private int[] deterministicObjs;
     private int[] stochasticObjs;
 
-    public SolutionManager(String instancePath, DataRegistry dataRegistry, ArrayList<Integer> scenarioDelays,
-                           ArrayList<Double> scenarioProbabilities, double[][] xValues) {
-        this.instancePath = instancePath;
+    public SolutionManager(DataRegistry dataRegistry, double[][] xValues) {
+        this.instancePath = Parameters.getInstancePath();
         this.dataRegistry = dataRegistry;
-        this.scenarioDelays = scenarioDelays;
-        this.scenarioProbabilities = scenarioProbabilities;
+        this.scenarioDelays = dataRegistry.getScenarioDelays();
+        this.scenarioProbabilities = dataRegistry.getScenarioProbabilities();
         this.xValues = xValues;
         solutionsCompared = false;
 
@@ -75,8 +74,6 @@ public class SolutionManager {
         int[] zeroes = new int[dataRegistry.getLegs().size()];
         Arrays.fill(zeroes, 0);
 
-        dataRegistry.setMaxLegDelayInMin(Math.max(dataRegistry.getMaxLegDelayInMin(), 100));
-        
         for(int i = 0; i < testDelays.size(); ++i) {
             Integer currDelay = testDelays.get(i);
             logger.info("Current test delay: " + currDelay);
@@ -151,39 +148,6 @@ public class SolutionManager {
             String fileName = "solution_" + (new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss'.txt'").format(new Date()));
             BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
 
-            // print input data
-            writer.write("instance name: " + instancePath + "\n");
-            writer.write("number of tails: " + dataRegistry.getTails().size() + "\n");
-            writer.write("number of legs: " + dataRegistry.getLegs().size() + "\n");
-            writer.write("number of scenarios: " + scenarioDelays.size() + "\n");
-            StringBuilder delayStr = new StringBuilder();
-            StringBuilder probStr = new StringBuilder();
-            delayStr.append("scenario delays: ");
-            delayStr.append(scenarioDelays.get(0));
-            probStr.append("scenario probabilities: ");
-            probStr.append(scenarioProbabilities.get(0));
-
-            for(int i = 1; i < scenarioDelays.size(); ++i) {
-                delayStr.append(",");
-                delayStr.append(scenarioDelays.get(i));
-                probStr.append(",");
-                probStr.append(scenarioProbabilities.get(i));
-            }
-
-            writer.write(delayStr.toString());
-            writer.write('\n');
-            writer.write(probStr.toString());
-            writer.write("\n\n");
-
-            // print selected reschedule times
-            writer.write("leg reschedule times:\n");
-            ArrayList<Leg> legs = dataRegistry.getLegs();
-            for(int i = 0; i < rescheduleLegIndices.size(); ++i) {
-                String line = legs.get(i).getId() + ": " + rescheduleTimes.get(i) + " minutes\n";
-                writer.write(line);
-            }
-            writer.write("\n");
-
             if(solutionsCompared) {
                 writer.write("number of test instances: " + testDelays.size() + "\n");
 
@@ -216,9 +180,8 @@ public class SolutionManager {
                 writer.write("average excess delay with rescheduling (min): " + meanStochDelay + "\n");
                 
                 Controller.delayResults.add(meanDetermDelay);
-                Controller.delayResults.add(meanStochDelay);                
+                Controller.delayResults.add(meanStochDelay);
             }
-
             writer.close();
         } catch (IOException ie) {
             logger.error(ie);

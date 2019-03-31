@@ -4,6 +4,7 @@ import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
 import com.stochastic.network.Path;
 import com.stochastic.registry.Parameters;
+import com.stochastic.utility.Constants;
 import com.stochastic.utility.OptException;
 import ilog.concert.*;
 import ilog.cplex.IloCplex;
@@ -98,7 +99,7 @@ public class SubSolver {
                 Leg leg = legs.get(i);
                 d[i] = cplex.numVar(0, Double.MAX_VALUE, "d_" + leg.getId());
 
-                delayRHS[i] = 14.0; // OTP time limit
+                delayRHS[i] = Constants.OTP_TIME_LIMIT_IN_MINUTES;
 
                 objExpr.addTerm(d[i], leg.getDelayCostPerMin());
                 legCoverExprs[i] = cplex.linearNumExpr();

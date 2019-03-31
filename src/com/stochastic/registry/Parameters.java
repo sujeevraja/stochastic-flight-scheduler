@@ -1,7 +1,8 @@
 package com.stochastic.registry;
 
 public class Parameters {
-    private static int numScenarios;
+    private static String instancePath;
+    private static int numScenariosToGenerate;
     private static double scale;
     private static double shape;
     private static int[] durations;
@@ -35,12 +36,20 @@ public class Parameters {
     private static double rho;
     private static double excessTarget;
 
-    public static void setNumScenarios(int numScenarios) {
-        Parameters.numScenarios = numScenarios;
+    public static void setInstancePath(String instancePath) {
+        Parameters.instancePath = instancePath;
     }
 
-    public static int getNumScenarios() {
-        return numScenarios;
+    public static String getInstancePath() {
+        return instancePath;
+    }
+
+    public static void setNumScenariosToGenerate(int numScenariosToGenerate) {
+        Parameters.numScenariosToGenerate = numScenariosToGenerate;
+    }
+
+    public static int getNumScenariosToGenerate() {
+        return numScenariosToGenerate;
     }
 
     public static void setScale(double scale) {

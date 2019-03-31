@@ -74,8 +74,7 @@ public class MasterSolver {
             thetaValue =  cplex.getValue(theta);
     }
     
-    public double getFirstStageObjValue()
-    {
+    public double getFirstStageObjValue() {
     	return objValue - thetaValue;
     }
 
@@ -83,7 +82,7 @@ public class MasterSolver {
         cplex.exportModel(fName);
     }
 
-    public void writeSolution(String fName) throws IloException {
+    public void writeCPLEXSolution(String fName) throws IloException {
         cplex.writeSolution(fName);
     }
 
@@ -102,14 +101,13 @@ public class MasterSolver {
     }
 
     private void addObjective() throws IloException {
-        // multiplied delay times by 0.5 as it should be cheaper to reschedule flights in the first stage
-        // rather than delaying them in the second stage. Otherwise, there is no difference between planning
-        // (first stage) and recourse (second stage).
+        // Ensure that reschedule costing is cheaper than delay costing. Otherwise, there is no difference between
+        // planning (first stage) and recourse (second stage).
 
         IloLinearNumExpr cons = cplex.linearNumExpr();
         for (int i = 0; i < durations.length; i++)
             for (int j = 0; j < legs.size(); j++)
-                cons.addTerm(x[i][j], durations[i] * legs.get(i).getRescheduleCostPerMin());
+                cons.addTerm(x[i][j], durations[i] * legs.get(j).getRescheduleCostPerMin());
 
         obj = cplex.addMinimize(cons);
     }
@@ -174,16 +172,6 @@ public class MasterSolver {
         }
     }
 
-    public void printSolution() {
-        for(int i=0; i< durations.length; i++)
-            for(int j=0; j< legs.size(); j++)
-                if(xValues[i][j] > 0)
-                    logger.debug(" xValues: " + " i: " + i + " j: " + j + " : " + x[i][j].getName() + " : "
-                            + xValues[i][j] + " , " + durations[i]);
-
-        logger.debug(" thetaValue: " + thetaValue);
-    }
-
     public double getObjValue() {
         return objValue;
     }
@@ -194,6 +182,10 @@ public class MasterSolver {
 
     public int[] getReschedules() {
         return reschedules;
+    }
+
+    public double getThetaValue() {
+        return thetaValue;
     }
 
     public void end() {

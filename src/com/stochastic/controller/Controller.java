@@ -4,19 +4,16 @@ import com.stochastic.domain.Leg;
 import com.stochastic.dao.ScheduleDAO;
 import com.stochastic.domain.Tail;
 import com.stochastic.network.Path;
+import com.stochastic.postopt.NewSolutionManager;
 import com.stochastic.postopt.SolutionManager;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.registry.Parameters;
-import com.stochastic.solver.BendersData;
-import com.stochastic.solver.MasterSolver;
-import com.stochastic.solver.SubSolverWrapper;
-import com.stochastic.utility.Constants;
+import com.stochastic.solver.BendersSolver;
+import com.stochastic.solver.NaiveSolver;
 import com.stochastic.utility.OptException;
 import ilog.concert.IloException;
 import org.apache.commons.math3.distribution.LogNormalDistribution;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
@@ -32,207 +29,89 @@ public class Controller {
      */
     private final static Logger logger = LogManager.getLogger(Controller.class);
     private DataRegistry dataRegistry;
-    private ArrayList<Integer> scenarioDelays;
-    private ArrayList<Double> scenarioProbabilities;
-    private String instancePath;
-    private BufferedWriter cutWriter;
-    private BufferedWriter slnWriter;
 
     public static ArrayList<Double> delayResults = new ArrayList<>();
 
     public static int[][] sceVal;
 
-    public Controller() throws IOException {
+    // Members to process solution and output
+    private NewSolutionManager newSolutionManager;
+
+    public Controller() {
         dataRegistry = new DataRegistry();
-        if (Parameters.isDebugVerbose()) {
-            cutWriter = new BufferedWriter(new FileWriter("logs/master__cuts.csv"));
-            slnWriter = new BufferedWriter(new FileWriter("logs/master__solutions.csv"));
-        }
+        newSolutionManager = new NewSolutionManager(dataRegistry);
     }
 
-    public final void readData(String instancePath) throws OptException {
+    public final void readData() throws OptException {
         logger.info("Started reading data...");
-        this.instancePath = instancePath;
 
         // Read leg data and remove unnecessary legs
+        String instancePath = Parameters.getInstancePath();
         ArrayList<Leg> legs = new ScheduleDAO(instancePath + "\\Schedule.xml").getLegs();
         storeLegs(legs);
         // limitNumTails();
         logger.info("Collected leg and tail data from Schedule.xml.");
+        logger.info("completed reading data.");
 
+        logger.info("started building connection network...");
         dataRegistry.buildConnectionNetwork();
         dataRegistry.getNetwork().countPathsForTails(dataRegistry.getTails());
         logger.info("built connection network.");
-        logger.info("Completed reading data.");
     }
 
-    public final void solve() throws IOException, IloException, OptException {
-        ArrayList<Leg> legs = dataRegistry.getLegs();
-        ArrayList<Tail> tails = dataRegistry.getTails();
-        int[] durations = Parameters.getDurations();
+    /**
+     * Generates delay realizations and probabilities for second stage scenarios.
+     */
+    public final void buildScenarios() {
+        // Scenarios scenarios = generateScenarioDelays(Parameters.getScale(), Parameters.getShape());
+        Scenarios scenarios = generateTestDelays();
 
-        int iter = -1;
-        MasterSolver masterSolver = new MasterSolver(legs, tails, durations);
-        masterSolver.constructFirstStage();
+        dataRegistry.setNumScenarios(scenarios.delays.size());
 
-        if (Parameters.isDebugVerbose()) {
-            writeCsvHeaders();
-            masterSolver.writeLPFile("logs/master__before_cuts.lp");
-        }
+        int[] scenarioDelays = new int[scenarios.delays.size()];
+        for(int i = 0; i < scenarioDelays.length; ++i)
+            scenarioDelays[i] = scenarios.delays.get(i);
+        dataRegistry.setScenarioDelays(scenarioDelays);
 
-        masterSolver.solve(iter);
-
-        if (Parameters.isDebugVerbose())
-            writeMasterSolution(iter, masterSolver.getxValues());
-
-        masterSolver.addColumn();
-
-        logger.info("Algorithm starts.");
-        if (Parameters.isFullEnumeration())
-            logger.info("Pricing problem strategy: full enumeration");
-        else
-            logger.info("Pricing problem strategy: labeling, " + Parameters.getReducedCostStrategy());
-
-        // generate random delays for 2nd stage scenarios.
-        // generateScenarioDelays(Parameters.getScale(), Parameters.getShape());
-        generateTestDelays();
-
-        // Update max delay and max end time
-        int requiredMaxDelay = Collections.max(scenarioDelays);
-        dataRegistry.setMaxLegDelayInMin(requiredMaxDelay);
-
-        logger.info("updated max 2nd stage delay: " + dataRegistry.getMaxLegDelayInMin());
-        logger.info("updated number of scenarios: " + scenarioDelays.size());
+        double[] scenarioProbabilities = new double[scenarios.probabilities.size()];
+        for (int j = 0; j < scenarioProbabilities.length; ++j)
+            scenarioProbabilities[j] = scenarios.probabilities.get(j);
+        dataRegistry.setScenarioProbabilities(scenarioProbabilities);
 
         logScenarioDelays();
-
-        double lBound;
-        double uBound = Double.MAX_VALUE;
-        boolean stoppingCondition;
-        do {
-            iter++;
-            SubSolverWrapper ssWrapper = new SubSolverWrapper(dataRegistry, masterSolver.getReschedules(), iter,
-                    masterSolver.getFirstStageObjValue());
-
-            if (Parameters.isRunSecondStageInParallel())
-                ssWrapper.solveParallel(scenarioDelays, scenarioProbabilities);
-            else
-                ssWrapper.solveSequential(scenarioDelays, scenarioProbabilities);
-
-            BendersData bendersData = ssWrapper.getBendersData();
-            masterSolver.constructBendersCut(bendersData.getAlpha(), bendersData.getBeta());
-
-            if (Parameters.isDebugVerbose()) {
-                masterSolver.writeLPFile("logs/master_" + iter + ".lp");
-                writeBendersCut(iter, bendersData.getBeta(), bendersData.getAlpha());
-            }
-
-            masterSolver.solve(iter);
-
-            if (Parameters.isDebugVerbose()) {
-                masterSolver.writeSolution("logs/master_" + iter + ".xml");
-                writeMasterSolution(iter, masterSolver.getxValues());
-            }
-
-            lBound = masterSolver.getObjValue();
-
-            if (bendersData.getUpperBound() < uBound)
-                uBound = bendersData.getUpperBound();
-
-            logger.info("----- LB: " + lBound + " UB: " + uBound + " Iter: " + iter
-                    + " bendersData.getUpperBound(): " + bendersData.getUpperBound());
-
-            double diff = uBound - lBound;
-            double tolerance = Parameters.getBendersTolerance() * Math.abs(uBound);
-            stoppingCondition = diff <= tolerance;
-            logger.info("----- diff: " + diff + " tolerance: " + tolerance + " stop: " + stoppingCondition);
-        } while (!stoppingCondition); // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
-
-        masterSolver.printSolution();
-        masterSolver.end();
-        logger.info("Algorithm ends.");
-
-        if (Parameters.isDebugVerbose()) {
-            cutWriter.close();
-            slnWriter.close();
-        }
     }
 
-    private void writeCsvHeaders() throws IOException {
-        StringBuilder row = new StringBuilder();
-        row.append("iter");
-        int[] durations = Parameters.getDurations();
-        ArrayList<Leg> legs = dataRegistry.getLegs();
-        for (int duration : durations) {
-            for (Leg leg : legs) {
-                row.append(",x_");
-                row.append(duration);
-                row.append("_");
-                row.append(leg.getId());
-            }
-        }
-
-        slnWriter.write(row.toString());
-        slnWriter.write("\n");
-        cutWriter.write(row.toString());
-        cutWriter.write(",rhs\n");
+    public final void solveWithBenders() throws IOException, IloException, OptException {
+        BendersSolver bendersSolver = new BendersSolver(dataRegistry);
+        bendersSolver.solve();
+        newSolutionManager.setBendersSolution(bendersSolver.getFinalSolution());
+        newSolutionManager.setBendersSolutionTime(bendersSolver.getSolutionTime());
     }
 
-    private void writeBendersCut(int iter, double[][] beta, double alpha) throws IOException {
-        int[] durations = Parameters.getDurations();
-        ArrayList<Leg> legs = dataRegistry.getLegs();
-
-        StringBuilder row = new StringBuilder();
-        row.append(iter);
-
-        for (int i = 0; i < durations.length; ++i) {
-            for (int j = 0; j < legs.size(); ++j) {
-                row.append(",");
-                row.append(beta[i][j]);
-            }
-        }
-
-        row.append(",");
-        row.append(alpha);
-        row.append("\n");
-
-        cutWriter.write(row.toString());
-    }
-
-    private void writeMasterSolution(int iter, double[][] xValues) throws IOException {
-        int[] durations = Parameters.getDurations();
-        ArrayList<Leg> legs = dataRegistry.getLegs();
-
-        StringBuilder row = new StringBuilder();
-        row.append(iter);
-
-        for (int i = 0; i < durations.length; ++i) {
-            for (int j = 0; j < legs.size(); ++j) {
-                row.append(",");
-                row.append(xValues[i][j]);
-            }
-        }
-
-        row.append("\n");
-        slnWriter.write(row.toString());
+    public final void solveWithNaiveApproach() {
+        NaiveSolver naiveSolver = new NaiveSolver(dataRegistry);
+        naiveSolver.solve();
+        newSolutionManager.setNaiveSolution(naiveSolver.getFinalSolution());
     }
 
     /**
      * This funciton is an alternative to generateScenarioDelays() and can be used to study a specific set of random
      * delay scenarios.
      */
-    private void generateTestDelays() {
-        scenarioDelays = new ArrayList<>(Collections.singletonList(45));
-        scenarioProbabilities = new ArrayList<>(Collections.singletonList(1.0));
+    private Scenarios generateTestDelays() {
+        ArrayList<Integer> scenarioDelays;
+        ArrayList<Double> scenarioProbabilities;
 
-        // scenarioDelays = new ArrayList<>(Arrays.asList(45, 60));
-        // scenarioProbabilities = new ArrayList<>(Arrays.asList(0.5, 0.5));
+        // scenarioDelays = new ArrayList<>(Collections.singletonList(45));
+        // scenarioProbabilities = new ArrayList<>(Collections.singletonList(1.0));
+
+        scenarioDelays = new ArrayList<>(Arrays.asList(45, 60));
+        scenarioProbabilities = new ArrayList<>(Arrays.asList(0.5, 0.5));
 
         // scenarioDelays = new ArrayList<>(Arrays.asList(22, 23, 30, 32, 33, 34, 36, 46, 52));
         // scenarioProbabilities = new ArrayList<>(Arrays.asList(0.1, 0.1, 0.1, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1));
 
-        dataRegistry.setNumScenarios(scenarioDelays.size());
-        dataRegistry.setMaxLegDelayInMin(Collections.max(scenarioDelays));
+        return new Scenarios(scenarioDelays, scenarioProbabilities);
     }
 
     /**
@@ -242,9 +121,10 @@ public class Controller {
      *
      * @param scale scale parameter of the lognormal distribution used to generate random delays
      * @param shape shape parameter of the distribution
+     * @return generated scenarios
      */
-    private void generateScenarioDelays(double scale, double shape) {
-        int numSamples = Parameters.getNumScenarios();
+    private Scenarios generateScenarioDelays(double scale, double shape) {
+        int numSamples = Parameters.getNumScenariosToGenerate();
         LogNormalDistribution logNormal = new LogNormalDistribution(scale, shape);
 
         int[] delayTimes = new int[numSamples];
@@ -252,8 +132,8 @@ public class Controller {
             delayTimes[i] = (int) Math.round(logNormal.sample());
 
         Arrays.sort(delayTimes);
-        scenarioDelays = new ArrayList<>();
-        scenarioProbabilities = new ArrayList<>();
+        ArrayList<Integer> delays = new ArrayList<>();
+        ArrayList<Double> probabilities = new ArrayList<>();
 
         DecimalFormat df = new DecimalFormat("##.##");
         df.setRoundingMode(RoundingMode.HALF_UP);
@@ -261,35 +141,41 @@ public class Controller {
         final double baseProbability = 1.0 / numSamples;
         int numCopies = 1;
 
-        scenarioDelays.add(delayTimes[0]);
+        delays.add(delayTimes[0]);
         int prevDelayTime = delayTimes[0];
         for (int i = 1; i < numSamples; ++i) {
             int delayTime = delayTimes[i];
 
             if (delayTime != prevDelayTime) {
                 final double prob = Double.parseDouble(df.format(numCopies * baseProbability));
-                scenarioProbabilities.add(prob); // add probabilities for previous time.
-                scenarioDelays.add(delayTime); // add new delay time.
+                probabilities.add(prob); // add probabilities for previous time.
+                delays.add(delayTime); // add new delay time.
                 numCopies = 1;
             } else
                 numCopies++;
 
             prevDelayTime = delayTime;
         }
-        scenarioProbabilities.add(numCopies * baseProbability);
-        dataRegistry.setNumScenarios(scenarioDelays.size());
+        probabilities.add(numCopies * baseProbability);
+
+        return new Scenarios(delays, probabilities);
     }
 
     private void logScenarioDelays() {
         StringBuilder delayStr = new StringBuilder();
         StringBuilder probStr = new StringBuilder();
-        delayStr.append("scenario delays: ");
-        probStr.append("scenario probabilities: ");
-        for (int i = 0; i < scenarioDelays.size(); ++i) {
-            delayStr.append(scenarioDelays.get(i));
+        delayStr.append("scenario delays:");
+        probStr.append("scenario probabilities:");
+
+        int numScenarios = dataRegistry.getNumScenarios();
+        int[] scenarioDelays = dataRegistry.getScenarioDelays();
+        double[] scenarioProbabilities = dataRegistry.getScenarioProbabilities();
+
+        for (int i = 0; i < numScenarios; ++i) {
             delayStr.append(" ");
-            probStr.append(scenarioProbabilities.get(i));
+            delayStr.append(scenarioDelays[i]);
             probStr.append(" ");
+            probStr.append(scenarioProbabilities[i]);
         }
         logger.info(delayStr);
         logger.info(probStr);
@@ -365,7 +251,7 @@ public class Controller {
 
             tailPaths.put(entry.getKey(), p);
         }
-        dataRegistry.setTailHashMap(tailPaths);
+        dataRegistry.setTailOrigPathMap(tailPaths);
     }
 
     /**
@@ -396,11 +282,11 @@ public class Controller {
         dataRegistry.setTails(newTails);
 
         // cleanup tail paths.
-        HashMap<Integer, Path> tailHashMap = dataRegistry.getTailHashMap();
+        HashMap<Integer, Path> tailHashMap = dataRegistry.getTailOrigPathMap();
         HashMap<Integer, Path> newTailPathMap = new HashMap<>();
         for (Tail tail : newTails)
             newTailPathMap.put(tail.getId(), tailHashMap.get(tail.getId()));
-        dataRegistry.setTailHashMap(newTailPathMap);
+        dataRegistry.setTailOrigPathMap(newTailPathMap);
 
         // cleanup legs.
         ArrayList<Leg> newLegs = new ArrayList<>();
@@ -422,10 +308,29 @@ public class Controller {
 
     public void processSolution(boolean qualifySolution, double[][] xValues,
                                 int numTestScenarios) throws OptException {
-        SolutionManager sm = new SolutionManager(instancePath, dataRegistry, scenarioDelays, scenarioProbabilities,
-                xValues);
+        SolutionManager sm = new SolutionManager(dataRegistry, xValues);
         if (qualifySolution)
             sm.compareSolutions(numTestScenarios);
         sm.writeOutput();
+    }
+
+    public void newProcessSolution() throws IOException {
+        newSolutionManager.writeOutput();
+    }
+
+    class Scenarios {
+        /**
+         * Class that holds generate delays and probabilities of second-stage scenarios.
+         *
+         * This class is only for use within Controller. After scenario generation and aggregation of equal probability
+         * scenarios, the updated data will be stored in the dataRegistry.
+         */
+        ArrayList<Integer> delays;
+        ArrayList<Double> probabilities;
+
+        Scenarios(ArrayList<Integer> delays, ArrayList<Double> probabilities) {
+            this.delays = delays;
+            this.probabilities = probabilities;
+        }
     }
 }
