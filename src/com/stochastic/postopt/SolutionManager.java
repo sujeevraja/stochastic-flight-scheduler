@@ -143,49 +143,44 @@ public class SolutionManager {
         }
     }
 
-    public void writeOutput() throws OptException {
-        try {
-            String fileName = "solution_" + (new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss'.txt'").format(new Date()));
-            BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
+    public void writeOutput() throws IOException {
+        String fileName = "solution_" + (new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss'.txt'").format(new Date()));
+        BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
 
-            if(solutionsCompared) {
-                writer.write("number of test instances: " + testDelays.size() + "\n");
+        if(solutionsCompared) {
+            writer.write("number of test instances: " + testDelays.size() + "\n");
 
-                for(int i = 0; i < testDelays.size(); ++i) {
-                    String line = "test delay (min): ";
-                    line += testDelays.get(i);
-                    line += ", deterministic excess delay (min): ";
-                    line += deterministicObjs[i];
-                    line += ", stochastic excess delay (min): ";
-                    line += stochasticObjs[i];
-                    line += "\n";
-                    writer.write(line);
-                }
-
-                double meanDetermDelay = 0;
-                double meanStochDelay = 0;
-                for(int i = 0; i < testDelays.size(); ++i) {
-                    meanDetermDelay += deterministicObjs[i];
-                    logger.debug(" meanDetermDelay: " + meanDetermDelay + " i: " + i + " deterministicObjs[i]: " +
-                    		deterministicObjs[i]);                    
-                    meanStochDelay += stochasticObjs[i];
-                }
-
-                meanDetermDelay /= testDelays.size();
-                meanStochDelay /= testDelays.size();
-
-                logger.debug(" meanDetermDelay: " + meanDetermDelay + " testDelays.size(): " + testDelays.size());
-                
-                writer.write("average excess delay without rescheduling (min): " + meanDetermDelay + "\n");
-                writer.write("average excess delay with rescheduling (min): " + meanStochDelay + "\n");
-                
-                Controller.delayResults.add(meanDetermDelay);
-                Controller.delayResults.add(meanStochDelay);
+            for(int i = 0; i < testDelays.size(); ++i) {
+                String line = "test delay (min): ";
+                line += testDelays.get(i);
+                line += ", deterministic excess delay (min): ";
+                line += deterministicObjs[i];
+                line += ", stochastic excess delay (min): ";
+                line += stochasticObjs[i];
+                line += "\n";
+                writer.write(line);
             }
-            writer.close();
-        } catch (IOException ie) {
-            logger.error(ie);
-            throw new OptException("error writing final output");
+
+            double meanDetermDelay = 0;
+            double meanStochDelay = 0;
+            for(int i = 0; i < testDelays.size(); ++i) {
+                meanDetermDelay += deterministicObjs[i];
+                logger.debug(" meanDetermDelay: " + meanDetermDelay + " i: " + i + " deterministicObjs[i]: " +
+                        deterministicObjs[i]);
+                meanStochDelay += stochasticObjs[i];
+            }
+
+            meanDetermDelay /= testDelays.size();
+            meanStochDelay /= testDelays.size();
+
+            logger.debug(" meanDetermDelay: " + meanDetermDelay + " testDelays.size(): " + testDelays.size());
+
+            writer.write("average excess delay without rescheduling (min): " + meanDetermDelay + "\n");
+            writer.write("average excess delay with rescheduling (min): " + meanStochDelay + "\n");
+
+            Controller.delayResults.add(meanDetermDelay);
+            Controller.delayResults.add(meanStochDelay);
         }
+        writer.close();
     }
 }

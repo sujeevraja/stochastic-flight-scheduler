@@ -81,17 +81,30 @@ public class Controller {
         logScenarioDelays();
     }
 
-    public final void solveWithBenders() throws IOException, IloException, OptException {
-        BendersSolver bendersSolver = new BendersSolver(dataRegistry);
-        bendersSolver.solve();
-        newSolutionManager.setBendersSolution(bendersSolver.getFinalSolution());
-        newSolutionManager.setBendersSolutionTime(bendersSolver.getSolutionTime());
+    public final void solveWithBenders() throws OptException {
+        try {
+            BendersSolver bendersSolver = new BendersSolver(dataRegistry);
+            bendersSolver.solve();
+            newSolutionManager.setBendersSolution(bendersSolver.getFinalSolution());
+            newSolutionManager.setBendersSolutionTime(bendersSolver.getSolutionTime());
+        } catch (IloException ex) {
+            logger.error(ex);
+            throw new OptException("CPLEX error in Benders");
+        } catch (IOException ex) {
+            logger.error(ex);
+            throw new OptException("error writing to files during Benders");
+        }
     }
 
-    public final void solveWithNaiveApproach() {
-        NaiveSolver naiveSolver = new NaiveSolver(dataRegistry);
-        naiveSolver.solve();
-        newSolutionManager.setNaiveSolution(naiveSolver.getFinalSolution());
+    public final void solveWithNaiveApproach() throws OptException {
+        try {
+            NaiveSolver naiveSolver = new NaiveSolver(dataRegistry);
+            naiveSolver.solve();
+            newSolutionManager.setNaiveSolution(naiveSolver.getFinalSolution());
+        } catch (IloException ex) {
+            logger.error(ex);
+            throw new OptException("exception solving naive model");
+        }
     }
 
     /**
@@ -308,14 +321,24 @@ public class Controller {
 
     public void processSolution(boolean qualifySolution, double[][] xValues,
                                 int numTestScenarios) throws OptException {
-        SolutionManager sm = new SolutionManager(dataRegistry, xValues);
-        if (qualifySolution)
-            sm.compareSolutions(numTestScenarios);
-        sm.writeOutput();
+        try {
+            SolutionManager sm = new SolutionManager(dataRegistry, xValues);
+            if (qualifySolution)
+                sm.compareSolutions(numTestScenarios);
+            sm.writeOutput();
+        } catch (IOException ex) {
+            logger.error(ex);
+            throw new OptException("error writing solution");
+        }
     }
 
-    public void newProcessSolution() throws IOException {
-        newSolutionManager.writeOutput();
+    public void newProcessSolution() throws OptException {
+        try {
+            newSolutionManager.writeOutput();
+        } catch (IOException ex) {
+            logger.error(ex);
+            throw new OptException("error writing solution");
+        }
     }
 
     class Scenarios {

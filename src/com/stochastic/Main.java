@@ -3,11 +3,8 @@ package com.stochastic;
 import com.stochastic.controller.Controller;
 import com.stochastic.registry.Parameters;
 import com.stochastic.utility.OptException;
-import ilog.concert.IloException;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
-
-import java.io.IOException;
 
 public class Main {
     /**
@@ -51,7 +48,7 @@ public class Main {
             // ---- SECTION END ----
 
             logger.info("completed optimization.");
-        } catch (IOException | IloException | OptException ex) {
+        } catch (OptException ex) {
             logger.error(ex);
         }
     }

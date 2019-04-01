@@ -161,26 +161,20 @@ public class MasterSolver {
         budgetConstraint.setName("reschedule_time_budget");
     }
 
-    public void constructBendersCut(double alphaValue, double[][] betaValue) throws OptException {
-        try {
-            IloLinearNumExpr cons = cplex.linearNumExpr();
+    public void constructBendersCut(double alphaValue, double[][] betaValue) throws IloException {
+        IloLinearNumExpr cons = cplex.linearNumExpr();
 
-            for (int i = 0; i < durations.length; i++)
-                for (int j = 0; j < legs.size(); j++)
-                    if (Math.abs(betaValue[i][j]) >= Constants.EPS)
-                        cons.addTerm(x[i][j], Utility.roundUp(betaValue[i][j], 3));
+        for (int i = 0; i < durations.length; i++)
+            for (int j = 0; j < legs.size(); j++)
+                if (Math.abs(betaValue[i][j]) >= Constants.EPS)
+                    cons.addTerm(x[i][j], Utility.roundUp(betaValue[i][j], 3));
 
-            cons.addTerm(theta, 1);
+        cons.addTerm(theta, 1);
 
-            double rhs = Math.abs(alphaValue) >= Constants.EPS ? alphaValue : 0.0;
-            IloRange r = cplex.addGe(cons, Utility.roundDown(rhs, 3));
-            r.setName("benders_cut_" + cutCounter);
-            ++cutCounter;
-
-        } catch (IloException e) {
-            logger.error(e.getStackTrace());
-            throw new OptException("CPLEX error solving first stage MIP");
-        }
+        double rhs = Math.abs(alphaValue) >= Constants.EPS ? alphaValue : 0.0;
+        IloRange r = cplex.addGe(cons, Utility.roundDown(rhs, 3));
+        r.setName("benders_cut_" + cutCounter);
+        ++cutCounter;
     }
 
     public double getObjValue() {
