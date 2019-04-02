@@ -1,6 +1,5 @@
 package com.stochastic.solver;
 
-import com.stochastic.controller.Controller;
 import com.stochastic.delay.DelayGenerator;
 import com.stochastic.delay.FirstFlightDelayGenerator;
 import com.stochastic.delay.Scenario;
@@ -172,7 +171,8 @@ public class DepSolver {
                     legCoverExprs[pathLeg.getIndex()][j].addTerm(y[i][j], 1.0);
                     legPresence[pathLeg.getIndex()][j] = true;
 
-                    delayExprs[pathLeg.getIndex()][j].addTerm(y[i][j], Controller.sceVal[i][j]);
+                    // TODO fix the delayExpr, shouldn't use containers from Controller
+                    // delayExprs[pathLeg.getIndex()][j].addTerm(y[i][j], Controller.sceVal[i][j]);
                 }
             }
 

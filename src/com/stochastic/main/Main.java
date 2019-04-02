@@ -1,6 +1,5 @@
-package com.stochastic;
+package com.stochastic.main;
 
-import com.stochastic.controller.Controller;
 import com.stochastic.registry.Parameters;
 import com.stochastic.utility.OptException;
 import org.apache.logging.log4j.Logger;

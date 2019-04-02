@@ -1,6 +1,5 @@
 package com.stochastic.postopt;
 
-import com.stochastic.controller.Controller;
 import com.stochastic.delay.DelayGenerator;
 import com.stochastic.delay.FirstFlightDelayGenerator;
 import com.stochastic.delay.Scenario;

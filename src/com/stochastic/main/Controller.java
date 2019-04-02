@@ -1,4 +1,4 @@
-package com.stochastic.controller;
+package com.stochastic.main;
 
 import com.stochastic.delay.DelayGenerator;
 import com.stochastic.delay.FirstFlightDelayGenerator;
@@ -35,7 +35,7 @@ public class Controller {
 
     public static int[][] sceVal;
 
-    public Controller() {
+    Controller() {
         dataRegistry = new DataRegistry();
         newSolutionManager = new NewSolutionManager(dataRegistry);
     }
@@ -70,7 +70,7 @@ public class Controller {
         dataRegistry.setDelayScenarios(scenarios);
     }
 
-    public final void solveWithBenders() throws OptException {
+    final void solveWithBenders() throws OptException {
         try {
             BendersSolver bendersSolver = new BendersSolver(dataRegistry);
             bendersSolver.solve();
@@ -86,7 +86,7 @@ public class Controller {
         }
     }
 
-    public final void solveWithNaiveApproach() throws OptException {
+    final void solveWithNaiveApproach() throws OptException {
         try {
             NaiveSolver naiveSolver = new NaiveSolver(dataRegistry);
             naiveSolver.solve();
