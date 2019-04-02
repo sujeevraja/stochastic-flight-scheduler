@@ -13,12 +13,10 @@ public class Solution {
      */
     private double objective;
     private int[] reschedules;
-    private Double thetaValue; // only applies to Benders solutions.
 
     public Solution(double objective, int[] reschedules) {
         this.objective = objective;
         this.reschedules = reschedules;
-        this.thetaValue = null;
     }
 
     /**
@@ -38,13 +36,5 @@ public class Solution {
 
     public double getObjective() {
         return objective;
-    }
-
-    public void setThetaValue(Double thetaValue) {
-        this.thetaValue = thetaValue;
-    }
-
-    public Double getThetaValue() {
-        return thetaValue;
     }
 }
