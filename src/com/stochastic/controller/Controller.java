@@ -1,5 +1,9 @@
 package com.stochastic.controller;
 
+import com.stochastic.delay.DelayGenerator;
+import com.stochastic.delay.FirstFlightDelayGenerator;
+import com.stochastic.delay.Scenario;
+import com.stochastic.delay.TestDelayGenerator;
 import com.stochastic.domain.Leg;
 import com.stochastic.dao.ScheduleDAO;
 import com.stochastic.domain.Tail;
@@ -15,8 +19,6 @@ import ilog.concert.IloException;
 import org.apache.commons.math3.distribution.LogNormalDistribution;
 
 import java.io.IOException;
-import java.math.RoundingMode;
-import java.text.DecimalFormat;
 import java.time.Duration;
 import java.util.*;
 
@@ -29,13 +31,9 @@ public class Controller {
      */
     private final static Logger logger = LogManager.getLogger(Controller.class);
     private DataRegistry dataRegistry;
-
-    public static ArrayList<Double> delayResults = new ArrayList<>();
+    private NewSolutionManager newSolutionManager;
 
     public static int[][] sceVal;
-
-    // Members to process solution and output
-    private NewSolutionManager newSolutionManager;
 
     public Controller() {
         dataRegistry = new DataRegistry();
@@ -63,22 +61,13 @@ public class Controller {
      * Generates delay realizations and probabilities for second stage scenarios.
      */
     public final void buildScenarios() {
-        // Scenarios scenarios = generateScenarioDelays(Parameters.getScale(), Parameters.getShape());
-        Scenarios scenarios = generateTestDelays();
+        // LogNormalDistribution distribution = new LogNormalDistribution(Parameters.getScale(), Parameters.getShape());
+        // DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getTails(), distribution);
 
-        dataRegistry.setNumScenarios(scenarios.delays.size());
+        DelayGenerator dgen = new TestDelayGenerator(dataRegistry.getTails());
 
-        int[] scenarioDelays = new int[scenarios.delays.size()];
-        for(int i = 0; i < scenarioDelays.length; ++i)
-            scenarioDelays[i] = scenarios.delays.get(i);
-        dataRegistry.setScenarioDelays(scenarioDelays);
-
-        double[] scenarioProbabilities = new double[scenarios.probabilities.size()];
-        for (int j = 0; j < scenarioProbabilities.length; ++j)
-            scenarioProbabilities[j] = scenarios.probabilities.get(j);
-        dataRegistry.setScenarioProbabilities(scenarioProbabilities);
-
-        logScenarioDelays();
+        Scenario[] scenarios = dgen.generateScenarios(Parameters.getNumScenariosToGenerate());
+        dataRegistry.setDelayScenarios(scenarios);
     }
 
     public final void solveWithBenders() throws OptException {
@@ -107,93 +96,6 @@ public class Controller {
             logger.error(ex);
             throw new OptException("exception solving naive model");
         }
-    }
-
-    /**
-     * This funciton is an alternative to generateScenarioDelays() and can be used to study a specific set of random
-     * delay scenarios.
-     */
-    private Scenarios generateTestDelays() {
-        ArrayList<Integer> scenarioDelays;
-        ArrayList<Double> scenarioProbabilities;
-
-        // scenarioDelays = new ArrayList<>(Collections.singletonList(45));
-        // scenarioProbabilities = new ArrayList<>(Collections.singletonList(1.0));
-
-        scenarioDelays = new ArrayList<>(Arrays.asList(45, 60));
-        scenarioProbabilities = new ArrayList<>(Arrays.asList(0.5, 0.5));
-
-        // scenarioDelays = new ArrayList<>(Arrays.asList(22, 23, 30, 32, 33, 34, 36, 46, 52));
-        // scenarioProbabilities = new ArrayList<>(Arrays.asList(0.1, 0.1, 0.1, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1));
-
-        return new Scenarios(scenarioDelays, scenarioProbabilities);
-    }
-
-    /**
-     * Generates random delays that will be applied to the first flight of each tail's original schedule.
-     * Also generates delay probabilites using frequency values. This function also updates the number of scenarios
-     * if delay times repeat.
-     *
-     * @param scale scale parameter of the lognormal distribution used to generate random delays
-     * @param shape shape parameter of the distribution
-     * @return generated scenarios
-     */
-    private Scenarios generateScenarioDelays(double scale, double shape) {
-        int numSamples = Parameters.getNumScenariosToGenerate();
-        LogNormalDistribution logNormal = new LogNormalDistribution(scale, shape);
-
-        int[] delayTimes = new int[numSamples];
-        for (int i = 0; i < numSamples; ++i)
-            delayTimes[i] = (int) Math.round(logNormal.sample());
-
-        Arrays.sort(delayTimes);
-        ArrayList<Integer> delays = new ArrayList<>();
-        ArrayList<Double> probabilities = new ArrayList<>();
-
-        DecimalFormat df = new DecimalFormat("##.##");
-        df.setRoundingMode(RoundingMode.HALF_UP);
-
-        final double baseProbability = 1.0 / numSamples;
-        int numCopies = 1;
-
-        delays.add(delayTimes[0]);
-        int prevDelayTime = delayTimes[0];
-        for (int i = 1; i < numSamples; ++i) {
-            int delayTime = delayTimes[i];
-
-            if (delayTime != prevDelayTime) {
-                final double prob = Double.parseDouble(df.format(numCopies * baseProbability));
-                probabilities.add(prob); // add probabilities for previous time.
-                delays.add(delayTime); // add new delay time.
-                numCopies = 1;
-            } else
-                numCopies++;
-
-            prevDelayTime = delayTime;
-        }
-        probabilities.add(numCopies * baseProbability);
-
-        return new Scenarios(delays, probabilities);
-    }
-
-    private void logScenarioDelays() {
-        StringBuilder delayStr = new StringBuilder();
-        StringBuilder probStr = new StringBuilder();
-        delayStr.append("scenario delays:");
-        probStr.append("scenario probabilities:");
-
-        int numScenarios = dataRegistry.getNumScenarios();
-        int[] scenarioDelays = dataRegistry.getScenarioDelays();
-        double[] scenarioProbabilities = dataRegistry.getScenarioProbabilities();
-
-        for (int i = 0; i < numScenarios; ++i) {
-            delayStr.append(" ");
-            delayStr.append(scenarioDelays[i]);
-            probStr.append(" ");
-            probStr.append(scenarioProbabilities[i]);
-        }
-        logger.info(delayStr);
-        logger.info(probStr);
     }
 
     /**
@@ -317,10 +219,6 @@ public class Controller {
         dataRegistry.setLegs(newLegs);
     }
 
-    public void generateDelays(int numTestScenarios) {
-        SolutionManager.generateDelaysForComparison(numTestScenarios, dataRegistry);
-    }
-
     public void processSolution(boolean qualifySolution, double[][] xValues,
                                 int numTestScenarios) throws OptException {
         try {
@@ -340,22 +238,6 @@ public class Controller {
         } catch (IOException ex) {
             logger.error(ex);
             throw new OptException("error writing solution");
-        }
-    }
-
-    class Scenarios {
-        /**
-         * Class that holds generate delays and probabilities of second-stage scenarios.
-         *
-         * This class is only for use within Controller. After scenario generation and aggregation of equal probability
-         * scenarios, the updated data will be stored in the dataRegistry.
-         */
-        ArrayList<Integer> delays;
-        ArrayList<Double> probabilities;
-
-        Scenarios(ArrayList<Integer> delays, ArrayList<Double> probabilities) {
-            this.delays = delays;
-            this.probabilities = probabilities;
         }
     }
 }

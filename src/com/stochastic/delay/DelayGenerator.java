@@ -1,7 +1,9 @@
 package com.stochastic.delay;
 
-import java.util.HashMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public interface DelayGenerator {
-    HashMap<Integer, Integer> generateDelays();
+    Logger logger = LogManager.getLogger(DelayGenerator.class);
+    Scenario[] generateScenarios(int numScenarios);
 }

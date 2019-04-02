@@ -1,5 +1,6 @@
 package com.stochastic.registry;
 
+import com.stochastic.delay.Scenario;
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
 import com.stochastic.network.Network;
@@ -23,9 +24,7 @@ public class DataRegistry {
     // i.e. before rescheduling.
     private Integer[][] origSlacks;
 
-    private Integer numScenarios;
-    private int[] scenarioDelays;
-    private double[] scenarioProbabilities;
+    private Scenario[] delayScenarios;
 
     public DataRegistry() {
         legs = new ArrayList<>();
@@ -99,28 +98,12 @@ public class DataRegistry {
         return origSlacks;
     }
 
-    public void setNumScenarios(Integer numScenarios) {
-        this.numScenarios = numScenarios;
+    public void setDelayScenarios(Scenario[] delayScenarios) {
+        this.delayScenarios = delayScenarios;
     }
 
-    public Integer getNumScenarios() {
-        return numScenarios;
-    }
-
-    public void setScenarioDelays(int[] scenarioDelays) {
-        this.scenarioDelays = scenarioDelays;
-    }
-
-    public int[] getScenarioDelays() {
-        return scenarioDelays;
-    }
-
-    public void setScenarioProbabilities(double[] scenarioProbabilities) {
-        this.scenarioProbabilities = scenarioProbabilities;
-    }
-
-    public double[] getScenarioProbabilities() {
-        return scenarioProbabilities;
+    public Scenario[] getDelayScenarios() {
+        return delayScenarios;
     }
 }
 

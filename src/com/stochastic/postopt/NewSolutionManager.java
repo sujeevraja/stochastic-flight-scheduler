@@ -86,42 +86,7 @@ public class NewSolutionManager {
         inputKpis.put("instance path", Parameters.getInstancePath());
         inputKpis.put("number of legs", dataRegistry.getLegs().size());
         inputKpis.put("number of tails", dataRegistry.getTails().size());
-        inputKpis.put("number of scenarios", dataRegistry.getNumScenarios());
-        inputKpis.put("scenario delays", dataRegistry.getScenarioDelays());
-        inputKpis.put("scenario probabilities", dataRegistry.getScenarioProbabilities());
+        inputKpis.put("number of scenarios", dataRegistry.getDelayScenarios().length);
         return inputKpis;
-    }
-
-    private void writeInputData(BufferedWriter writer) throws IOException {
-        writer.write("input:\n");
-        writer.write("  instance path: " + Parameters.getInstancePath() + "\n");
-        writer.write("  number of legs: " + dataRegistry.getLegs().size() + "\n");
-        writer.write("  number of tails: " + dataRegistry.getTails().size() + "\n");
-
-        int numScenarios = dataRegistry.getNumScenarios();
-        writer.write("  number of scenarios: " + numScenarios + "\n");
-
-        StringBuilder delayStr = new StringBuilder();
-        StringBuilder probStr = new StringBuilder();
-
-        delayStr.append("  scenario delays: [");
-        probStr.append("  scenario probabilities: [");
-
-        int[] scenarioDelays = dataRegistry.getScenarioDelays();
-        double[] scenarioProbabilities = dataRegistry.getScenarioProbabilities();
-        for(int i = 0; i < numScenarios; ++i) {
-            delayStr.append(scenarioDelays[i]);
-            probStr.append(scenarioProbabilities[i]);
-            if (i < numScenarios - 1) {
-                delayStr.append(", ");
-                probStr.append(", ");
-            }
-        }
-
-        delayStr.append("]\n");
-        probStr.append("]\n");
-
-        writer.write(delayStr.toString());
-        writer.write(probStr.toString());
     }
 }

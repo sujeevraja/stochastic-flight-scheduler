@@ -2,6 +2,7 @@ package com.stochastic.solver;
 
 import com.stochastic.delay.DelayGenerator;
 import com.stochastic.delay.FirstFlightDelayGenerator;
+import com.stochastic.delay.Scenario;
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
 import com.stochastic.network.Path;
@@ -39,32 +40,23 @@ public class SubSolverWrapper {
     }
 
     public void solveSequential() {
-        final int numScenarios = dataRegistry.getNumScenarios();
-        final int[] scenarioDelays = dataRegistry.getScenarioDelays();
-        final double[] probabilities = dataRegistry.getScenarioProbabilities();
-
-        for (int i = 0; i < numScenarios; i++) {
-            DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getTails(), scenarioDelays[i]);
-            HashMap<Integer, Integer> legDelays = dgen.generateDelays();
-            SubSolverRunnable subSolverRunnable = new SubSolverRunnable(dataRegistry, iter, i, probabilities[i],
-                    reschedules, legDelays, bendersData);
+        Scenario[] scenarios = dataRegistry.getDelayScenarios();
+        for (int i = 0; i < scenarios.length; i++) {
+            Scenario scenario = scenarios[i];
+            SubSolverRunnable subSolverRunnable = new SubSolverRunnable(dataRegistry, iter, i,
+                    scenario.getProbability(), reschedules, scenario.getPrimaryDelays(), bendersData);
             subSolverRunnable.run();
         }
     }
 
     public void solveParallel() throws OptException {
         try {
-            final int numScenarios = dataRegistry.getNumScenarios();
-            final int[] scenarioDelays = dataRegistry.getScenarioDelays();
-            final double[] probabilities = dataRegistry.getScenarioProbabilities();
-
+            Scenario[] scenarios = dataRegistry.getDelayScenarios();
             ExecutorService exSrv = Executors.newFixedThreadPool(Parameters.getNumThreadsForSecondStage());
-            for (int i = 0; i < numScenarios; i++) {
-                DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getTails(), scenarioDelays[i]);
-                HashMap<Integer, Integer> legDelays = dgen.generateDelays();
-
-                SubSolverRunnable subSolverRunnable = new SubSolverRunnable(dataRegistry, iter, i, probabilities[i],
-                        reschedules, legDelays, bendersData);
+            for (int i = 0; i < scenarios.length; i++) {
+                Scenario scenario = scenarios[i];
+                SubSolverRunnable subSolverRunnable = new SubSolverRunnable(dataRegistry, iter, i,
+                        scenario.getProbability(), reschedules, scenario.getPrimaryDelays(), bendersData);
                 exSrv.execute(subSolverRunnable); // this calls SubSolverRunnable.run()
             }
             exSrv.shutdown();

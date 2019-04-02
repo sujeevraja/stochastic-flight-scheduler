@@ -2,6 +2,7 @@ package com.stochastic.solver;
 
 import com.stochastic.delay.DelayGenerator;
 import com.stochastic.delay.FirstFlightDelayGenerator;
+import com.stochastic.delay.Scenario;
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
 import com.stochastic.network.Path;
@@ -75,16 +76,11 @@ public class NaiveSolver {
     }
 
     private void buildAveragePrimaryDelays() {
-        final int numScenarios = dataRegistry.getNumScenarios();
-        int[] scenarioDelays = dataRegistry.getScenarioDelays();
-        double[] probabilities = dataRegistry.getScenarioProbabilities();
-
-        for(int i = 0; i < numScenarios; ++i) {
-            DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getTails(), scenarioDelays[i]);
-            HashMap<Integer, Integer> legDelays = dgen.generateDelays();
-
-            for (Map.Entry<Integer, Integer> entry : legDelays.entrySet())
-                expectedDelays[entry.getKey()] += probabilities[i] * entry.getValue();
+        Scenario[] scenarios = dataRegistry.getDelayScenarios();
+        for(Scenario scenario : scenarios) {
+            HashMap<Integer, Integer> primaryDelays = scenario.getPrimaryDelays();
+            for (Map.Entry<Integer, Integer> entry : primaryDelays.entrySet())
+                expectedDelays[entry.getKey()] += scenario.getProbability() * entry.getValue();
         }
     }
 
@@ -97,7 +93,6 @@ public class NaiveSolver {
         int[] durations = Parameters.getDurations();
         IloNumVar[] v = new IloNumVar[dataRegistry.getLegs().size()];
         IloIntVar[][] x = new IloIntVar[durations.length][legs.size()];
-
 
         // Add objective
         IloLinearNumExpr objExpr = cplex.linearNumExpr();

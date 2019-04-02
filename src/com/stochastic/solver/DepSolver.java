@@ -3,6 +3,7 @@ package com.stochastic.solver;
 import com.stochastic.controller.Controller;
 import com.stochastic.delay.DelayGenerator;
 import com.stochastic.delay.FirstFlightDelayGenerator;
+import com.stochastic.delay.Scenario;
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
 import com.stochastic.network.Path;
@@ -16,6 +17,7 @@ import ilog.cplex.IloCplex;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import org.apache.commons.math3.distribution.LogNormalDistribution;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
@@ -49,8 +51,13 @@ public class DepSolver {
             durations = Parameters.getDurations();
 
             // Generate random delays using a delay generator.
-            DelayGenerator dgen = new FirstFlightDelayGenerator(tails, 20);
-            HashMap<Integer, Integer> randomDelays = dgen.generateDelays();
+            LogNormalDistribution distribution = new LogNormalDistribution(
+                    Parameters.getScale(), Parameters.getShape());
+            DelayGenerator dgen = new FirstFlightDelayGenerator(tails, distribution);
+
+            Scenario[] scenarios = dgen.generateScenarios(1);
+            HashMap<Integer, Integer> randomDelays = scenarios[0].getPrimaryDelays();
+
             int[] delays = new int[legs.size()];
             for (Leg leg : legs)
                 delays[leg.getIndex()] = randomDelays.getOrDefault(leg.getIndex(), 0);
