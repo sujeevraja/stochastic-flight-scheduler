@@ -24,7 +24,8 @@ class SubSolverRunnable implements Runnable {
     private int[] reschedules;
     private HashMap<Integer, Integer> randomDelays;
     private BendersData bendersData;
-    private boolean solveAsMIP;
+    private boolean solveForQuality = false;
+    private double objvalue;
 
     SubSolverRunnable(DataRegistry dataRegistry, int iter, int scenarioNum, double probability, int[] reschedules,
                       HashMap<Integer, Integer> randomDelays, BendersData bendersData) {
@@ -35,11 +36,14 @@ class SubSolverRunnable implements Runnable {
         this.reschedules = reschedules;
         this.randomDelays = randomDelays;
         this.bendersData = bendersData;
-        solveAsMIP = false;
     }
 
-    public void setSolveAsMIP(boolean solveAsMIP) {
-        this.solveAsMIP = solveAsMIP;
+    public void setSolveForQuality(boolean solveForQuality) {
+        this.solveForQuality = solveForQuality;
+    }
+
+    public double getObjvalue() {
+        return objvalue;
     }
 
     //exSrv.execute(buildSDThrObj) calls brings you here
@@ -78,26 +82,49 @@ class SubSolverRunnable implements Runnable {
                 tailPathsMap.get(p.getTail().getId()).add(p);
 
             SubSolver ss = new SubSolver(dataRegistry.getTails(), dataRegistry.getLegs(), reschedules, probability);
+            if (solveForQuality)
+                ss.setSolveAsMIP(true);
             ss.constructSecondStage(tailPathsMap);
 
-            if (Parameters.isDebugVerbose())
-                ss.writeLPFile("logs/", iter, -1, this.scenarioNum);
+            String name = "dummy";
+            if (Parameters.isDebugVerbose()) {
+                StringBuilder nameBuilder = new StringBuilder();
+                nameBuilder.append("logs/");
+                if (solveForQuality) {
+                    nameBuilder.append("qual");
+                } else {
+                    nameBuilder.append("sub_benders_");
+                    nameBuilder.append(iter);
+                }
+                nameBuilder.append("_scen_");
+                nameBuilder.append(scenarioNum);
+                nameBuilder.append("_fullEnum");
+                name = nameBuilder.toString();
+                ss.writeLPFile(name + ".lp");
+            }
 
             ss.solve();
-            ss.collectDuals();
+            if (!solveForQuality)
+                ss.collectDuals();
+
             logger.debug("Iter " + iter + ": subproblem objective value: " + ss.getObjValue());
 
-            if (Parameters.isDebugVerbose())
-                ss.writeCplexSolution("logs/", iter, -1, this.scenarioNum);
+            if (Parameters.isDebugVerbose()) {
+                ss.writeCplexSolution(name + ".xml");
+            }
 
             ss.end();
 
-            double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(),
-                    ss.getDualsBound(), ss.getDualRisk());
+            if (solveForQuality) {
+                objvalue = ss.getObjValue();
+            } else {
+                double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(),
+                        ss.getDualsBound(), ss.getDualRisk());
 
-            updateAlpha(scenAlpha);
-            updateBeta(ss.getDualsDelay(), ss.getDualRisk());
-            updateUpperBound(ss.getObjValue());
+                updateAlpha(scenAlpha);
+                updateBeta(ss.getDualsDelay(), ss.getDualRisk());
+                updateUpperBound(ss.getObjValue());
+            }
         } catch (OptException oe) {
             logger.error("submodel run for scenario " + scenarioNum + " failed.");
             logger.error(oe);
@@ -121,15 +148,30 @@ class SubSolverRunnable implements Runnable {
             // Solve second-stage RMP (Restricted Master Problem)
             ss.constructSecondStage(pathsAll);
 
-            if (Parameters.isDebugVerbose())
-                ss.writeLPFile("logs/", iter, columnGenIter, this.scenarioNum);
+            String name = "dummy";
+            if (Parameters.isDebugVerbose()) {
+                StringBuilder nameBuilder = new StringBuilder();
+                nameBuilder.append("logs/");
+                if (solveForQuality) {
+                    nameBuilder.append("qual");
+                } else {
+                    nameBuilder.append("sub_benders_");
+                    nameBuilder.append(iter);
+                }
+                nameBuilder.append("_scen_");
+                nameBuilder.append(scenarioNum);
+                nameBuilder.append("_labelingIter_");
+                nameBuilder.append(columnGenIter);
+                name = nameBuilder.toString();
+                ss.writeLPFile(name + ".lp");
+            }
 
             ss.solve();
             ss.collectDuals();
             logger.debug("Iter " + iter + ": subproblem objective value: " + ss.getObjValue());
 
             if (Parameters.isDebugVerbose())
-                ss.writeCplexSolution("logs/", iter, columnGenIter, this.scenarioNum);
+                ss.writeCplexSolution(name + ".xml");
 
             // Collect paths with negative reduced cost from the labeling algorithm. Optimality is reached when
             // there are no new negative reduced cost paths available for any tail.
@@ -181,14 +223,30 @@ class SubSolverRunnable implements Runnable {
             ++columnGenIter;
         }
 
-        // Update master problem data
-        logger.info( "Iter " + iter + ": reached sub-problem optimality");
-        double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(), ss.getDualsBound(),
-                ss.getDualRisk());
+        logger.info("Iter " + iter + ": reached sub-problem LP optimality");
 
-        updateAlpha(scenAlpha);
-        updateBeta(ss.getDualsDelay(), ss.getDualRisk());
-        updateUpperBound(ss.getObjValue());
+        if (solveForQuality) {
+            // Solve problem with all columns as MIP to collect objective value.
+            ss.setSolveAsMIP(true);
+            ss.constructSecondStage(pathsAll);
+            ss.solve();
+
+            if (Parameters.isDebugVerbose()) {
+                String name = "logs/qual_" + iter + "_sub_labeling_mip";
+                ss.writeLPFile(name + ".lp");
+                ss.writeCplexSolution(name + ".xml");
+                objvalue = ss.getObjValue();
+                ss.end();
+            }
+        } else {
+            // Update master problem data
+            double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(),
+                    ss.getDualsBound(), ss.getDualRisk());
+
+            updateAlpha(scenAlpha);
+            updateBeta(ss.getDualsDelay(), ss.getDualRisk());
+            updateUpperBound(ss.getObjValue());
+        }
     }
 
     private HashMap<Integer, ArrayList<Path>> getInitialPaths(int[] delays) {

@@ -238,28 +238,12 @@ public class SubSolver {
         }
     }
 
-    public void writeLPFile(String fName, int iter, int wcnt, int sceNo) throws IloException {
-        String modelName = fName + "sub_" + iter + "_scen_" + sceNo;
-
-        if (wcnt >= 0)
-            modelName += "_labelingIter_" + wcnt;
-        else
-            modelName += "_fullEnum";
-        modelName += ".lp";
-
-        cplex.exportModel(modelName);
+    public void writeLPFile(String name) throws IloException {
+        cplex.exportModel(name);
     }
 
-    public void writeCplexSolution(String fName, int iter, int wcnt, int sceNo) throws IloException {
-        String slnName = fName + "sub_" + iter + "_scen_" + sceNo;
-
-        if (wcnt >= 0)
-            slnName += "_labelingIter_" + wcnt;
-        else
-            slnName += "_fullEnum";
-        slnName += ".xml";
-
-        cplex.writeSolution(slnName);
+    public void writeCplexSolution(String name) throws IloException {
+        cplex.writeSolution(name);
     }
 
     public void end() {
