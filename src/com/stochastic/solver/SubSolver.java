@@ -28,6 +28,7 @@ public class SubSolver {
     private int numLegs;
     private int[] reschedules;  // reschedules[i] is the first-stage reschedule chosen for legs[i].
     private double probability;
+    private boolean solveAsMIP;
 
     // CPLEX variables
     private IloNumVar[][] y; // y[i][j] = 1 if path j is selected for tail i is selected, 0 else.
@@ -57,12 +58,17 @@ public class SubSolver {
         this.numLegs = legs.size();
         this.reschedules = reschedules;
         this.probability = probability;
+        solveAsMIP = false;
 
         dualsTail = new double[numTails];
         dualsLeg = new double[numLegs];
         dualsDelay = new double[numLegs];
         dualsBound = new double[numTails][];
         dualRisk = 0;
+    }
+
+    public void setSolveAsMIP(boolean solveAsMIP) {
+        this.solveAsMIP = solveAsMIP;
     }
 
     public void constructSecondStage(HashMap<Integer, ArrayList<Path>> paths) throws OptException {
@@ -191,6 +197,12 @@ public class SubSolver {
         try {
             cplex.setParam(IloCplex.IntParam.RootAlg, IloCplex.Algorithm.Dual);
             cplex.setParam(IloCplex.BooleanParam.PreInd, false);
+
+            if (solveAsMIP) {
+                for (int i = 0; i < tails.size(); ++i)
+                    cplex.add(cplex.conversion(y[i], IloNumVarType.Int));
+            }
+
             cplex.solve();
             IloCplex.Status status = cplex.getStatus();
             if (status != IloCplex.Status.Optimal) {

@@ -24,6 +24,7 @@ class SubSolverRunnable implements Runnable {
     private int[] reschedules;
     private HashMap<Integer, Integer> randomDelays;
     private BendersData bendersData;
+    private boolean solveAsMIP;
 
     SubSolverRunnable(DataRegistry dataRegistry, int iter, int scenarioNum, double probability, int[] reschedules,
                       HashMap<Integer, Integer> randomDelays, BendersData bendersData) {
@@ -34,52 +35,11 @@ class SubSolverRunnable implements Runnable {
         this.reschedules = reschedules;
         this.randomDelays = randomDelays;
         this.bendersData = bendersData;
+        solveAsMIP = false;
     }
 
-    private HashMap<Integer, ArrayList<Path>> getInitialPaths(int[] delays) {
-        HashMap<Integer, ArrayList<Path>> initialPaths = new HashMap<>();
-
-        for (Map.Entry<Integer, Path> entry : dataRegistry.getTailOrigPathMap().entrySet()) {
-            int tailId = entry.getKey();
-            Tail tail = dataRegistry.getTail(tailId);
-
-            Path origPath = entry.getValue();
-
-            // The original path of the tail may not be valid due to random delays or reschedules of the first
-            // leg caused by the first stage model. To make the path valid, we need to propagate changes in
-            // departure time of the first leg to the remaining legs on the path. These delayed paths for all
-            // tails will serve as the initial set of columns for the second stage model.
-
-            // Note that the leg coverage constraint in the second-stage model remains feasible even with just
-            // these paths as we assume that there are no open legs in any dataset. This means that each leg
-            // must be on the original path of some tail.
-
-            Path pathWithDelays = new Path(tail);
-            LocalDateTime currentTime = null;
-            for (Leg leg : origPath.getLegs()) {
-                // find delayed departure time due to original delay (planned 1st stange + random 2nd stage)
-                int legDelay = delays[leg.getIndex()];
-                LocalDateTime delayedDepTime = leg.getDepTime().plusMinutes(legDelay);
-
-                // find delayed departure time due to propagated delay
-                if (currentTime != null && currentTime.isAfter(delayedDepTime))
-                    delayedDepTime = currentTime;
-
-                legDelay = (int) Duration.between(leg.getDepTime(), delayedDepTime).toMinutes();
-                pathWithDelays.addLeg(leg, legDelay);
-
-                // update current time based on leg's delayed arrival time and turn time.
-                currentTime = leg.getArrTime().plusMinutes(legDelay).plusMinutes(leg.getTurnTimeInMin());
-            }
-
-
-            ArrayList<Path> tailPaths = new ArrayList<>();
-            tailPaths.add(new Path(tail)); // add empty path
-            tailPaths.add(pathWithDelays);
-            initialPaths.put(tailId, tailPaths);
-        }
-
-        return initialPaths;
+    public void setSolveAsMIP(boolean solveAsMIP) {
+        this.solveAsMIP = solveAsMIP;
     }
 
     //exSrv.execute(buildSDThrObj) calls brings you here
@@ -97,6 +57,50 @@ class SubSolverRunnable implements Runnable {
         } catch (OptException oe) {
             logger.error(oe);
             logger.error("algo error solving subproblem");
+            System.exit(Constants.ERROR_CODE);
+        }
+    }
+
+    private void solveWithFullEnumeration() throws IloException {
+        try {
+            // Enumerate all paths for each tail.
+            int[] delays = getTotalDelays();
+
+            ArrayList<Path> allPaths = dataRegistry.getNetwork().enumeratePathsForTails(
+                    dataRegistry.getTails(), delays);
+
+            // Store paths for each tail separately. Also add empty paths for each tail.
+            HashMap<Integer, ArrayList<Path>> tailPathsMap = new HashMap<>();
+            for (Tail t : dataRegistry.getTails())
+                tailPathsMap.put(t.getId(), new ArrayList<>(Collections.singletonList(new Path(t))));
+
+            for(Path p : allPaths)
+                tailPathsMap.get(p.getTail().getId()).add(p);
+
+            SubSolver ss = new SubSolver(dataRegistry.getTails(), dataRegistry.getLegs(), reschedules, probability);
+            ss.constructSecondStage(tailPathsMap);
+
+            if (Parameters.isDebugVerbose())
+                ss.writeLPFile("logs/", iter, -1, this.scenarioNum);
+
+            ss.solve();
+            ss.collectDuals();
+            logger.debug("Iter " + iter + ": subproblem objective value: " + ss.getObjValue());
+
+            if (Parameters.isDebugVerbose())
+                ss.writeCplexSolution("logs/", iter, -1, this.scenarioNum);
+
+            ss.end();
+
+            double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(),
+                    ss.getDualsBound(), ss.getDualRisk());
+
+            updateAlpha(scenAlpha);
+            updateBeta(ss.getDualsDelay(), ss.getDualRisk());
+            updateUpperBound(ss.getObjValue());
+        } catch (OptException oe) {
+            logger.error("submodel run for scenario " + scenarioNum + " failed.");
+            logger.error(oe);
             System.exit(Constants.ERROR_CODE);
         }
     }
@@ -187,48 +191,49 @@ class SubSolverRunnable implements Runnable {
         updateUpperBound(ss.getObjValue());
     }
 
-    private void solveWithFullEnumeration() throws IloException {
-        try {
-            // Enumerate all paths for each tail.
-            int[] delays = getTotalDelays();
+    private HashMap<Integer, ArrayList<Path>> getInitialPaths(int[] delays) {
+        HashMap<Integer, ArrayList<Path>> initialPaths = new HashMap<>();
 
-            ArrayList<Path> allPaths = dataRegistry.getNetwork().enumeratePathsForTails(
-                    dataRegistry.getTails(), delays);
+        for (Map.Entry<Integer, Path> entry : dataRegistry.getTailOrigPathMap().entrySet()) {
+            int tailId = entry.getKey();
+            Tail tail = dataRegistry.getTail(tailId);
 
-            // Store paths for each tail separately. Also add empty paths for each tail.
-            HashMap<Integer, ArrayList<Path>> tailPathsMap = new HashMap<>();
-            for (Tail t : dataRegistry.getTails())
-                tailPathsMap.put(t.getId(), new ArrayList<>(Collections.singletonList(new Path(t))));
+            Path origPath = entry.getValue();
 
-            for(Path p : allPaths)
-                tailPathsMap.get(p.getTail().getId()).add(p);
+            // The original path of the tail may not be valid due to random delays or reschedules of the first
+            // leg caused by the first stage model. To make the path valid, we need to propagate changes in
+            // departure time of the first leg to the remaining legs on the path. These delayed paths for all
+            // tails will serve as the initial set of columns for the second stage model.
 
-            SubSolver ss = new SubSolver(dataRegistry.getTails(), dataRegistry.getLegs(), reschedules, probability);
-            ss.constructSecondStage(tailPathsMap);
+            // Note that the leg coverage constraint in the second-stage model remains feasible even with just
+            // these paths as we assume that there are no open legs in any dataset. This means that each leg
+            // must be on the original path of some tail.
 
-            if (Parameters.isDebugVerbose())
-                ss.writeLPFile("logs/", iter, -1, this.scenarioNum);
+            Path pathWithDelays = new Path(tail);
+            LocalDateTime currentTime = null;
+            for (Leg leg : origPath.getLegs()) {
+                // find delayed departure time due to original delay (planned 1st stange + random 2nd stage)
+                int legDelay = delays[leg.getIndex()];
+                LocalDateTime delayedDepTime = leg.getDepTime().plusMinutes(legDelay);
 
-            ss.solve();
-            ss.collectDuals();
-            logger.debug("Iter " + iter + ": subproblem objective value: " + ss.getObjValue());
+                // find delayed departure time due to propagated delay
+                if (currentTime != null && currentTime.isAfter(delayedDepTime))
+                    delayedDepTime = currentTime;
 
-            if (Parameters.isDebugVerbose())
-                ss.writeCplexSolution("logs/", iter, -1, this.scenarioNum);
+                legDelay = (int) Duration.between(leg.getDepTime(), delayedDepTime).toMinutes();
+                pathWithDelays.addLeg(leg, legDelay);
 
-            ss.end();
+                // update current time based on leg's delayed arrival time and turn time.
+                currentTime = leg.getArrTime().plusMinutes(legDelay).plusMinutes(leg.getTurnTimeInMin());
+            }
 
-            double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(),
-                    ss.getDualsBound(), ss.getDualRisk());
-
-            updateAlpha(scenAlpha);
-            updateBeta(ss.getDualsDelay(), ss.getDualRisk());
-            updateUpperBound(ss.getObjValue());
-        } catch (OptException oe) {
-            logger.error("submodel run for scenario " + scenarioNum + " failed.");
-            logger.error(oe);
-            System.exit(Constants.ERROR_CODE);
+            ArrayList<Path> tailPaths = new ArrayList<>();
+            tailPaths.add(new Path(tail)); // add empty path
+            tailPaths.add(pathWithDelays);
+            initialPaths.put(tailId, tailPaths);
         }
+
+        return initialPaths;
     }
 
     /**
