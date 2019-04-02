@@ -78,6 +78,10 @@ public class Main {
         Parameters.setRunSecondStageInParallel(false);
         Parameters.setNumThreadsForSecondStage(2);
 
+        // Solution quality parameters
+        Parameters.setCheckSolutionQuality(true);
+        Parameters.setNumTestScenarios(3);
+
         // Expected excess parameters
         Parameters.setExpectedExcess(false);
         Parameters.setRho(0.9);

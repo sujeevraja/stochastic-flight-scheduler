@@ -43,6 +43,12 @@ public class NewSolutionManager {
         kpis.put(key, value);
     }
 
+    public void checkSolutionQuality() {
+        // generate test scenarios
+        // run deterministic model, Benders and naive model for each case (maybe DEP too)
+        // compare objective values and solution times
+    }
+
     public void writeOutput() throws IOException {
         String bendersOutputPath = "solution/" + timeStamp + "_benders_solution.csv";
         bendersSolution.writeCSV(bendersOutputPath, dataRegistry.getLegs());

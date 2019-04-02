@@ -32,6 +32,10 @@ public class Parameters {
     private static boolean runSecondStageInParallel = false;
     private static int numThreadsForSecondStage = 1;
 
+    // Parameters to check 2-stage solution quality
+    private static boolean checkSolutionQuality;
+    private static int numTestScenarios;
+
     // Parameters for expected excess formulation
     private static boolean expectedExcess;
     private static double rho;
@@ -135,6 +139,22 @@ public class Parameters {
 
     public static int getNumThreadsForSecondStage() {
         return numThreadsForSecondStage;
+    }
+
+    public static void setCheckSolutionQuality(boolean checkSolutionQuality) {
+        Parameters.checkSolutionQuality = checkSolutionQuality;
+    }
+
+    public static boolean isCheckSolutionQuality() {
+        return checkSolutionQuality;
+    }
+
+    public static void setNumTestScenarios(int numTestScenarios) {
+        Parameters.numTestScenarios = numTestScenarios;
+    }
+
+    public static int getNumTestScenarios() {
+        return numTestScenarios;
     }
 
     public static void setExpectedExcess(boolean expectedExcess) {
