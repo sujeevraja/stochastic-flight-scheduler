@@ -15,6 +15,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -31,6 +32,7 @@ public class NaiveSolver {
     private DataRegistry dataRegistry;
     private double[] expectedDelays;
     private Solution finalSolution;
+    private double solutionTime;
 
     public NaiveSolver(DataRegistry dataRegistry) {
         this.dataRegistry = dataRegistry;
@@ -44,7 +46,12 @@ public class NaiveSolver {
         return finalSolution;
     }
 
+    public double getSolutionTime() {
+        return solutionTime;
+    }
+
     public void solve() throws IloException {
+        Instant start = Instant.now();
         buildAveragePrimaryDelays();
 
         // ArrayList<Leg> legs = dataRegistry.getLegs();
@@ -64,6 +71,7 @@ public class NaiveSolver {
         // finalSolution = new Solution(objective, reschedules);
 
         solveModel();
+        solutionTime = Duration.between(start, Instant.now()).toMinutes() / 60.0;
     }
 
     private void buildAveragePrimaryDelays() {
@@ -104,8 +112,7 @@ public class NaiveSolver {
                 objExpr.addTerm(x[i][j], durations[i] * leg.getRescheduleCostPerMin());
             }
         }
-
-        IloObjective obj = cplex.addMinimize(objExpr);
+        cplex.addMinimize(objExpr);
 
         // Add excess delay constraints
         for (int i = 0; i < legs.size(); ++i) {
@@ -118,8 +125,7 @@ public class NaiveSolver {
             for (int j = 0; j < durations.length; ++j)
                 expr.addTerm(x[j][i], durations[j]);
 
-            IloRange r = cplex.addGe(expr, expectedDelays[i]);
-            r.setName("excess_delay_" + legs.get(i).getId());
+            cplex.addGe(expr, expectedDelays[i], "delay_reschedule_link_" + legs.get(i).getId());
         }
 
         // Add duration cover constraints
@@ -129,8 +135,7 @@ public class NaiveSolver {
             for (int j = 0; j < durations.length; j++)
                 cons.addTerm(x[j][i], 1);
 
-            IloRange r = cplex.addLe(cons, 1);
-            r.setName("duration_cover_" + legs.get(i).getId());
+            cplex.addLe(cons, 1, "duration_cover_" + legs.get(i).getId());
         }
 
         // Add original routing constraints
@@ -153,8 +158,7 @@ public class NaiveSolver {
 
                 int rhs = (int) Duration.between(currLeg.getArrTime(), nextLeg.getDepTime()).toMinutes();
                 rhs -= currLeg.getTurnTimeInMin();
-                IloRange r = cplex.addLe(cons, (double) rhs);
-                r.setName("connect_" + currLeg.getId() + "_" + nextLeg.getId());
+                cplex.addLe(cons, (double) rhs, "connect_" + currLeg.getId() + "_" + nextLeg.getId());
             }
         }
 
@@ -164,8 +168,7 @@ public class NaiveSolver {
             for (int j = 0; j < legs.size(); ++j)
                 budgetExpr.addTerm(x[i][j], durations[i]);
 
-        IloRange budgetConstraint = cplex.addLe(budgetExpr, (double) Parameters.getRescheduleTimeBudget());
-        budgetConstraint.setName("reschedule_time_budget");
+        cplex.addLe(budgetExpr, (double) Parameters.getRescheduleTimeBudget(), "reschedule_time_budget");
 
         if (Parameters.isDebugVerbose())
             cplex.exportModel("logs/naive_model.lp");
@@ -176,9 +179,17 @@ public class NaiveSolver {
         if (Parameters.isDebugVerbose())
             cplex.writeSolution("logs/naive_solution.xml");
 
-        final double objValue = cplex.getObjValue();
+        final double cplexObjValue = cplex.getObjValue();
+        logger.debug("naive model CPLEX objective: " + cplexObjValue);
 
-        logger.debug("naive model objective: " + objValue);
+        double[] vValues = cplex.getValues(v);
+        double excessDelayPenalty = 0.0;
+        for (int i = 0; i < legs.size(); ++i) {
+            if (vValues[i] >= Constants.EPS)
+                excessDelayPenalty += (vValues[i] * legs.get(i).getDelayCostPerMin());
+        }
+        logger.debug("excess delay penalty: " + excessDelayPenalty);
+
         double[][] xValues = new double[durations.length][legs.size()];
         int[] reschedules = new int[legs.size()];
         Arrays.fill(reschedules, 0);
@@ -190,7 +201,7 @@ public class NaiveSolver {
                     reschedules[j] = durations[i];
         }
 
-        finalSolution = new Solution(objValue, reschedules);
+        finalSolution = new Solution(cplexObjValue - excessDelayPenalty, reschedules);
         cplex.end();
     }
 

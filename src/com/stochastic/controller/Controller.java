@@ -86,7 +86,8 @@ public class Controller {
             BendersSolver bendersSolver = new BendersSolver(dataRegistry);
             bendersSolver.solve();
             newSolutionManager.setBendersSolution(bendersSolver.getFinalSolution());
-            newSolutionManager.setBendersSolutionTime(bendersSolver.getSolutionTime());
+            newSolutionManager.addKpi("benders solution time (seconds)", bendersSolver.getSolutionTime());
+            newSolutionManager.addKpi("benders theta", bendersSolver.getFinalThetaValue());
         } catch (IloException ex) {
             logger.error(ex);
             throw new OptException("CPLEX error in Benders");
@@ -101,6 +102,7 @@ public class Controller {
             NaiveSolver naiveSolver = new NaiveSolver(dataRegistry);
             naiveSolver.solve();
             newSolutionManager.setNaiveSolution(naiveSolver.getFinalSolution());
+            newSolutionManager.addKpi("naive model solution time (seconds)", naiveSolver.getSolutionTime());
         } catch (IloException ex) {
             logger.error(ex);
             throw new OptException("exception solving naive model");

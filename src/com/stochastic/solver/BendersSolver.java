@@ -32,6 +32,7 @@ public class BendersSolver {
     private double upperBound;
 
     private Solution finalSolution;
+    private double finalThetaValue;
     private double solutionTime;
 
     public BendersSolver(DataRegistry dataRegistry) throws IOException {
@@ -48,6 +49,10 @@ public class BendersSolver {
 
     public Solution getFinalSolution() {
         return finalSolution;
+    }
+
+    public double getFinalThetaValue() {
+        return finalThetaValue;
     }
 
     public double getSolutionTime() {
@@ -149,7 +154,7 @@ public class BendersSolver {
 
     private void storeFinalSolution() {
         finalSolution = new Solution(masterSolver.getFirstStageObjValue(), masterSolver.getReschedules());
-        finalSolution.setThetaValue(masterSolver.getThetaValue());
+        finalThetaValue = masterSolver.getThetaValue();
     }
 
     private void writeCsvHeaders() throws IOException {

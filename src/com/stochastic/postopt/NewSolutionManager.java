@@ -4,12 +4,15 @@ import com.stochastic.registry.DataRegistry;
 import com.stochastic.registry.Parameters;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TreeMap;
 
 public class NewSolutionManager {
     /**
@@ -19,68 +22,84 @@ public class NewSolutionManager {
     private String timeStamp;
     private DataRegistry dataRegistry;
     private Solution bendersSolution;
-    private double bendersSolutionTime;
     private Solution naiveSolution;
+    private TreeMap<String, Object> kpis;
 
     public NewSolutionManager(DataRegistry dataRegistry) {
         timeStamp = new SimpleDateFormat("yyyy_MM_dd'T'HH_mm_ss").format(new Date());
         this.dataRegistry = dataRegistry;
+        kpis = new TreeMap<>();
     }
 
     public void setBendersSolution(Solution bendersSolution) {
         this.bendersSolution = bendersSolution;
     }
 
-    public void setBendersSolutionTime(double bendersSolutionTime) {
-        this.bendersSolutionTime = bendersSolutionTime;
-    }
-
     public void setNaiveSolution(Solution naiveSolution) {
         this.naiveSolution = naiveSolution;
+    }
+
+    public void addKpi(String key, Object value) {
+        kpis.put(key, value);
     }
 
     public void writeOutput() throws IOException {
         String bendersOutputPath = "solution/" + timeStamp + "_benders_solution.csv";
         bendersSolution.writeCSV(bendersOutputPath, dataRegistry.getLegs());
+        addKpi("benders objective", bendersSolution.getObjective());
         logger.info("wrote benders output to " + bendersOutputPath);
 
         if (naiveSolution != null) {
             String naiveOutputPath = "solution/" + timeStamp + "_naive_solution.csv";
             naiveSolution.writeCSV(naiveOutputPath, dataRegistry.getLegs());
+            kpis.put("naive objective", naiveSolution.getObjective());
             logger.info("wrote naive output to " + naiveOutputPath);
         }
 
-        // write KPIs
-        BufferedWriter kpiWriter = new BufferedWriter(new FileWriter("solution/" + timeStamp + "_kpis.yaml"));
-        kpiWriter.write("---\n");
-        writeInputData(kpiWriter);
-        kpiWriter.write("Benders objective: " + bendersSolution.getObjective() + "\n");
-        kpiWriter.write("Benders theta: " + bendersSolution.getThetaValue() + "\n");
-        kpiWriter.write("Benders solution time (seconds): " + bendersSolutionTime + "\n");
-        if (naiveSolution != null)
-            kpiWriter.write("Naive objective: " + naiveSolution.getObjective() + "\n");
-        else
-            kpiWriter.write("Naive objective: N/A\n");
-        kpiWriter.write("...\n");
-        kpiWriter.close();
-        logger.info("wrote KPIs");
-
+        writeKpis();
         logger.info("solution processing completed.");
     }
 
+    private void writeKpis() throws IOException {
+        TreeMap<String, Object> allKpis = new TreeMap<>();
+        allKpis.put("input", getInputKpis());
+        allKpis.put("output", kpis);
+
+        BufferedWriter kpiWriter = new BufferedWriter(new FileWriter("solution/" + timeStamp + "_kpis.yaml"));
+        DumperOptions options = new DumperOptions();
+        options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+        options.setPrettyFlow(true);
+        Yaml yaml = new Yaml(options);
+        yaml.dump(allKpis, kpiWriter);
+        kpiWriter.close();
+        logger.info("wrote KPIs");
+    }
+
+    private TreeMap<String, Object> getInputKpis() {
+        TreeMap<String, Object> inputKpis = new TreeMap<>();
+        inputKpis.put("instance path", Parameters.getInstancePath());
+        inputKpis.put("number of legs", dataRegistry.getLegs().size());
+        inputKpis.put("number of tails", dataRegistry.getTails().size());
+        inputKpis.put("number of scenarios", dataRegistry.getNumScenarios());
+        inputKpis.put("scenario delays", dataRegistry.getScenarioDelays());
+        inputKpis.put("scenario probabilities", dataRegistry.getScenarioProbabilities());
+        return inputKpis;
+    }
+
     private void writeInputData(BufferedWriter writer) throws IOException {
-        writer.write("instance path: " + Parameters.getInstancePath() + "\n");
-        writer.write("number of tails: " + dataRegistry.getTails().size() + "\n");
-        writer.write("number of legs: " + dataRegistry.getLegs().size() + "\n");
+        writer.write("input:\n");
+        writer.write("  instance path: " + Parameters.getInstancePath() + "\n");
+        writer.write("  number of legs: " + dataRegistry.getLegs().size() + "\n");
+        writer.write("  number of tails: " + dataRegistry.getTails().size() + "\n");
 
         int numScenarios = dataRegistry.getNumScenarios();
-        writer.write("number of scenarios: " + numScenarios + "\n");
+        writer.write("  number of scenarios: " + numScenarios + "\n");
 
         StringBuilder delayStr = new StringBuilder();
         StringBuilder probStr = new StringBuilder();
 
-        delayStr.append("scenario delays: [");
-        probStr.append("scenario probabilities: [");
+        delayStr.append("  scenario delays: [");
+        probStr.append("  scenario probabilities: [");
 
         int[] scenarioDelays = dataRegistry.getScenarioDelays();
         double[] scenarioProbabilities = dataRegistry.getScenarioProbabilities();
