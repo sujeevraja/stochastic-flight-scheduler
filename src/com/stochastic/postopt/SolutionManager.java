@@ -23,22 +23,19 @@ public class SolutionManager {
     private final static Logger logger = LogManager.getLogger(SolutionManager.class);
     private String timeStamp;
     private DataRegistry dataRegistry;
-    private RescheduleSolution bendersSolution;
-    private RescheduleSolution naiveSolution;
+    private ArrayList<RescheduleSolution> rescheduleSolutions;
     private TreeMap<String, Object> kpis;
 
     public SolutionManager(DataRegistry dataRegistry) {
         timeStamp = new SimpleDateFormat("yyyy_MM_dd'T'HH_mm_ss").format(new Date());
         this.dataRegistry = dataRegistry;
+        rescheduleSolutions = new ArrayList<>();
         kpis = new TreeMap<>();
     }
 
-    public void setBendersSolution(RescheduleSolution bendersSolution) {
-        this.bendersSolution = bendersSolution;
-    }
-
-    public void setNaiveSolution(RescheduleSolution naiveSolution) {
-        this.naiveSolution = naiveSolution;
+    public void addRescheduleSolution(RescheduleSolution sln) {
+        rescheduleSolutions.add(sln);
+        addKpi(sln.getName() + " reschedule cost", sln.getRescheduleCost());
     }
 
     public void addKpi(String key, Object value) {
@@ -65,32 +62,21 @@ public class SolutionManager {
         CSVHelper.writeLine(csvWriter, qc.getComparisonRow("original schedule"));
         logger.info("completed original schedule test runs.");
 
-        logger.info("starting benders solution test runs...");
-        qc.testSolution(bendersSolution);
-        CSVHelper.writeLine(csvWriter, qc.getComparisonRow("benders solution"));
-        logger.info("completed benders solution test runs...");
-
-        logger.info("starting naive model solution test runs...");
-        qc.testSolution(naiveSolution);
-        CSVHelper.writeLine(csvWriter, qc.getComparisonRow("naive model"));
-        logger.info("completed naive model solution test runs...");
+        for (RescheduleSolution sln : rescheduleSolutions) {
+            logger.info("starting " + sln.getName() + " test runs...");
+            qc.testSolution(sln);
+            CSVHelper.writeLine(csvWriter, qc.getComparisonRow(sln.getName() + " solution"));
+            logger.info("completed " + sln.getName() + " solution test runs.");
+        }
 
         csvWriter.close();
     }
 
     public void writeOutput() throws IOException {
-        String bendersOutputPath = "solution/" + timeStamp + "_benders_solution.csv";
-        bendersSolution.writeCSV(bendersOutputPath, dataRegistry.getLegs());
-        addKpi("benders reschedule cost", bendersSolution.getRescheduleCost());
-        logger.info("wrote benders output to " + bendersOutputPath);
-
-        if (naiveSolution != null) {
-            String naiveOutputPath = "solution/" + timeStamp + "_naive_solution.csv";
-            naiveSolution.writeCSV(naiveOutputPath, dataRegistry.getLegs());
-            kpis.put("naive model reschedule cost", naiveSolution.getRescheduleCost());
-            logger.info("wrote naive output to " + naiveOutputPath);
+        for (RescheduleSolution sln : rescheduleSolutions) {
+            sln.writeCSV(dataRegistry.getLegs());
+            logger.info("wrote " + sln.getName() + " reschedule solution");
         }
-
         writeKpis();
         logger.info("solution processing completed.");
     }
