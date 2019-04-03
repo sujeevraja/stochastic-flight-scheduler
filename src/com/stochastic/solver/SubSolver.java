@@ -31,7 +31,7 @@ public class SubSolver {
     private boolean solveAsMIP;
 
     // CPLEX variables
-    private IloNumVar[][] y; // y[i][j] = 1 if path j is selected for tail i is selected, 0 else.
+    private IloNumVar[][] y; // y[i][j] = 1 if path j is selected for tails.get(i) is selected, 0 else.
     private IloNumVar[] d; // d[i] >= 0 is the total delay of leg i.
     private IloNumVar v;
     private IloCplex cplex;
@@ -45,7 +45,8 @@ public class SubSolver {
 
     // Solution info
     private double objValue;
-    private double[] delaySolution;
+    private double[] dValues;
+    private double[][] yValues;
     private double[] dualsTail;
     private double[] dualsLeg;
     private double[] dualsDelay;
@@ -212,11 +213,17 @@ public class SubSolver {
             }
 
             objValue = cplex.getObjValue();
-            delaySolution = cplex.getValues(d);
         } catch (IloException ie) {
             logger.error(ie);
             throw new OptException("error solving subproblem");
         }
+    }
+
+    public void collectSolution() throws IloException {
+        dValues = cplex.getValues(d);
+        yValues = new double[tails.size()][];
+        for (int i = 0; i < tails.size(); ++i)
+            yValues[i] = cplex.getValues(y[i]);
     }
 
     public void collectDuals() throws OptException {
@@ -234,7 +241,6 @@ public class SubSolver {
 
             if (Parameters.isExpectedExcess())
                 dualRisk = cplex.getDual(riskConstraint);
-
         } catch (IloException ie) {
             logger.error(ie);
             throw new OptException("error when collecting duals from sub-problem");
@@ -268,8 +274,12 @@ public class SubSolver {
         return objValue;
     }
 
-    public double[] getDelaySolution() {
-        return delaySolution;
+    public double[] getdValues() {
+        return dValues;
+    }
+
+    public double[][] getyValues() {
+        return yValues;
     }
 
     public double[] getDualsLeg() {

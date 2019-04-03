@@ -3,6 +3,7 @@ package com.stochastic.solver;
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
 import com.stochastic.network.Path;
+import com.stochastic.postopt.DelaySolution;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.registry.Parameters;
 import com.stochastic.utility.Constants;
@@ -28,7 +29,7 @@ public class SubSolverRunnable implements Runnable {
     private BendersData bendersData;
 
     private boolean solveForQuality = false;
-    private double objvalue;
+    private DelaySolution delaySolution; // used only when checking Benders solution quality
 
     public SubSolverRunnable(DataRegistry dataRegistry, int iter, int scenarioNum, double probability,
                              int[] reschedules, HashMap<Integer, Integer> randomDelays) {
@@ -53,8 +54,8 @@ public class SubSolverRunnable implements Runnable {
         this.solveForQuality = solveForQuality;
     }
 
-    public double getObjvalue() {
-        return objvalue;
+    public DelaySolution getDelaySolution() {
+        return delaySolution;
     }
 
     //exSrv.execute(buildSDThrObj) calls brings you here
@@ -120,20 +121,15 @@ public class SubSolverRunnable implements Runnable {
             }
 
             ss.solve();
-            if (!solveForQuality)
-                ss.collectDuals();
-
-            logger.debug("Iter " + iter + ": subproblem objective value: " + ss.getObjValue());
-
             if (Parameters.isDebugVerbose()) {
                 ss.writeCplexSolution(name + ".xml");
             }
 
-            ss.end();
-
             if (solveForQuality) {
-                objvalue = ss.getObjValue();
+                ss.collectSolution();
+                buildDelaySolution(ss, delays, tailPathsMap);
             } else {
+                ss.collectDuals();
                 double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(),
                         ss.getDualsBound(), ss.getDualRisk());
 
@@ -141,6 +137,9 @@ public class SubSolverRunnable implements Runnable {
                 updateBeta(ss.getDualsDelay(), ss.getDualRisk());
                 updateUpperBound(ss.getObjValue());
             }
+
+            logger.debug("Iter " + iter + ": subproblem objective value: " + ss.getObjValue());
+            ss.end();
         } catch (OptException oe) {
             logger.error("submodel run for scenario " + scenarioNum + " failed.");
             logger.error(oe);
@@ -256,7 +255,8 @@ public class SubSolverRunnable implements Runnable {
                 ss.writeCplexSolution(name + ".xml");
             }
 
-            objvalue = ss.getObjValue();
+            ss.collectSolution();
+            buildDelaySolution(ss, delays, pathsAll);
             ss.end();
         } else {
             // Update master problem data
@@ -330,6 +330,50 @@ public class SubSolverRunnable implements Runnable {
         }
 
         return delays;
+    }
+
+    private void buildDelaySolution(SubSolver ss, int[] primaryDelays, HashMap<Integer, ArrayList<Path>> tailPaths) {
+        // find selected paths for each tail
+        ArrayList<Tail> tails = dataRegistry.getTails();
+        ArrayList<Path> selectedPaths = new ArrayList<>();
+        double[][] yValues = ss.getyValues();
+
+        for (int i = 0; i < tails.size(); ++i) {
+            Tail tail = tails.get(i);
+            ArrayList<Path> generatedPaths = tailPaths.getOrDefault(tail.getId(), null);
+            if (generatedPaths == null)
+                continue;
+
+            double[] yValuesForTail = yValues[i];
+            for (int j = 0; j < yValuesForTail.length; ++j) {
+                if (yValuesForTail[j] >= Constants.EPS) {
+                    selectedPaths.add(generatedPaths.get(j));
+                    break;
+                }
+            }
+        }
+
+        // collect total second-stage delay for each tail
+        int[] totalDelays = new int[dataRegistry.getLegs().size()];
+        int[] propagatedDelays = new int[dataRegistry.getLegs().size()];
+        Arrays.fill(totalDelays, 0);
+        Arrays.fill(propagatedDelays, 0);
+
+        for (Path path : selectedPaths) {
+            ArrayList<Leg> pathLegs = path.getLegs();
+            if (pathLegs.isEmpty())
+                continue;
+
+            ArrayList<Integer> pathDelays = path.getDelayTimesInMin();
+            for (int i = 0; i < pathLegs.size(); ++i) {
+                int index = pathLegs.get(i).getIndex();
+                totalDelays[index] = pathDelays.get(i);
+                propagatedDelays[index] = totalDelays[index] - primaryDelays[index];
+            }
+        }
+
+        delaySolution = new DelaySolution(ss.getObjValue(), primaryDelays, totalDelays, propagatedDelays,
+                ss.getdValues());
     }
 
     private double calculateAlpha(double[] dualsLegs, double[] dualsTail, double[] dualsDelay, double[][] dualsBnd,

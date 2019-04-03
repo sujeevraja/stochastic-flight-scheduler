@@ -52,23 +52,6 @@ public class NaiveSolver {
     public void solve() throws IloException {
         Instant start = Instant.now();
         buildAveragePrimaryDelays();
-
-        // ArrayList<Leg> legs = dataRegistry.getLegs();
-        // final int numLegs = legs.size();
-        // int[] reschedules = new int[numLegs];
-        // Arrays.fill(reschedules, 0);
-        // selectPrimaryReschedules(reschedules);
-        // propagateReschedules(reschedules);
-
-        // double objective = 0.0;
-        // for (int i = 0; i < numLegs; ++i) {
-        //     if (reschedules[i] > 0)
-        //         objective += (reschedules[i] * legs.get(i).getRescheduleCostPerMin());
-        // }
-
-        // logger.info("naive solver objective: " + objective);
-        // finalRescheduleSolution = new RescheduleSolution(objective, reschedules);
-
         solveModel();
         solutionTime = Duration.between(start, Instant.now()).toMinutes() / 60.0;
     }
@@ -194,53 +177,8 @@ public class NaiveSolver {
                     reschedules[j] = durations[i];
         }
 
-        finalRescheduleSolution = new RescheduleSolution(cplexObjValue - excessDelayPenalty, reschedules);
+        finalRescheduleSolution = new RescheduleSolution("naive_model",
+                cplexObjValue - excessDelayPenalty, reschedules);
         cplex.end();
-    }
-
-    private void selectPrimaryReschedules(int[] reschedules) {
-        int[] durations = Parameters.getDurations();
-        for (int i = 0; i < expectedDelays.length; ++i) {
-            double delay = expectedDelays[i];
-            if (delay <= Constants.EPS)
-                continue;
-
-            // set primary reschedule as the maximum value less than or equal to the expected delay.
-            boolean rescheduleSet = false;
-            for (int j = 0; j < durations.length; ++j) {
-                if (durations[j] <= delay - Constants.EPS)
-                    continue;
-
-                if (j > 0) {
-                    reschedules[i] = durations[j-1];
-                    rescheduleSet = true;
-                    break;
-                }
-            }
-
-            if (!rescheduleSet)
-                reschedules[i] = durations[durations.length - 1];
-        }
-    }
-
-    private void propagateReschedules(int[] reschedules) {
-        HashMap<Integer, Path> tailPathMap = dataRegistry.getTailOrigPathMap();
-        Integer[][] slacks = dataRegistry.getOrigSlacks();
-
-        for(Map.Entry<Integer, Path> entry : tailPathMap.entrySet()) {
-            ArrayList<Leg> pathLegs = entry.getValue().getLegs();
-            if (pathLegs.size() <= 1)
-                continue;
-
-            int prevLegIndex = pathLegs.get(0).getIndex();
-            int totalDelay = reschedules[prevLegIndex];
-
-            for (int i = 1; i < pathLegs.size(); ++i) {
-                int index = pathLegs.get(i).getIndex();
-                totalDelay = Math.max(totalDelay - slacks[prevLegIndex][index], reschedules[index]);
-                reschedules[index] = totalDelay;
-                prevLegIndex = index;
-            }
-        }
     }
 }

@@ -89,7 +89,8 @@ class QualityChecker {
             double slntime = Duration.between(start, Instant.now()).toMillis() / 1000.0;
             solutionTimesInSeconds[i] = slntime;
 
-            double obj = ssr.getObjvalue();
+            DelaySolution delaySolution = ssr.getDelaySolution();
+            double obj = delaySolution.getDelayCost();
             objectives[i] = obj;
             expectedObjective += (scen.getProbability() * obj);
             logger.info("tested original schedule with scenario " + (i+1) + " of " + testScenarios.length);
@@ -128,7 +129,8 @@ class QualityChecker {
             double slntime = Duration.between(start, Instant.now()).toMillis() / 1000.0;
             solutionTimesInSeconds[i] = slntime;
 
-            double obj = ssr.getObjvalue();
+            DelaySolution delaySolution = ssr.getDelaySolution();
+            double obj = delaySolution.getDelayCost();
             objectives[i] = obj;
             expectedObjective += (scen.getProbability() * obj);
             logger.info("tested original schedule with scenario " + (i+1) + " of " + testScenarios.length);
