@@ -44,7 +44,8 @@ public class SubSolverWrapper {
         for (int i = 0; i < scenarios.length; i++) {
             Scenario scenario = scenarios[i];
             SubSolverRunnable subSolverRunnable = new SubSolverRunnable(dataRegistry, iter, i,
-                    scenario.getProbability(), reschedules, scenario.getPrimaryDelays(), bendersData);
+                    scenario.getProbability(), reschedules, scenario.getPrimaryDelays());
+            subSolverRunnable.setBendersData(bendersData);
             subSolverRunnable.run();
         }
     }
@@ -56,7 +57,8 @@ public class SubSolverWrapper {
             for (int i = 0; i < scenarios.length; i++) {
                 Scenario scenario = scenarios[i];
                 SubSolverRunnable subSolverRunnable = new SubSolverRunnable(dataRegistry, iter, i,
-                        scenario.getProbability(), reschedules, scenario.getPrimaryDelays(), bendersData);
+                        scenario.getProbability(), reschedules, scenario.getPrimaryDelays());
+                subSolverRunnable.setBendersData(bendersData);
                 exSrv.execute(subSolverRunnable); // this calls SubSolverRunnable.run()
             }
             exSrv.shutdown();

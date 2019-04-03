@@ -1,14 +1,12 @@
 package com.stochastic.main;
 
 import com.stochastic.delay.DelayGenerator;
-import com.stochastic.delay.FirstFlightDelayGenerator;
 import com.stochastic.delay.Scenario;
 import com.stochastic.delay.TestDelayGenerator;
 import com.stochastic.domain.Leg;
 import com.stochastic.dao.ScheduleDAO;
 import com.stochastic.domain.Tail;
 import com.stochastic.network.Path;
-import com.stochastic.postopt.NewSolutionManager;
 import com.stochastic.postopt.SolutionManager;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.registry.Parameters;
@@ -31,13 +29,13 @@ public class Controller {
      */
     private final static Logger logger = LogManager.getLogger(Controller.class);
     private DataRegistry dataRegistry;
-    private NewSolutionManager newSolutionManager;
+    private SolutionManager solutionManager;
 
     public static int[][] sceVal;
 
     Controller() {
         dataRegistry = new DataRegistry();
-        newSolutionManager = new NewSolutionManager(dataRegistry);
+        solutionManager = new SolutionManager(dataRegistry);
     }
 
     public final void readData() throws OptException {
@@ -74,9 +72,9 @@ public class Controller {
         try {
             BendersSolver bendersSolver = new BendersSolver(dataRegistry);
             bendersSolver.solve();
-            newSolutionManager.setBendersSolution(bendersSolver.getFinalSolution());
-            newSolutionManager.addKpi("benders solution time (seconds)", bendersSolver.getSolutionTime());
-            newSolutionManager.addKpi("benders theta", bendersSolver.getFinalThetaValue());
+            solutionManager.setBendersSolution(bendersSolver.getFinalSolution());
+            solutionManager.addKpi("benders solution time (seconds)", bendersSolver.getSolutionTime());
+            solutionManager.addKpi("benders theta", bendersSolver.getFinalThetaValue());
         } catch (IloException ex) {
             logger.error(ex);
             throw new OptException("CPLEX error in Benders");
@@ -90,8 +88,8 @@ public class Controller {
         try {
             NaiveSolver naiveSolver = new NaiveSolver(dataRegistry);
             naiveSolver.solve();
-            newSolutionManager.setNaiveSolution(naiveSolver.getFinalSolution());
-            newSolutionManager.addKpi("naive model solution time (seconds)", naiveSolver.getSolutionTime());
+            solutionManager.setNaiveSolution(naiveSolver.getFinalSolution());
+            solutionManager.addKpi("naive model solution time (seconds)", naiveSolver.getSolutionTime());
         } catch (IloException ex) {
             logger.error(ex);
             throw new OptException("exception solving naive model");
@@ -219,22 +217,10 @@ public class Controller {
         dataRegistry.setLegs(newLegs);
     }
 
-    public void processSolution(boolean qualifySolution, double[][] xValues,
-                                int numTestScenarios) throws OptException {
+    public void processSolution() throws OptException {
         try {
-            SolutionManager sm = new SolutionManager(dataRegistry, xValues);
-            if (qualifySolution)
-                sm.compareSolutions(numTestScenarios);
-            sm.writeOutput();
-        } catch (IOException ex) {
-            logger.error(ex);
-            throw new OptException("error writing solution");
-        }
-    }
-
-    public void newProcessSolution() throws OptException {
-        try {
-            newSolutionManager.writeOutput();
+            solutionManager.writeOutput();
+            solutionManager.checkSolutionQuality();
         } catch (IOException ex) {
             logger.error(ex);
             throw new OptException("error writing solution");

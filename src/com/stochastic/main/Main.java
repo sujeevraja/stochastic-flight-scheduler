@@ -21,7 +21,7 @@ public class Main {
             controller.buildScenarios();
             controller.solveWithNaiveApproach();
             controller.solveWithBenders();
-            controller.newProcessSolution();
+            controller.processSolution();
 
             /*
             // ---- SECTION START ----

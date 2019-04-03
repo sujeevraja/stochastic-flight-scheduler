@@ -19,6 +19,14 @@ public class Solution {
         this.reschedules = reschedules;
     }
 
+    public double getObjective() {
+        return objective;
+    }
+
+    public int[] getReschedules() {
+        return reschedules;
+    }
+
     /**
      * Writes stored solution to a file with the given path.
      * @param path path to file (assumed to be csv).
@@ -32,9 +40,5 @@ public class Solution {
             writer.write(row);
         }
         writer.close();
-    }
-
-    public double getObjective() {
-        return objective;
     }
 }

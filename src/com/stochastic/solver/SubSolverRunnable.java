@@ -15,7 +15,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
-class SubSolverRunnable implements Runnable {
+public class SubSolverRunnable implements Runnable {
     private final static Logger logger = LogManager.getLogger(SubSolverWrapper.class);
     private DataRegistry dataRegistry;
     private int iter;
@@ -27,14 +27,17 @@ class SubSolverRunnable implements Runnable {
     private boolean solveForQuality = false;
     private double objvalue;
 
-    SubSolverRunnable(DataRegistry dataRegistry, int iter, int scenarioNum, double probability, int[] reschedules,
-                      HashMap<Integer, Integer> randomDelays, BendersData bendersData) {
+    public SubSolverRunnable(DataRegistry dataRegistry, int iter, int scenarioNum, double probability,
+                             int[] reschedules, HashMap<Integer, Integer> randomDelays) {
         this.dataRegistry = dataRegistry;
         this.iter = iter;
         this.scenarioNum = scenarioNum;
         this.probability = probability;
         this.reschedules = reschedules;
         this.randomDelays = randomDelays;
+    }
+
+    public void setBendersData(BendersData bendersData) {
         this.bendersData = bendersData;
     }
 
@@ -235,9 +238,10 @@ class SubSolverRunnable implements Runnable {
                 String name = "logs/qual_" + iter + "_sub_labeling_mip";
                 ss.writeLPFile(name + ".lp");
                 ss.writeCplexSolution(name + ".xml");
-                objvalue = ss.getObjValue();
-                ss.end();
             }
+
+            objvalue = ss.getObjValue();
+            ss.end();
         } else {
             // Update master problem data
             double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(),
