@@ -1,12 +1,10 @@
 package com.stochastic.solver;
 
-import com.stochastic.delay.DelayGenerator;
-import com.stochastic.delay.FirstFlightDelayGenerator;
 import com.stochastic.delay.Scenario;
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
 import com.stochastic.network.Path;
-import com.stochastic.postopt.Solution;
+import com.stochastic.postopt.RescheduleSolution;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.registry.Parameters;
 import com.stochastic.utility.Constants;
@@ -32,7 +30,7 @@ public class NaiveSolver {
     private final static Logger logger = LogManager.getLogger(NaiveSolver.class);
     private DataRegistry dataRegistry;
     private double[] expectedDelays;
-    private Solution finalSolution;
+    private RescheduleSolution finalRescheduleSolution;
     private double solutionTime;
 
     public NaiveSolver(DataRegistry dataRegistry) {
@@ -43,8 +41,8 @@ public class NaiveSolver {
         Arrays.fill(expectedDelays, 0.0);
     }
 
-    public Solution getFinalSolution() {
-        return finalSolution;
+    public RescheduleSolution getFinalRescheduleSolution() {
+        return finalRescheduleSolution;
     }
 
     public double getSolutionTime() {
@@ -69,7 +67,7 @@ public class NaiveSolver {
         // }
 
         // logger.info("naive solver objective: " + objective);
-        // finalSolution = new Solution(objective, reschedules);
+        // finalRescheduleSolution = new RescheduleSolution(objective, reschedules);
 
         solveModel();
         solutionTime = Duration.between(start, Instant.now()).toMinutes() / 60.0;
@@ -196,7 +194,7 @@ public class NaiveSolver {
                     reschedules[j] = durations[i];
         }
 
-        finalSolution = new Solution(cplexObjValue - excessDelayPenalty, reschedules);
+        finalRescheduleSolution = new RescheduleSolution(cplexObjValue - excessDelayPenalty, reschedules);
         cplex.end();
     }
 

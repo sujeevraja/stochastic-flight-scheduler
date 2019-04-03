@@ -45,13 +45,14 @@ public class SubSolver {
 
     // Solution info
     private double objValue;
+    private double[] delaySolution;
     private double[] dualsTail;
     private double[] dualsLeg;
     private double[] dualsDelay;
     private double[][] dualsBound;
     private double dualRisk;
 
-    public SubSolver(ArrayList<Tail> tails, ArrayList<Leg> legs, int[] reschedules, double probability) {
+    SubSolver(ArrayList<Tail> tails, ArrayList<Leg> legs, int[] reschedules, double probability) {
         this.tails = tails;
         this.numTails = tails.size();
         this.legs = legs;
@@ -209,7 +210,9 @@ public class SubSolver {
                 logger.error("sub-problem status: " + status);
                 throw new OptException("optimal solution not found for sub-problem");
             }
+
             objValue = cplex.getObjValue();
+            delaySolution = cplex.getValues(d);
         } catch (IloException ie) {
             logger.error(ie);
             throw new OptException("error solving subproblem");
@@ -261,6 +264,14 @@ public class SubSolver {
         cplex = null;
     }
 
+    public double getObjValue() {
+        return objValue;
+    }
+
+    public double[] getDelaySolution() {
+        return delaySolution;
+    }
+
     public double[] getDualsLeg() {
         return dualsLeg;
     }
@@ -279,9 +290,5 @@ public class SubSolver {
 
     public double getDualRisk() {
         return dualRisk;
-    }
-
-    public double getObjValue() {
-        return objValue;
     }
 }

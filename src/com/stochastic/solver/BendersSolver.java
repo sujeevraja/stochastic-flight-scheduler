@@ -2,7 +2,7 @@ package com.stochastic.solver;
 
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
-import com.stochastic.postopt.Solution;
+import com.stochastic.postopt.RescheduleSolution;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.registry.Parameters;
 import com.stochastic.utility.OptException;
@@ -31,7 +31,7 @@ public class BendersSolver {
     private double lowerBound;
     private double upperBound;
 
-    private Solution finalSolution;
+    private RescheduleSolution finalRescheduleSolution;
     private double finalThetaValue;
     private double solutionTime;
 
@@ -47,8 +47,8 @@ public class BendersSolver {
         solutionTime = 0.0;
     }
 
-    public Solution getFinalSolution() {
-        return finalSolution;
+    public RescheduleSolution getFinalRescheduleSolution() {
+        return finalRescheduleSolution;
     }
 
     public double getFinalThetaValue() {
@@ -153,7 +153,7 @@ public class BendersSolver {
     }
 
     private void storeFinalSolution() {
-        finalSolution = new Solution(masterSolver.getFirstStageObjValue(), masterSolver.getReschedules());
+        finalRescheduleSolution = new RescheduleSolution(masterSolver.getFirstStageObjValue(), masterSolver.getReschedules());
         finalThetaValue = masterSolver.getThetaValue();
     }
 

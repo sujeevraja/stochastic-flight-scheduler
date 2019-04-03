@@ -7,20 +7,21 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class Solution {
+public class RescheduleSolution {
     /**
-     * Solution objects store solutions of the master problem.
+     * RescheduleSolution objects store solutions of the master problem that reschedule legs to protect against
+     * uncertain delays.
      */
-    private double objective;
+    private double rescheduleCost;
     private int[] reschedules;
 
-    public Solution(double objective, int[] reschedules) {
-        this.objective = objective;
+    public RescheduleSolution(double rescheduleCost, int[] reschedules) {
+        this.rescheduleCost = rescheduleCost;
         this.reschedules = reschedules;
     }
 
-    public double getObjective() {
-        return objective;
+    public double getRescheduleCost() {
+        return rescheduleCost;
     }
 
     public int[] getReschedules() {

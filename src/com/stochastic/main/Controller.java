@@ -73,7 +73,7 @@ public class Controller {
         try {
             BendersSolver bendersSolver = new BendersSolver(dataRegistry);
             bendersSolver.solve();
-            solutionManager.setBendersSolution(bendersSolver.getFinalSolution());
+            solutionManager.setBendersSolution(bendersSolver.getFinalRescheduleSolution());
             solutionManager.addKpi("benders solution time (seconds)", bendersSolver.getSolutionTime());
             solutionManager.addKpi("benders theta", bendersSolver.getFinalThetaValue());
         } catch (IloException ex) {
@@ -89,7 +89,7 @@ public class Controller {
         try {
             NaiveSolver naiveSolver = new NaiveSolver(dataRegistry);
             naiveSolver.solve();
-            solutionManager.setNaiveSolution(naiveSolver.getFinalSolution());
+            solutionManager.setNaiveSolution(naiveSolver.getFinalRescheduleSolution());
             solutionManager.addKpi("naive model solution time (seconds)", naiveSolver.getSolutionTime());
         } catch (IloException ex) {
             logger.error(ex);

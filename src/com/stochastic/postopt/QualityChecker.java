@@ -98,7 +98,7 @@ class QualityChecker {
         averageSolutionTime = Arrays.stream(solutionTimesInSeconds).average().orElse(Double.NaN);
     }
 
-    void testSolution(Solution sln) {
+    void testSolution(RescheduleSolution sln) {
         reset();
         int[] reschedules = sln.getReschedules();
 

@@ -23,8 +23,8 @@ public class SolutionManager {
     private final static Logger logger = LogManager.getLogger(SolutionManager.class);
     private String timeStamp;
     private DataRegistry dataRegistry;
-    private Solution bendersSolution;
-    private Solution naiveSolution;
+    private RescheduleSolution bendersSolution;
+    private RescheduleSolution naiveSolution;
     private TreeMap<String, Object> kpis;
 
     public SolutionManager(DataRegistry dataRegistry) {
@@ -33,11 +33,11 @@ public class SolutionManager {
         kpis = new TreeMap<>();
     }
 
-    public void setBendersSolution(Solution bendersSolution) {
+    public void setBendersSolution(RescheduleSolution bendersSolution) {
         this.bendersSolution = bendersSolution;
     }
 
-    public void setNaiveSolution(Solution naiveSolution) {
+    public void setNaiveSolution(RescheduleSolution naiveSolution) {
         this.naiveSolution = naiveSolution;
     }
 
@@ -81,13 +81,13 @@ public class SolutionManager {
     public void writeOutput() throws IOException {
         String bendersOutputPath = "solution/" + timeStamp + "_benders_solution.csv";
         bendersSolution.writeCSV(bendersOutputPath, dataRegistry.getLegs());
-        addKpi("benders objective", bendersSolution.getObjective());
+        addKpi("benders reschedule cost", bendersSolution.getRescheduleCost());
         logger.info("wrote benders output to " + bendersOutputPath);
 
         if (naiveSolution != null) {
             String naiveOutputPath = "solution/" + timeStamp + "_naive_solution.csv";
             naiveSolution.writeCSV(naiveOutputPath, dataRegistry.getLegs());
-            kpis.put("naive objective", naiveSolution.getObjective());
+            kpis.put("naive model reschedule cost", naiveSolution.getRescheduleCost());
             logger.info("wrote naive output to " + naiveOutputPath);
         }
 
