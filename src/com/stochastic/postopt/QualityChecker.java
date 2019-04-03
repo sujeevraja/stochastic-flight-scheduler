@@ -3,6 +3,7 @@ package com.stochastic.postopt;
 import com.stochastic.delay.DelayGenerator;
 import com.stochastic.delay.FirstFlightDelayGenerator;
 import com.stochastic.delay.Scenario;
+import com.stochastic.domain.Leg;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.registry.Parameters;
 import com.stochastic.solver.SubSolverRunnable;
@@ -24,6 +25,7 @@ class QualityChecker {
      */
     private final static Logger logger = LogManager.getLogger(QualityChecker.class);
     private DataRegistry dataRegistry;
+    private int[] zeroReschedules;
     private Scenario[] testScenarios;
 
     private double[] objectives;
@@ -33,6 +35,8 @@ class QualityChecker {
 
     QualityChecker(DataRegistry dataRegistry) {
         this.dataRegistry = dataRegistry;
+        zeroReschedules = new int[dataRegistry.getLegs().size()];
+        Arrays.fill(zeroReschedules, 0);
     }
 
     public double[] getObjectives() {
@@ -73,13 +77,11 @@ class QualityChecker {
 
     void testOriginalSchedule() {
         reset();
-        int[] reschedules = new int[dataRegistry.getLegs().size()];
-        Arrays.fill(reschedules, 0);
 
         for (int i = 0; i < testScenarios.length; ++i) {
             Scenario scen = testScenarios[i];
-            SubSolverRunnable ssr = new SubSolverRunnable(dataRegistry, 0, i, scen.getProbability(), reschedules,
-                    scen.getPrimaryDelays());
+            SubSolverRunnable ssr = new SubSolverRunnable(dataRegistry, 0, i, scen.getProbability(),
+                    zeroReschedules, scen.getPrimaryDelays());
             ssr.setSolveForQuality(true);
 
             Instant start = Instant.now();
@@ -100,6 +102,10 @@ class QualityChecker {
         reset();
         int[] reschedules = sln.getReschedules();
 
+        // update leg departure time according to reschedule values.
+        for (Leg leg : dataRegistry.getLegs())
+            leg.reschedule(reschedules[leg.getIndex()]);
+
         for (int i = 0; i < testScenarios.length; ++i) {
             Scenario scen = testScenarios[i];
 
@@ -112,8 +118,9 @@ class QualityChecker {
             }
 
             // solve routing MIP and collect solution
-            SubSolverRunnable ssr = new SubSolverRunnable(dataRegistry, 0, i, scen.getProbability(), reschedules,
-                    adjustedDelays);
+            SubSolverRunnable ssr = new SubSolverRunnable(dataRegistry, 0, i, scen.getProbability(),
+                    zeroReschedules, adjustedDelays);
+            ssr.setFilePrefix(sln.getName());
             ssr.setSolveForQuality(true);
 
             Instant start = Instant.now();
@@ -127,6 +134,10 @@ class QualityChecker {
             logger.info("tested original schedule with scenario " + (i+1) + " of " + testScenarios.length);
         }
         averageSolutionTime = Arrays.stream(solutionTimesInSeconds).average().orElse(Double.NaN);
+
+        // undo reschedules
+        for (Leg leg : dataRegistry.getLegs())
+            leg.revertReschedule();
     }
 
     private void reset() {

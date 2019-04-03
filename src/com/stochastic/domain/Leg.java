@@ -14,11 +14,14 @@ public class Leg {
     private Integer arrPort;
     private int turnTimeInMin;
     private Integer origTailId;
-    private LocalDateTime depTime;
-    private LocalDateTime arrTime;
     private int blockTimeInMin;
     private double rescheduleCostPerMin; // first stage reschedule cost
     private double delayCostPerMin; // second stage reschedule cost
+
+    private LocalDateTime origDepTime;
+    private LocalDateTime depTime;
+    private LocalDateTime origArrTime;
+    private LocalDateTime arrTime;
 
     // info for labeling algorithm       
     
@@ -31,11 +34,14 @@ public class Leg {
         this.arrPort = arrPort;
         this.turnTimeInMin = turnTimeInMin;
         this.origTailId = origTailId;
-        this.depTime = depTime;
-        this.arrTime = arrTime;
         this.blockTimeInMin = (int) Duration.between(depTime, arrTime).toMinutes();
         this.rescheduleCostPerMin = 0.1 * blockTimeInMin;
         this.delayCostPerMin = 0.5 * blockTimeInMin;
+
+        this.origDepTime = depTime;
+        this.depTime = depTime;
+        this.origArrTime = arrTime;
+        this.arrTime = arrTime;
     }
 
 	public Integer getId() {
@@ -72,14 +78,6 @@ public class Leg {
         return origTailId;
     }
 
-    public LocalDateTime getDepTime() {
-        return depTime;
-    }
-
-    public LocalDateTime getArrTime() {
-        return arrTime;
-    }
-
     public int getBlockTimeInMin() {
         return blockTimeInMin;
     }
@@ -92,10 +90,22 @@ public class Leg {
         return delayCostPerMin;
     }
 
+    public LocalDateTime getDepTime() {
+        return depTime;
+    }
+
+    public LocalDateTime getArrTime() {
+        return arrTime;
+    }
+
     public void reschedule(int numMinutes) {
         depTime = depTime.plusMinutes(numMinutes);
         arrTime = arrTime.plusMinutes(numMinutes);
-//        arrTime = depTime.plusMinutes(numMinutes);
+    }
+
+    public void revertReschedule() {
+        depTime = origDepTime;
+        arrTime = origArrTime;
     }
 
     @Override

@@ -23,7 +23,10 @@ public class SubSolverRunnable implements Runnable {
     private double probability;
     private int[] reschedules;
     private HashMap<Integer, Integer> randomDelays;
+
+    private String filePrefix;
     private BendersData bendersData;
+
     private boolean solveForQuality = false;
     private double objvalue;
 
@@ -35,6 +38,11 @@ public class SubSolverRunnable implements Runnable {
         this.probability = probability;
         this.reschedules = reschedules;
         this.randomDelays = randomDelays;
+        this.filePrefix = null;
+    }
+
+    public void setFilePrefix(String filePrefix) {
+        this.filePrefix = filePrefix;
     }
 
     public void setBendersData(BendersData bendersData) {
@@ -95,6 +103,11 @@ public class SubSolverRunnable implements Runnable {
                 nameBuilder.append("logs/");
                 if (solveForQuality) {
                     nameBuilder.append("qual");
+                    if (filePrefix != null) {
+                        nameBuilder.append("_");
+                        nameBuilder.append(filePrefix);
+                        nameBuilder.append("_");
+                    }
                 } else {
                     nameBuilder.append("sub_benders_");
                     nameBuilder.append(iter);
@@ -235,7 +248,10 @@ public class SubSolverRunnable implements Runnable {
             ss.solve();
 
             if (Parameters.isDebugVerbose()) {
-                String name = "logs/qual_" + iter + "_sub_labeling_mip";
+                String name = "logs/qual_";
+                if (filePrefix != null)
+                    name += filePrefix +"_";
+                name += iter + "_sub_labeling_mip";
                 ss.writeLPFile(name + ".lp");
                 ss.writeCplexSolution(name + ".xml");
             }

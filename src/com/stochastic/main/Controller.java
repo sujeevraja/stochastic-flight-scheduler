@@ -1,6 +1,7 @@
 package com.stochastic.main;
 
 import com.stochastic.delay.DelayGenerator;
+import com.stochastic.delay.FirstFlightDelayGenerator;
 import com.stochastic.delay.Scenario;
 import com.stochastic.delay.TestDelayGenerator;
 import com.stochastic.domain.Leg;
