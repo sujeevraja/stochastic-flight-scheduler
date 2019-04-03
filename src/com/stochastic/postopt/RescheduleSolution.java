@@ -39,8 +39,8 @@ public class RescheduleSolution {
     /**
      * Writes stored solution to a file with the given path.
      */
-    public void writeCSV(ArrayList<Leg> legs) throws IOException {
-        String path = "solution/" + name + "_reschedule_solution.csv";
+    public void writeCSV(String timeStamp, ArrayList<Leg> legs) throws IOException {
+        String path = "solution/" + timeStamp + "__reschedule_solution_" + name + ".csv";
         BufferedWriter writer = new BufferedWriter(new FileWriter(path));
         ArrayList<String> headers = new ArrayList<>(Arrays.asList("leg_id", "flt_num", "reschedule"));
         CSVHelper.writeLine(writer, headers);

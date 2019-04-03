@@ -46,7 +46,8 @@ public class SolutionManager {
         QualityChecker qc = new QualityChecker(dataRegistry);
         qc.generateTestDelays();
 
-        BufferedWriter csvWriter = new BufferedWriter(new FileWriter("solution/comparison.csv"));
+        String compareFileName = "solution/" + timeStamp + "__comparison.csv";
+        BufferedWriter csvWriter = new BufferedWriter(new FileWriter(compareFileName));
         ArrayList<String> headers = new ArrayList<>();
         headers.add("");
         for (int i = 0; i < Parameters.getNumTestScenarios(); ++i) {
@@ -58,13 +59,13 @@ public class SolutionManager {
         CSVHelper.writeLine(csvWriter, headers);
 
         logger.info("starting original schedule test runs...");
-        qc.testOriginalSchedule();
+        qc.testSolution("original", null);
         CSVHelper.writeLine(csvWriter, qc.getComparisonRow("original schedule"));
         logger.info("completed original schedule test runs.");
 
         for (RescheduleSolution sln : rescheduleSolutions) {
             logger.info("starting " + sln.getName() + " test runs...");
-            qc.testSolution(sln);
+            qc.testSolution(sln.getName(), sln.getReschedules());
             CSVHelper.writeLine(csvWriter, qc.getComparisonRow(sln.getName() + " solution"));
             logger.info("completed " + sln.getName() + " solution test runs.");
         }
@@ -74,7 +75,7 @@ public class SolutionManager {
 
     public void writeOutput() throws IOException {
         for (RescheduleSolution sln : rescheduleSolutions) {
-            sln.writeCSV(dataRegistry.getLegs());
+            sln.writeCSV(timeStamp, dataRegistry.getLegs());
             logger.info("wrote " + sln.getName() + " reschedule solution");
         }
         writeKpis();
@@ -86,7 +87,8 @@ public class SolutionManager {
         allKpis.put("input", getInputKpis());
         allKpis.put("output", kpis);
 
-        BufferedWriter kpiWriter = new BufferedWriter(new FileWriter("solution/" + timeStamp + "_kpis.yaml"));
+        String kpiFileName = "solution/" + timeStamp + "__kpis.yaml";
+        BufferedWriter kpiWriter = new BufferedWriter(new FileWriter(kpiFileName));
         DumperOptions options = new DumperOptions();
         options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
         options.setPrettyFlow(true);

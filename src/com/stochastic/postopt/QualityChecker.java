@@ -75,53 +75,35 @@ class QualityChecker {
         testScenarios = dgen.generateScenarios(Parameters.getNumTestScenarios());
     }
 
-    void testOriginalSchedule() {
+    void testSolution(String slnName, int[] reschedules) {
         reset();
-
-        for (int i = 0; i < testScenarios.length; ++i) {
-            Scenario scen = testScenarios[i];
-            SubSolverRunnable ssr = new SubSolverRunnable(dataRegistry, 0, i, scen.getProbability(),
-                    zeroReschedules, scen.getPrimaryDelays());
-            ssr.setSolveForQuality(true);
-
-            Instant start = Instant.now();
-            ssr.run();
-            double slntime = Duration.between(start, Instant.now()).toMillis() / 1000.0;
-            solutionTimesInSeconds[i] = slntime;
-
-            DelaySolution delaySolution = ssr.getDelaySolution();
-            double obj = delaySolution.getDelayCost();
-            objectives[i] = obj;
-            expectedObjective += (scen.getProbability() * obj);
-            logger.info("tested original schedule with scenario " + (i+1) + " of " + testScenarios.length);
-        }
-
-        averageSolutionTime = Arrays.stream(solutionTimesInSeconds).average().orElse(Double.NaN);
-    }
-
-    void testSolution(RescheduleSolution sln) {
-        reset();
-        int[] reschedules = sln.getReschedules();
 
         // update leg departure time according to reschedule values.
-        for (Leg leg : dataRegistry.getLegs())
-            leg.reschedule(reschedules[leg.getIndex()]);
+        if (reschedules != null) {
+            for (Leg leg : dataRegistry.getLegs())
+                leg.reschedule(reschedules[leg.getIndex()]);
+        }
 
         for (int i = 0; i < testScenarios.length; ++i) {
             Scenario scen = testScenarios[i];
 
             // update primary delays using reschedules.
-            HashMap<Integer, Integer> adjustedDelays = new HashMap<>();
-            HashMap<Integer, Integer> primaryDelays = scen.getPrimaryDelays();
-            for (Map.Entry<Integer, Integer> entry : primaryDelays.entrySet()) {
-                Integer adjustedDelay = Math.max(entry.getValue() - reschedules[entry.getKey()], 0);
-                adjustedDelays.put(entry.getKey(), adjustedDelay);
+            HashMap<Integer, Integer> adjustedDelays;
+            if (reschedules != null) {
+                adjustedDelays = new HashMap<>();
+                HashMap<Integer, Integer> primaryDelays = scen.getPrimaryDelays();
+                for (Map.Entry<Integer, Integer> entry : primaryDelays.entrySet()) {
+                    Integer adjustedDelay = Math.max(entry.getValue() - reschedules[entry.getKey()], 0);
+                    adjustedDelays.put(entry.getKey(), adjustedDelay);
+                }
+            } else {
+                adjustedDelays = scen.getPrimaryDelays();
             }
 
             // solve routing MIP and collect solution
             SubSolverRunnable ssr = new SubSolverRunnable(dataRegistry, 0, i, scen.getProbability(),
                     zeroReschedules, adjustedDelays);
-            ssr.setFilePrefix(sln.getName());
+            ssr.setFilePrefix(slnName);
             ssr.setSolveForQuality(true);
 
             Instant start = Instant.now();
@@ -133,7 +115,7 @@ class QualityChecker {
             double obj = delaySolution.getDelayCost();
             objectives[i] = obj;
             expectedObjective += (scen.getProbability() * obj);
-            logger.info("tested original schedule with scenario " + (i+1) + " of " + testScenarios.length);
+            logger.info("tested " + slnName + " schedule with scenario " + (i+1) + " of " + testScenarios.length);
         }
         averageSolutionTime = Arrays.stream(solutionTimesInSeconds).average().orElse(Double.NaN);
 
