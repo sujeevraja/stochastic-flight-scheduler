@@ -5,6 +5,17 @@ The model is a 2-stage stochastic model where the first stage reschedules flight
 slacks. The second stage minimizes excess delay over the OTP limit after offsetting primary delays
 using the first stage rescheduling.
 
+## Features
+
+Given a flight schedule XML file, this solver can be used to:
+
+- generate random second-stage scenarios and probabilities.
+- run the 2-stage model with Benders and generated scenarios to find an optimal reschedule plan.
+- solve the second stage models sequentially or in parallel.
+- Use full enumeration or column generation with labeling to solve the second stage problems.
+- solve the same problem using a naive MIP that reschedules based on expected values of primary delays.
+- compare the performance of the two models with the original schedule using new random delay scenarios. 
+
 ## Dependencies
 
 - CPLEX
