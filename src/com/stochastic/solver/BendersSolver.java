@@ -34,6 +34,7 @@ public class BendersSolver {
     private RescheduleSolution finalRescheduleSolution;
     private double finalThetaValue;
     private double solutionTime;
+    private double percentGap;
 
     public BendersSolver(DataRegistry dataRegistry) throws IOException {
         this.dataRegistry = dataRegistry;
@@ -41,7 +42,7 @@ public class BendersSolver {
             cutWriter = new BufferedWriter(new FileWriter("logs/master__cuts.csv"));
             slnWriter = new BufferedWriter(new FileWriter("logs/master__solutions.csv"));
         }
-        iteration = -1;
+        iteration = 0;
         lowerBound = -Double.MAX_VALUE;
         upperBound = Double.MAX_VALUE;
         solutionTime = 0.0;
@@ -57,6 +58,14 @@ public class BendersSolver {
 
     public double getSolutionTime() {
         return solutionTime;
+    }
+
+    public int getIteration() {
+        return iteration;
+    }
+
+    public double getPercentGap() {
+        return percentGap;
     }
 
     public void solve() throws IloException, IOException, OptException {
@@ -147,9 +156,15 @@ public class BendersSolver {
 
     private boolean stoppingConditionReached() {
         double diff = upperBound - lowerBound;
-        double tolerance = Parameters.getBendersTolerance() * Math.abs(upperBound);
+        double tolerance = Parameters.getBendersTolerance() * upperBound;
+        percentGap = (diff * 100.0 / upperBound);
         logger.info("----- diff: " + diff + " tolerance: " + tolerance);
-        return diff <= tolerance; // && (System.currentTimeMillis() - Optimizer.stTime)/1000 < Optimizer.runTime); // && iter < 10);
+        logger.info("----- Benders gap (%): " + percentGap);
+        if (iteration >= Parameters.getNumBendersIterations()) {
+            logger.info("----- benders iteration limit reached");
+            return true;
+        }
+        return diff <= tolerance;
     }
 
     private void storeFinalSolution() {

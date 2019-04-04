@@ -70,7 +70,7 @@ public class MasterSolver {
                     reschedules[j] = durations[i];
         }
 
-        if(iter > -1)
+        if(iter > 0)
             thetaValue =  cplex.getValue(theta);
     }
     

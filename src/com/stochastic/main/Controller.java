@@ -76,6 +76,8 @@ public class Controller {
             solutionManager.addRescheduleSolution(bendersSolver.getFinalRescheduleSolution());
             solutionManager.addKpi("benders solution time (seconds)", bendersSolver.getSolutionTime());
             solutionManager.addKpi("benders theta", bendersSolver.getFinalThetaValue());
+            solutionManager.addKpi("benders iterations", bendersSolver.getIteration());
+            solutionManager.addKpi("benders gap (%)", bendersSolver.getPercentGap());
         } catch (IloException ex) {
             logger.error(ex);
             throw new OptException("CPLEX error in Benders");

@@ -64,6 +64,7 @@ public class Main {
         Parameters.setDurations(new int[]{5, 10, 15, 20, 25, 30});
         // Parameters.setDurations(new int[]{5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60});
         Parameters.setBendersTolerance(1e-3);
+        Parameters.setNumBendersIterations(30);
 
         // Second-stage parameters
         Parameters.setFullEnumeration(false);
