@@ -46,31 +46,10 @@ public class SolutionManager {
         QualityChecker qc = new QualityChecker(dataRegistry);
         qc.generateTestDelays();
 
-        String compareFileName = "solution/" + timeStamp + "__comparison.csv";
-        BufferedWriter csvWriter = new BufferedWriter(new FileWriter(compareFileName));
-        ArrayList<String> headers = new ArrayList<>();
-        headers.add("");
-        for (int i = 0; i < Parameters.getNumTestScenarios(); ++i) {
-            headers.add("scenario " + (i+1) + " objective");
-            headers.add("scenario " + (i+1) + " solution time (sec)");
-        }
-        headers.add("expected objective");
-        headers.add("average solution time");
-        CSVHelper.writeLine(csvWriter, headers);
-
-        logger.info("starting original schedule test runs...");
-        qc.testSolution("original", null);
-        CSVHelper.writeLine(csvWriter, qc.getComparisonRow("original schedule"));
-        logger.info("completed original schedule test runs.");
-
-        for (RescheduleSolution sln : rescheduleSolutions) {
-            logger.info("starting " + sln.getName() + " test runs...");
-            qc.testSolution(sln.getName(), sln.getReschedules());
-            CSVHelper.writeLine(csvWriter, qc.getComparisonRow(sln.getName() + " solution"));
-            logger.info("completed " + sln.getName() + " solution test runs.");
-        }
-
-        csvWriter.close();
+        ArrayList<RescheduleSolution> allRescheduleSolutions = new ArrayList<>();
+        allRescheduleSolutions.add(new RescheduleSolution("original", 0, null));
+        allRescheduleSolutions.addAll(rescheduleSolutions);
+        qc.compareSolutions(allRescheduleSolutions, timeStamp);
     }
 
     public void writeOutput() throws IOException {

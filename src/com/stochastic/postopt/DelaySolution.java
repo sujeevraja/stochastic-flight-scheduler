@@ -22,6 +22,7 @@ public class DelaySolution {
     private int totalDelaySum;
     private int propagatedDelaySum;
     private int excessDelaySum;
+    private double solutionTimeInSeconds;
 
     public DelaySolution(double delayCost, int[] primaryDelays, int[] totalDelays, int[] propagatedDelays,
                          double[] recourseDelays) {
@@ -53,6 +54,14 @@ public class DelaySolution {
 
     public int getExcessDelaySum() {
         return excessDelaySum;
+    }
+
+    public void setSolutionTimeInSeconds(double solutionTimeInSeconds) {
+        this.solutionTimeInSeconds = solutionTimeInSeconds;
+    }
+
+    public double getSolutionTimeInSeconds() {
+        return solutionTimeInSeconds;
     }
 
     /**
