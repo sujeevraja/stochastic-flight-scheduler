@@ -28,9 +28,10 @@ public class SubSolver {
     private int numLegs;
     private int[] reschedules;  // reschedules[i] is the first-stage reschedule chosen for legs[i].
     private double probability;
+    private boolean solveAsMIP;
 
     // CPLEX variables
-    private IloNumVar[][] y; // y[i][j] = 1 if path j is selected for tail i is selected, 0 else.
+    private IloNumVar[][] y; // y[i][j] = 1 if path j is selected for tails.get(i) is selected, 0 else.
     private IloNumVar[] d; // d[i] >= 0 is the total delay of leg i.
     private IloNumVar v;
     private IloCplex cplex;
@@ -44,25 +45,32 @@ public class SubSolver {
 
     // Solution info
     private double objValue;
+    private double[] dValues;
+    private double[][] yValues;
     private double[] dualsTail;
     private double[] dualsLeg;
     private double[] dualsDelay;
     private double[][] dualsBound;
     private double dualRisk;
 
-    public SubSolver(ArrayList<Tail> tails, ArrayList<Leg> legs, int[] reschedules, double probability) {
+    SubSolver(ArrayList<Tail> tails, ArrayList<Leg> legs, int[] reschedules, double probability) {
         this.tails = tails;
         this.numTails = tails.size();
         this.legs = legs;
         this.numLegs = legs.size();
         this.reschedules = reschedules;
         this.probability = probability;
+        solveAsMIP = false;
 
         dualsTail = new double[numTails];
         dualsLeg = new double[numLegs];
         dualsDelay = new double[numLegs];
         dualsBound = new double[numTails][];
         dualRisk = 0;
+    }
+
+    public void setSolveAsMIP(boolean solveAsMIP) {
+        this.solveAsMIP = solveAsMIP;
     }
 
     public void constructSecondStage(HashMap<Integer, ArrayList<Path>> paths) throws OptException {
@@ -191,17 +199,31 @@ public class SubSolver {
         try {
             cplex.setParam(IloCplex.IntParam.RootAlg, IloCplex.Algorithm.Dual);
             cplex.setParam(IloCplex.BooleanParam.PreInd, false);
+
+            if (solveAsMIP) {
+                for (int i = 0; i < tails.size(); ++i)
+                    cplex.add(cplex.conversion(y[i], IloNumVarType.Int));
+            }
+
             cplex.solve();
             IloCplex.Status status = cplex.getStatus();
             if (status != IloCplex.Status.Optimal) {
                 logger.error("sub-problem status: " + status);
                 throw new OptException("optimal solution not found for sub-problem");
             }
+
             objValue = cplex.getObjValue();
         } catch (IloException ie) {
             logger.error(ie);
             throw new OptException("error solving subproblem");
         }
+    }
+
+    public void collectSolution() throws IloException {
+        dValues = cplex.getValues(d);
+        yValues = new double[tails.size()][];
+        for (int i = 0; i < tails.size(); ++i)
+            yValues[i] = cplex.getValues(y[i]);
     }
 
     public void collectDuals() throws OptException {
@@ -219,35 +241,18 @@ public class SubSolver {
 
             if (Parameters.isExpectedExcess())
                 dualRisk = cplex.getDual(riskConstraint);
-
         } catch (IloException ie) {
             logger.error(ie);
             throw new OptException("error when collecting duals from sub-problem");
         }
     }
 
-    public void writeLPFile(String fName, int iter, int wcnt, int sceNo) throws IloException {
-        String modelName = fName + "sub_" + iter + "_scen_" + sceNo;
-
-        if (wcnt >= 0)
-            modelName += "_labelingIter_" + wcnt;
-        else
-            modelName += "_fullEnum";
-        modelName += ".lp";
-
-        cplex.exportModel(modelName);
+    public void writeLPFile(String name) throws IloException {
+        cplex.exportModel(name);
     }
 
-    public void writeCplexSolution(String fName, int iter, int wcnt, int sceNo) throws IloException {
-        String slnName = fName + "sub_" + iter + "_scen_" + sceNo;
-
-        if (wcnt >= 0)
-            slnName += "_labelingIter_" + wcnt;
-        else
-            slnName += "_fullEnum";
-        slnName += ".xml";
-
-        cplex.writeSolution(slnName);
+    public void writeCplexSolution(String name) throws IloException {
+        cplex.writeSolution(name);
     }
 
     public void end() {
@@ -263,6 +268,18 @@ public class SubSolver {
 
         cplex.end();
         cplex = null;
+    }
+
+    public double getObjValue() {
+        return objValue;
+    }
+
+    public double[] getdValues() {
+        return dValues;
+    }
+
+    public double[][] getyValues() {
+        return yValues;
     }
 
     public double[] getDualsLeg() {
@@ -283,9 +300,5 @@ public class SubSolver {
 
     public double getDualRisk() {
         return dualRisk;
-    }
-
-    public double getObjValue() {
-        return objValue;
     }
 }

@@ -1,6 +1,5 @@
-package com.stochastic;
+package com.stochastic.main;
 
-import com.stochastic.controller.Controller;
 import com.stochastic.registry.Parameters;
 import com.stochastic.utility.OptException;
 import org.apache.logging.log4j.Logger;
@@ -22,7 +21,7 @@ public class Main {
             controller.buildScenarios();
             controller.solveWithNaiveApproach();
             controller.solveWithBenders();
-            controller.newProcessSolution();
+            controller.processSolution();
 
             /*
             // ---- SECTION START ----
@@ -65,6 +64,7 @@ public class Main {
         Parameters.setDurations(new int[]{5, 10, 15, 20, 25, 30});
         // Parameters.setDurations(new int[]{5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60});
         Parameters.setBendersTolerance(1e-3);
+        Parameters.setNumBendersIterations(30);
 
         // Second-stage parameters
         Parameters.setFullEnumeration(false);
@@ -77,6 +77,10 @@ public class Main {
         // Multi-threading parameters
         Parameters.setRunSecondStageInParallel(false);
         Parameters.setNumThreadsForSecondStage(2);
+
+        // Solution quality parameters
+        Parameters.setCheckSolutionQuality(true);
+        Parameters.setNumTestScenarios(3);
 
         // Expected excess parameters
         Parameters.setExpectedExcess(false);

@@ -3,6 +3,7 @@ package com.stochastic.solver;
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
 import com.stochastic.network.Path;
+import com.stochastic.postopt.DelaySolution;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.registry.Parameters;
 import com.stochastic.utility.Constants;
@@ -15,7 +16,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
-class SubSolverRunnable implements Runnable {
+public class SubSolverRunnable implements Runnable {
     private final static Logger logger = LogManager.getLogger(SubSolverWrapper.class);
     private DataRegistry dataRegistry;
     private int iter;
@@ -23,63 +24,38 @@ class SubSolverRunnable implements Runnable {
     private double probability;
     private int[] reschedules;
     private HashMap<Integer, Integer> randomDelays;
+
+    private String filePrefix;
     private BendersData bendersData;
 
-    SubSolverRunnable(DataRegistry dataRegistry, int iter, int scenarioNum, double probability, int[] reschedules,
-                      HashMap<Integer, Integer> randomDelays, BendersData bendersData) {
+    private boolean solveForQuality = false;
+    private DelaySolution delaySolution; // used only when checking Benders solution quality
+
+    public SubSolverRunnable(DataRegistry dataRegistry, int iter, int scenarioNum, double probability,
+                             int[] reschedules, HashMap<Integer, Integer> randomDelays) {
         this.dataRegistry = dataRegistry;
         this.iter = iter;
         this.scenarioNum = scenarioNum;
         this.probability = probability;
         this.reschedules = reschedules;
         this.randomDelays = randomDelays;
+        this.filePrefix = null;
+    }
+
+    public void setFilePrefix(String filePrefix) {
+        this.filePrefix = filePrefix;
+    }
+
+    public void setBendersData(BendersData bendersData) {
         this.bendersData = bendersData;
     }
 
-    private HashMap<Integer, ArrayList<Path>> getInitialPaths(int[] delays) {
-        HashMap<Integer, ArrayList<Path>> initialPaths = new HashMap<>();
+    public void setSolveForQuality(boolean solveForQuality) {
+        this.solveForQuality = solveForQuality;
+    }
 
-        for (Map.Entry<Integer, Path> entry : dataRegistry.getTailOrigPathMap().entrySet()) {
-            int tailId = entry.getKey();
-            Tail tail = dataRegistry.getTail(tailId);
-
-            Path origPath = entry.getValue();
-
-            // The original path of the tail may not be valid due to random delays or reschedules of the first
-            // leg caused by the first stage model. To make the path valid, we need to propagate changes in
-            // departure time of the first leg to the remaining legs on the path. These delayed paths for all
-            // tails will serve as the initial set of columns for the second stage model.
-
-            // Note that the leg coverage constraint in the second-stage model remains feasible even with just
-            // these paths as we assume that there are no open legs in any dataset. This means that each leg
-            // must be on the original path of some tail.
-
-            Path pathWithDelays = new Path(tail);
-            LocalDateTime currentTime = null;
-            for (Leg leg : origPath.getLegs()) {
-                // find delayed departure time due to original delay (planned 1st stange + random 2nd stage)
-                int legDelay = delays[leg.getIndex()];
-                LocalDateTime delayedDepTime = leg.getDepTime().plusMinutes(legDelay);
-
-                // find delayed departure time due to propagated delay
-                if (currentTime != null && currentTime.isAfter(delayedDepTime))
-                    delayedDepTime = currentTime;
-
-                legDelay = (int) Duration.between(leg.getDepTime(), delayedDepTime).toMinutes();
-                pathWithDelays.addLeg(leg, legDelay);
-
-                // update current time based on leg's delayed arrival time and turn time.
-                currentTime = leg.getArrTime().plusMinutes(legDelay).plusMinutes(leg.getTurnTimeInMin());
-            }
-
-
-            ArrayList<Path> tailPaths = new ArrayList<>();
-            tailPaths.add(new Path(tail)); // add empty path
-            tailPaths.add(pathWithDelays);
-            initialPaths.put(tailId, tailPaths);
-        }
-
-        return initialPaths;
+    public DelaySolution getDelaySolution() {
+        return delaySolution;
     }
 
     //exSrv.execute(buildSDThrObj) calls brings you here
@@ -101,6 +77,76 @@ class SubSolverRunnable implements Runnable {
         }
     }
 
+    private void solveWithFullEnumeration() throws IloException {
+        try {
+            // Enumerate all paths for each tail.
+            int[] delays = getTotalDelays();
+
+            ArrayList<Path> allPaths = dataRegistry.getNetwork().enumeratePathsForTails(
+                    dataRegistry.getTails(), delays);
+
+            // Store paths for each tail separately. Also add empty paths for each tail.
+            HashMap<Integer, ArrayList<Path>> tailPathsMap = new HashMap<>();
+            for (Tail t : dataRegistry.getTails())
+                tailPathsMap.put(t.getId(), new ArrayList<>(Collections.singletonList(new Path(t))));
+
+            for(Path p : allPaths)
+                tailPathsMap.get(p.getTail().getId()).add(p);
+
+            SubSolver ss = new SubSolver(dataRegistry.getTails(), dataRegistry.getLegs(), reschedules, probability);
+            if (solveForQuality)
+                ss.setSolveAsMIP(true);
+            ss.constructSecondStage(tailPathsMap);
+
+            String name = "dummy";
+            if (Parameters.isDebugVerbose()) {
+                StringBuilder nameBuilder = new StringBuilder();
+                nameBuilder.append("logs/");
+                if (solveForQuality) {
+                    nameBuilder.append("qual");
+                    if (filePrefix != null) {
+                        nameBuilder.append("_");
+                        nameBuilder.append(filePrefix);
+                        nameBuilder.append("_");
+                    }
+                } else {
+                    nameBuilder.append("sub_benders_");
+                    nameBuilder.append(iter);
+                }
+                nameBuilder.append("_scen_");
+                nameBuilder.append(scenarioNum);
+                nameBuilder.append("_fullEnum");
+                name = nameBuilder.toString();
+                ss.writeLPFile(name + ".lp");
+            }
+
+            ss.solve();
+            if (Parameters.isDebugVerbose()) {
+                ss.writeCplexSolution(name + ".xml");
+            }
+
+            if (solveForQuality) {
+                ss.collectSolution();
+                buildDelaySolution(ss, delays, tailPathsMap);
+            } else {
+                ss.collectDuals();
+                double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(),
+                        ss.getDualsBound(), ss.getDualRisk());
+
+                updateAlpha(scenAlpha);
+                updateBeta(ss.getDualsDelay(), ss.getDualRisk());
+                updateUpperBound(ss.getObjValue());
+            }
+
+            logger.debug("Iter " + iter + ": subproblem objective value: " + ss.getObjValue());
+            ss.end();
+        } catch (OptException oe) {
+            logger.error("submodel run for scenario " + scenarioNum + " failed.");
+            logger.error(oe);
+            System.exit(Constants.ERROR_CODE);
+        }
+    }
+
     private void solveWithLabeling() throws IloException, OptException {
         SubSolver ss = new SubSolver(dataRegistry.getTails(), dataRegistry.getLegs(), reschedules, probability);
         int[] delays = getTotalDelays();
@@ -117,15 +163,30 @@ class SubSolverRunnable implements Runnable {
             // Solve second-stage RMP (Restricted Master Problem)
             ss.constructSecondStage(pathsAll);
 
-            if (Parameters.isDebugVerbose())
-                ss.writeLPFile("logs/", iter, columnGenIter, this.scenarioNum);
+            String name = "dummy";
+            if (Parameters.isDebugVerbose()) {
+                StringBuilder nameBuilder = new StringBuilder();
+                nameBuilder.append("logs/");
+                if (solveForQuality) {
+                    nameBuilder.append("qual");
+                } else {
+                    nameBuilder.append("sub_benders_");
+                    nameBuilder.append(iter);
+                }
+                nameBuilder.append("_scen_");
+                nameBuilder.append(scenarioNum);
+                nameBuilder.append("_labelingIter_");
+                nameBuilder.append(columnGenIter);
+                name = nameBuilder.toString();
+                ss.writeLPFile(name + ".lp");
+            }
 
             ss.solve();
             ss.collectDuals();
             logger.debug("Iter " + iter + ": subproblem objective value: " + ss.getObjValue());
 
             if (Parameters.isDebugVerbose())
-                ss.writeCplexSolution("logs/", iter, columnGenIter, this.scenarioNum);
+                ss.writeCplexSolution(name + ".xml");
 
             // Collect paths with negative reduced cost from the labeling algorithm. Optimality is reached when
             // there are no new negative reduced cost paths available for any tail.
@@ -177,58 +238,80 @@ class SubSolverRunnable implements Runnable {
             ++columnGenIter;
         }
 
-        // Update master problem data
-        logger.info( "Iter " + iter + ": reached sub-problem optimality");
-        double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(), ss.getDualsBound(),
-                ss.getDualRisk());
+        logger.info("Iter " + iter + ": reached sub-problem LP optimality");
 
-        updateAlpha(scenAlpha);
-        updateBeta(ss.getDualsDelay(), ss.getDualRisk());
-        updateUpperBound(ss.getObjValue());
-    }
-
-    private void solveWithFullEnumeration() throws IloException {
-        try {
-            // Enumerate all paths for each tail.
-            int[] delays = getTotalDelays();
-
-            ArrayList<Path> allPaths = dataRegistry.getNetwork().enumeratePathsForTails(
-                    dataRegistry.getTails(), delays);
-
-            // Store paths for each tail separately. Also add empty paths for each tail.
-            HashMap<Integer, ArrayList<Path>> tailPathsMap = new HashMap<>();
-            for (Tail t : dataRegistry.getTails())
-                tailPathsMap.put(t.getId(), new ArrayList<>(Collections.singletonList(new Path(t))));
-
-            for(Path p : allPaths)
-                tailPathsMap.get(p.getTail().getId()).add(p);
-
-            SubSolver ss = new SubSolver(dataRegistry.getTails(), dataRegistry.getLegs(), reschedules, probability);
-            ss.constructSecondStage(tailPathsMap);
-
-            if (Parameters.isDebugVerbose())
-                ss.writeLPFile("logs/", iter, -1, this.scenarioNum);
-
+        if (solveForQuality) {
+            // Solve problem with all columns as MIP to collect objective value.
+            ss.setSolveAsMIP(true);
+            ss.constructSecondStage(pathsAll);
             ss.solve();
-            ss.collectDuals();
-            logger.debug("Iter " + iter + ": subproblem objective value: " + ss.getObjValue());
 
-            if (Parameters.isDebugVerbose())
-                ss.writeCplexSolution("logs/", iter, -1, this.scenarioNum);
+            if (Parameters.isDebugVerbose()) {
+                String name = "logs/qual_";
+                if (filePrefix != null)
+                    name += filePrefix +"_";
+                name += iter + "_sub_labeling_mip";
+                ss.writeLPFile(name + ".lp");
+                ss.writeCplexSolution(name + ".xml");
+            }
 
+            ss.collectSolution();
+            buildDelaySolution(ss, delays, pathsAll);
             ss.end();
-
+        } else {
+            // Update master problem data
             double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(),
                     ss.getDualsBound(), ss.getDualRisk());
 
             updateAlpha(scenAlpha);
             updateBeta(ss.getDualsDelay(), ss.getDualRisk());
             updateUpperBound(ss.getObjValue());
-        } catch (OptException oe) {
-            logger.error("submodel run for scenario " + scenarioNum + " failed.");
-            logger.error(oe);
-            System.exit(Constants.ERROR_CODE);
         }
+    }
+
+    private HashMap<Integer, ArrayList<Path>> getInitialPaths(int[] delays) {
+        HashMap<Integer, ArrayList<Path>> initialPaths = new HashMap<>();
+
+        for (Map.Entry<Integer, Path> entry : dataRegistry.getTailOrigPathMap().entrySet()) {
+            int tailId = entry.getKey();
+            Tail tail = dataRegistry.getTail(tailId);
+
+            Path origPath = entry.getValue();
+
+            // The original path of the tail may not be valid due to random delays or reschedules of the first
+            // leg caused by the first stage model. To make the path valid, we need to propagate changes in
+            // departure time of the first leg to the remaining legs on the path. These delayed paths for all
+            // tails will serve as the initial set of columns for the second stage model.
+
+            // Note that the leg coverage constraint in the second-stage model remains feasible even with just
+            // these paths as we assume that there are no open legs in any dataset. This means that each leg
+            // must be on the original path of some tail.
+
+            Path pathWithDelays = new Path(tail);
+            LocalDateTime currentTime = null;
+            for (Leg leg : origPath.getLegs()) {
+                // find delayed departure time due to original delay (planned 1st stange + random 2nd stage)
+                int legDelay = delays[leg.getIndex()];
+                LocalDateTime delayedDepTime = leg.getDepTime().plusMinutes(legDelay);
+
+                // find delayed departure time due to propagated delay
+                if (currentTime != null && currentTime.isAfter(delayedDepTime))
+                    delayedDepTime = currentTime;
+
+                legDelay = (int) Duration.between(leg.getDepTime(), delayedDepTime).toMinutes();
+                pathWithDelays.addLeg(leg, legDelay);
+
+                // update current time based on leg's delayed arrival time and turn time.
+                currentTime = leg.getArrTime().plusMinutes(legDelay).plusMinutes(leg.getTurnTimeInMin());
+            }
+
+            ArrayList<Path> tailPaths = new ArrayList<>();
+            tailPaths.add(new Path(tail)); // add empty path
+            tailPaths.add(pathWithDelays);
+            initialPaths.put(tailId, tailPaths);
+        }
+
+        return initialPaths;
     }
 
     /**
@@ -247,6 +330,50 @@ class SubSolverRunnable implements Runnable {
         }
 
         return delays;
+    }
+
+    private void buildDelaySolution(SubSolver ss, int[] primaryDelays, HashMap<Integer, ArrayList<Path>> tailPaths) {
+        // find selected paths for each tail
+        ArrayList<Tail> tails = dataRegistry.getTails();
+        ArrayList<Path> selectedPaths = new ArrayList<>();
+        double[][] yValues = ss.getyValues();
+
+        for (int i = 0; i < tails.size(); ++i) {
+            Tail tail = tails.get(i);
+            ArrayList<Path> generatedPaths = tailPaths.getOrDefault(tail.getId(), null);
+            if (generatedPaths == null)
+                continue;
+
+            double[] yValuesForTail = yValues[i];
+            for (int j = 0; j < yValuesForTail.length; ++j) {
+                if (yValuesForTail[j] >= Constants.EPS) {
+                    selectedPaths.add(generatedPaths.get(j));
+                    break;
+                }
+            }
+        }
+
+        // collect total second-stage delay for each tail
+        int[] totalDelays = new int[dataRegistry.getLegs().size()];
+        int[] propagatedDelays = new int[dataRegistry.getLegs().size()];
+        Arrays.fill(totalDelays, 0);
+        Arrays.fill(propagatedDelays, 0);
+
+        for (Path path : selectedPaths) {
+            ArrayList<Leg> pathLegs = path.getLegs();
+            if (pathLegs.isEmpty())
+                continue;
+
+            ArrayList<Integer> pathDelays = path.getDelayTimesInMin();
+            for (int i = 0; i < pathLegs.size(); ++i) {
+                int index = pathLegs.get(i).getIndex();
+                totalDelays[index] = pathDelays.get(i);
+                propagatedDelays[index] = totalDelays[index] - primaryDelays[index];
+            }
+        }
+
+        delaySolution = new DelaySolution(ss.getObjValue(), primaryDelays, totalDelays, propagatedDelays,
+                ss.getdValues());
     }
 
     private double calculateAlpha(double[] dualsLegs, double[] dualsTail, double[] dualsDelay, double[][] dualsBnd,
