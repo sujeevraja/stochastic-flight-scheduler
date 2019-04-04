@@ -17,10 +17,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 class QualityChecker {
     /**
@@ -85,31 +83,53 @@ class QualityChecker {
         String compareFileName = "solution/" + timeStamp + "__comparison.csv";
         BufferedWriter csvWriter = new BufferedWriter(new FileWriter(compareFileName));
 
-        ArrayList<String> headers = new ArrayList<>(Arrays.asList("scenario number", "reschedule type",
+        ArrayList<String> headers = new ArrayList<>(Arrays.asList("name", "probability", "reschedule type",
                 "reschedule cost", "delay cost", "total cost", "total flight delay", "total propagated delay",
                 "total excess delay", "delay solution time (sec)"));
         CSVHelper.writeLine(csvWriter, headers);
 
+        ArrayList<ArrayList<Double>> averageRows = new ArrayList<>();
+        for (int i = 0; i < rescheduleSolutions.size(); ++i)
+            averageRows.add(new ArrayList<>(Collections.nCopies(headers.size() - 3, 0.0)));
+
         for (int i = 0; i < testScenarios.length; ++i) {
+            double probability = testScenarios[i].getProbability();
             for (int j = 0; j < rescheduleSolutions.size(); ++j) {
-                ArrayList<String> row = new ArrayList<>();
-                row.add(Integer.toString(i));
-
                 RescheduleSolution rescheduleSolution = rescheduleSolutions.get(j);
-                row.add(rescheduleSolution.getName());
-                row.add(Double.toString(rescheduleSolution.getRescheduleCost()));
-
                 DelaySolution delaySolution = delaySolutions[i][j];
-                row.add(Double.toString(delaySolution.getDelayCost()));
 
-                row.add(Double.toString(rescheduleSolution.getRescheduleCost() + delaySolution.getDelayCost()));
-                row.add(Double.toString(delaySolution.getTotalDelaySum()));
-                row.add(Double.toString(delaySolution.getPropagatedDelaySum()));
-                row.add(Double.toString(delaySolution.getExcessDelaySum()));
-                row.add(Double.toString(delaySolution.getSolutionTimeInSeconds()));
+                double[] rowValues = new double[] {
+                       rescheduleSolution.getRescheduleCost(),
+                       delaySolution.getDelayCost(),
+                       rescheduleSolution.getRescheduleCost() + delaySolution.getDelayCost(),
+                       (double) delaySolution.getTotalDelaySum(),
+                       (double) delaySolution.getPropagatedDelaySum(),
+                       (double) delaySolution.getExcessDelaySum(),
+                       delaySolution.getSolutionTimeInSeconds()};
+
+                ArrayList<String> row = new ArrayList<>();
+                row.add("scenario " + Integer.toString(i));
+                row.add(Double.toString(probability));
+                row.add(rescheduleSolution.getName());
+
+                ArrayList<Double> averageRow = averageRows.get(j);
+
+                for (int k = 0; k < rowValues.length; ++k) {
+                    double val = rowValues[k];
+                    row.add(Double.toString(val));
+                    averageRow.set(k, averageRow.get(k) + (probability * val));
+                }
 
                 CSVHelper.writeLine(csvWriter, row);
             }
+        }
+
+        for (int i = 0; i < averageRows.size(); ++i) {
+            ArrayList<Double> avgRow = averageRows.get(i);
+            ArrayList<String> row = new ArrayList<>(Arrays.asList("average", "-",
+                    rescheduleSolutions.get(i).getName()));
+            row.addAll(avgRow.stream().map(val -> Double.toString(val)).collect(Collectors.toList()));
+            CSVHelper.writeLine(csvWriter, row);
         }
 
         csvWriter.close();
