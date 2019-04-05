@@ -1,23 +1,13 @@
 package com.stochastic.solver;
 
-import com.stochastic.delay.DelayGenerator;
-import com.stochastic.delay.FirstFlightDelayGenerator;
 import com.stochastic.delay.Scenario;
-import com.stochastic.domain.Leg;
-import com.stochastic.domain.Tail;
-import com.stochastic.network.Path;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.registry.Parameters;
-import com.stochastic.utility.Constants;
 import com.stochastic.utility.OptException;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import ilog.concert.IloException;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
@@ -39,7 +29,7 @@ public class SubSolverWrapper {
                 new double[Parameters.getNumDurations()][dataRegistry.getLegs().size()]);
     }
 
-    public void solveSequential() {
+    void solveSequential() {
         Scenario[] scenarios = dataRegistry.getDelayScenarios();
         for (int i = 0; i < scenarios.length; i++) {
             Scenario scenario = scenarios[i];
@@ -50,7 +40,7 @@ public class SubSolverWrapper {
         }
     }
 
-    public void solveParallel() throws OptException {
+    void solveParallel() throws OptException {
         try {
             Scenario[] scenarios = dataRegistry.getDelayScenarios();
             ExecutorService exSrv = Executors.newFixedThreadPool(Parameters.getNumThreadsForSecondStage());
@@ -71,7 +61,7 @@ public class SubSolverWrapper {
         }
     }
 
-    public BendersData getBendersData() {
+    BendersData getBendersData() {
         return bendersData;
     }
 }
