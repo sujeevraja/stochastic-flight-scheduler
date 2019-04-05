@@ -39,13 +39,6 @@ public class Main {
             // ---- SECTION END ----
             */
 
-            // ---- SECTION START ----
-            // Sujeev: no idea what this tests, check later.
-            // DepSolver ds = new DepSolver();
-            // ds.constructModel(controller.getDataRegistry());
-            // ds.solve();      
-            // ---- SECTION END ----
-
             logger.info("completed optimization.");
         } catch (OptException ex) {
             logger.error(ex);
@@ -63,11 +56,13 @@ public class Main {
         Parameters.setShape(0.25);
         Parameters.setDurations(new int[]{5, 10, 15, 20, 25, 30});
         // Parameters.setDurations(new int[]{5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60});
+
+        Parameters.setBendersMultiCut(true);
         Parameters.setBendersTolerance(1e-3);
         Parameters.setNumBendersIterations(30);
 
         // Second-stage parameters
-        Parameters.setFullEnumeration(false);
+        Parameters.setFullEnumeration(true);
         Parameters.setReducedCostStrategy(Parameters.ReducedCostStrategy.FIRST_PATHS);
         Parameters.setNumReducedCostPaths(10);
 

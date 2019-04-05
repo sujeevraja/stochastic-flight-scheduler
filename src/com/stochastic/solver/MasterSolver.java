@@ -4,7 +4,6 @@ import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
 import com.stochastic.registry.Parameters;
 import com.stochastic.utility.Constants;
-import com.stochastic.utility.OptException;
 import com.stochastic.utility.Utility;
 import ilog.concert.*;
 import ilog.cplex.IloCplex;
@@ -24,24 +23,28 @@ public class MasterSolver {
     private ArrayList<Leg> legs;
     private ArrayList<Tail> tails;
     private int[] durations;
+    private int numScenarios;
 
     // CPLEX variables
     private IloCplex cplex;
     private IloIntVar[][] x; // x[i][j] = 1 if durations[i] selected for leg[j] reschedule, 0 otherwise.
-    private IloNumVar theta;
     private IloObjective obj;
+
+    private IloNumVar[] thetas;
 
     private double objValue;
     private double[][] xValues;
-    private double thetaValue;
     private int[] reschedules; // reschedules[i] is the selected reschedule duration for legs[i].
+    private double rescheduleCost; // this is \sum_({p,f} c_f g_p x_{pf} and will be used for the Benders upper bound.
+    private double[] thetaValues;
 
-    private int cutCounter = 0; // Benders cut counter
+    private int numBendersCuts = 0; // Benders cut counter
 
-    public MasterSolver(ArrayList<Leg> legs, ArrayList<Tail> tails, int[] durations) throws IloException {
+    MasterSolver(ArrayList<Leg> legs, ArrayList<Tail> tails, int[] durations, int numScenarios) throws IloException {
         this.legs = legs;
         this.tails = tails;
         this.durations = durations;
+        this.numScenarios = numScenarios;
         this.reschedules = new int[legs.size()];
 
         cplex = new IloCplex();
@@ -51,8 +54,17 @@ public class MasterSolver {
         x = new IloIntVar[durations.length][legs.size()];
     }
 
-    public void addColumn() throws IloException {
-        cplex.setLinearCoef(obj, theta, 1);
+    void addTheta() throws IloException {
+        if (Parameters.isBendersMultiCut()) {
+            thetas = new IloNumVar[numScenarios];
+            for (int i = 0; i < numScenarios; ++i)
+                thetas[i] = cplex.numVar(-Double.MAX_VALUE, Double.MAX_VALUE, "theta_" + i);
+        } else {
+            thetas = new IloNumVar[1];
+            thetas[0] = cplex.numVar(-Double.MAX_VALUE, Double.MAX_VALUE, "theta");
+        }
+        for (IloNumVar theta : thetas)
+            cplex.setLinearCoef(obj, theta, 1);
     }
 
     public void solve(int iter) throws IloException {
@@ -63,37 +75,38 @@ public class MasterSolver {
         xValues = new double[durations.length][legs.size()];
         Arrays.fill(reschedules, 0);
 
+        rescheduleCost = 0;
         for (int i = 0; i < durations.length; i++) {
             xValues[i] = cplex.getValues(x[i]);
             for (int j = 0; j < legs.size(); ++j)
-                if (xValues[i][j] >= Constants.EPS)
+                if (xValues[i][j] >= Constants.EPS) {
                     reschedules[j] = durations[i];
+                    rescheduleCost += legs.get(j).getRescheduleCostPerMin() * durations[i];
+                }
         }
 
         if(iter > 0)
-            thetaValue =  cplex.getValue(theta);
+            thetaValues = cplex.getValues(thetas);
     }
     
-    public double getFirstStageObjValue() {
-    	return objValue - thetaValue;
+    double getRescheduleCost() {
+        return rescheduleCost;
     }
 
-    public void writeLPFile(String fName) throws IloException {
+    void writeLPFile(String fName) throws IloException {
         cplex.exportModel(fName);
     }
 
-    public void writeCPLEXSolution(String fName) throws IloException {
+    void writeCPLEXSolution(String fName) throws IloException {
         cplex.writeSolution(fName);
     }
 
-    public void constructFirstStage() throws IloException {
+    void constructFirstStage() throws IloException {
         for (int i = 0; i < durations.length; i++)
             for (int j = 0; j < legs.size(); j++) {
                 String varName = "x_" + durations[i] + "_" + legs.get(j).getId();
                 x[i][j] = cplex.boolVar(varName);
             }
-
-        theta = cplex.numVar(-Double.MAX_VALUE, Double.MAX_VALUE, "theta");
 
         addObjective();
         addDurationCoverConstraints();
@@ -161,43 +174,50 @@ public class MasterSolver {
         budgetConstraint.setName("reschedule_time_budget");
     }
 
-    public void constructBendersCut(double alphaValue, double[][] betaValue) throws IloException {
+    void addBendersCut(BendersCut cutData, int thetaIndex) throws IloException {
         IloLinearNumExpr cons = cplex.linearNumExpr();
 
+        // TODO remove rounding in this function
+        double[][] beta = cutData.getBeta();
         for (int i = 0; i < durations.length; i++)
             for (int j = 0; j < legs.size(); j++)
-                if (Math.abs(betaValue[i][j]) >= Constants.EPS)
-                    cons.addTerm(x[i][j], Utility.roundUp(betaValue[i][j], 3));
+                if (Math.abs(beta[i][j]) >= Constants.EPS)
+                    cons.addTerm(x[i][j], Utility.roundUp(beta[i][j], 3));
 
-        cons.addTerm(theta, 1);
+        cons.addTerm(thetas[thetaIndex], 1);
 
-        double rhs = Math.abs(alphaValue) >= Constants.EPS ? alphaValue : 0.0;
+        double alpha = cutData.getAlpha();
+        double rhs = Math.abs(alpha) >= Constants.EPS ? alpha : 0.0;
         IloRange r = cplex.addGe(cons, Utility.roundDown(rhs, 3));
-        r.setName("benders_cut_" + cutCounter);
-        ++cutCounter;
+        r.setName("benders_cut_" + numBendersCuts);
+        ++numBendersCuts;
     }
 
-    public double getObjValue() {
+    double getObjValue() {
         return objValue;
     }
 
-    public double[][] getxValues() {
+    double[][] getxValues() {
         return xValues;
     }
 
-    public int[] getReschedules() {
+    int[] getReschedules() {
         return reschedules;
     }
 
-    public double getThetaValue() {
-        return thetaValue;
+    double[] getThetaValues() {
+        return thetaValues;
     }
 
-    public void end() {
+    void end() {
         // CPLEX variables
         x = null;
-        theta = null;
-        obj      = null;        
+        thetas = null;
+        obj = null;
         cplex.end();
+    }
+
+    int getNumBendersCuts() {
+        return numBendersCuts;
     }
 }

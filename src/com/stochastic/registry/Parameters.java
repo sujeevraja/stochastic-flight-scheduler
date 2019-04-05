@@ -7,6 +7,7 @@ public class Parameters {
     private static double scale;
     private static double shape;
     private static int[] durations;
+    private static boolean bendersMultiCut;
     private static double bendersTolerance;
     private static int numBendersIterations;
 
@@ -92,6 +93,14 @@ public class Parameters {
 
     public static int getNumDurations() {
         return durations.length;
+    }
+
+    public static void setBendersMultiCut(boolean bendersMultiCut) {
+        Parameters.bendersMultiCut = bendersMultiCut;
+    }
+
+    public static boolean isBendersMultiCut() {
+        return bendersMultiCut;
     }
 
     public static void setBendersTolerance(double bendersTolerance) {

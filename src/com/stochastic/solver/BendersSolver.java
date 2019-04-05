@@ -32,7 +32,8 @@ public class BendersSolver {
     private double upperBound;
 
     private RescheduleSolution finalRescheduleSolution;
-    private double finalThetaValue;
+    private double[] finalThetaValues;
+    private int numBendersCuts;
     private double solutionTime;
     private double percentGap;
 
@@ -52,8 +53,12 @@ public class BendersSolver {
         return finalRescheduleSolution;
     }
 
-    public double getFinalThetaValue() {
-        return finalThetaValue;
+    public double[] getFinalThetaValues() {
+        return finalThetaValues;
+    }
+
+    public int getNumBendersCuts() {
+        return numBendersCuts;
     }
 
     public double getSolutionTime() {
@@ -75,7 +80,7 @@ public class BendersSolver {
         int[] durations = Parameters.getDurations();
 
         // Solve master problem once to initialize the algorithm.
-        masterSolver = new MasterSolver(legs, tails, durations);
+        masterSolver = new MasterSolver(legs, tails, durations, dataRegistry.getDelayScenarios().length);
         masterSolver.constructFirstStage();
 
         if (Parameters.isDebugVerbose()) {
@@ -87,7 +92,7 @@ public class BendersSolver {
         if (Parameters.isDebugVerbose())
             writeMasterSolution(iteration, masterSolver.getxValues());
 
-        masterSolver.addColumn();
+        masterSolver.addTheta();
 
         logger.info("algorithm starts.");
         if (Parameters.isFullEnumeration())
@@ -119,7 +124,7 @@ public class BendersSolver {
     private void runBendersIteration() throws IloException, IOException, OptException {
         ++iteration;
         SubSolverWrapper ssWrapper = new SubSolverWrapper(dataRegistry, masterSolver.getReschedules(), iteration,
-                masterSolver.getFirstStageObjValue());
+                masterSolver.getRescheduleCost());
 
         if (Parameters.isRunSecondStageInParallel())
             ssWrapper.solveParallel();
@@ -127,11 +132,28 @@ public class BendersSolver {
             ssWrapper.solveSequential();
 
         BendersData bendersData = ssWrapper.getBendersData();
-        masterSolver.constructBendersCut(bendersData.getAlpha(), bendersData.getBeta());
+        if (Parameters.isBendersMultiCut()) {
+            ArrayList<BendersCut> cuts = bendersData.getCuts();
+            double[] thetaValues = masterSolver.getThetaValues();
+
+            for (int i = 0; i < dataRegistry.getDelayScenarios().length; ++i) {
+                BendersCut cut = bendersData.getCut(i);
+                if (thetaValues == null || cut.separates(masterSolver.getxValues(), thetaValues[i])) {
+                    masterSolver.addBendersCut(cut, i);
+                    if (Parameters.isDebugVerbose())
+                        writeBendersCut(iteration, i, cut.getBeta(), cut.getAlpha());
+                }
+            }
+        }
+        else {
+            BendersCut cut = bendersData.getCut(0);
+            masterSolver.addBendersCut(cut, 0);
+            if (Parameters.isDebugVerbose())
+                writeBendersCut(iteration, 0, cut.getBeta(), cut.getAlpha());
+        }
 
         if (Parameters.isDebugVerbose()) {
             masterSolver.writeLPFile("logs/master_" + iteration + ".lp");
-            writeBendersCut(iteration, bendersData.getBeta(), bendersData.getAlpha());
         }
 
         masterSolver.solve(iteration);
@@ -147,6 +169,7 @@ public class BendersSolver {
         logger.info("----- lower bound: " + lowerBound);
         logger.info("----- upper bound: " + upperBound);
         logger.info("----- upper bound from subsolver: " + bendersData.getUpperBound());
+        logger.info("----- number of cuts added: " + masterSolver.getNumBendersCuts());
 
         if (bendersData.getUpperBound() < upperBound)
             upperBound = bendersData.getUpperBound();
@@ -168,9 +191,10 @@ public class BendersSolver {
     }
 
     private void storeFinalSolution() {
-        finalRescheduleSolution = new RescheduleSolution("benders", masterSolver.getFirstStageObjValue(),
+        finalRescheduleSolution = new RescheduleSolution("benders", masterSolver.getRescheduleCost(),
                 masterSolver.getReschedules());
-        finalThetaValue = masterSolver.getThetaValue();
+        finalThetaValues = masterSolver.getThetaValues();
+        numBendersCuts = masterSolver.getNumBendersCuts();
     }
 
     private void writeCsvHeaders() throws IOException {
@@ -211,7 +235,7 @@ public class BendersSolver {
         slnWriter.write(row.toString());
     }
 
-    private void writeBendersCut(int iter, double[][] beta, double alpha) throws IOException {
+    private void writeBendersCut(int iter, int cutIndex, double[][] beta, double alpha) throws IOException {
         int[] durations = Parameters.getDurations();
         ArrayList<Leg> legs = dataRegistry.getLegs();
 

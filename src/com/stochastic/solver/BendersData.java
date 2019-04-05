@@ -1,37 +1,33 @@
 package com.stochastic.solver;
 
-public class BendersData {
+import java.util.ArrayList;
+
+class BendersData {
     private double upperBound;
-    private double alpha;
-    private double[][] beta;
+    private ArrayList<BendersCut> cuts;
 
-    BendersData(double upperBound, double alpha, double[][] beta) {
+    BendersData(double upperBound) {
         this.upperBound = upperBound;
-        this.alpha = alpha;
-        this.beta = beta;
+        cuts = new ArrayList<>();
     }
 
-    public void setUpperBound(double upperBound) {
+    void setUpperBound(double upperBound) {
         this.upperBound = upperBound;
     }
 
-    public double getUpperBound() {
+    double getUpperBound() {
         return upperBound;
     }
 
-    public void setAlpha(double alpha) {
-        this.alpha = alpha;
+    void addCut(BendersCut cut) {
+        cuts.add(cut);
     }
 
-    public double getAlpha() {
-        return alpha;
+    ArrayList<BendersCut> getCuts() {
+        return cuts;
     }
 
-    public void setBeta(double[][] beta) {
-        this.beta = beta;
-    }
-
-    public double[][] getBeta() {
-        return beta;
+    BendersCut getCut(int cutIndex) {
+        return cuts.get(cutIndex);
     }
 }

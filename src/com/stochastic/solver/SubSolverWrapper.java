@@ -1,27 +1,17 @@
 package com.stochastic.solver;
 
-import com.stochastic.delay.DelayGenerator;
-import com.stochastic.delay.FirstFlightDelayGenerator;
 import com.stochastic.delay.Scenario;
-import com.stochastic.domain.Leg;
-import com.stochastic.domain.Tail;
-import com.stochastic.network.Path;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.registry.Parameters;
-import com.stochastic.utility.Constants;
 import com.stochastic.utility.OptException;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import ilog.concert.IloException;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
-public class SubSolverWrapper {
+class SubSolverWrapper {
     /**
      * Wrapper class that can be used to solve the second-stage problems in parallel.
      */
@@ -31,15 +21,20 @@ public class SubSolverWrapper {
     private int iter;
     private BendersData bendersData; // this object will be shared across threads by SubSolverRunnable.
 
-    public SubSolverWrapper(DataRegistry dataRegistry, int[] reschedules, int iter, double uBound) {
+    SubSolverWrapper(DataRegistry dataRegistry, int[] reschedules, int iter, double uBound) {
         this.dataRegistry = dataRegistry;
         this.reschedules = reschedules;
         this.iter = iter;
-        this.bendersData = new BendersData(uBound, 0,
-                new double[Parameters.getNumDurations()][dataRegistry.getLegs().size()]);
+        this.bendersData = new BendersData(uBound);
+
+        final int numDurations = Parameters.getNumDurations();
+        final int numLegs = dataRegistry.getLegs().size();
+        final int numCuts = Parameters.isBendersMultiCut() ? dataRegistry.getDelayScenarios().length : 1;
+        for (int i = 0; i < numCuts; ++i)
+            bendersData.addCut(new BendersCut(0.0, numDurations, numLegs));
     }
 
-    public void solveSequential() {
+    void solveSequential() {
         Scenario[] scenarios = dataRegistry.getDelayScenarios();
         for (int i = 0; i < scenarios.length; i++) {
             Scenario scenario = scenarios[i];
@@ -50,7 +45,7 @@ public class SubSolverWrapper {
         }
     }
 
-    public void solveParallel() throws OptException {
+    void solveParallel() throws OptException {
         try {
             Scenario[] scenarios = dataRegistry.getDelayScenarios();
             ExecutorService exSrv = Executors.newFixedThreadPool(Parameters.getNumThreadsForSecondStage());
@@ -71,7 +66,7 @@ public class SubSolverWrapper {
         }
     }
 
-    public BendersData getBendersData() {
+    BendersData getBendersData() {
         return bendersData;
     }
 }
