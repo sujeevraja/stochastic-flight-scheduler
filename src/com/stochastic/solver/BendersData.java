@@ -3,6 +3,9 @@ package com.stochastic.solver;
 import java.util.ArrayList;
 
 class BendersData {
+    /**
+     * BendersData objects store cuts and updated upper bounds from second stage solutions.
+     */
     private double upperBound;
     private ArrayList<BendersCut> cuts;
 

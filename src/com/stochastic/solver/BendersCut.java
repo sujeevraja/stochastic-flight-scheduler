@@ -1,7 +1,6 @@
 package com.stochastic.solver;
 
 import com.stochastic.utility.Constants;
-import com.sun.xml.internal.bind.v2.runtime.reflect.opt.Const;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -54,7 +53,7 @@ class BendersCut {
         }
 
         logger.debug("lhs: " + lhs + " rhs: " + alpha + " violation: " + (lhs - alpha));
-        return lhs <= alpha - 0.01;
+        return lhs <= alpha - Constants.MINIMUM_CUT_VIOLATION;
    }
 
    void clear() {

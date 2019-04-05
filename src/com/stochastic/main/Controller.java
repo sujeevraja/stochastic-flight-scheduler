@@ -77,7 +77,7 @@ public class Controller {
             solutionManager.addKpi("benders solution time (seconds)", bendersSolver.getSolutionTime());
             solutionManager.addKpi("benders iterations", bendersSolver.getIteration());
             solutionManager.addKpi("benders gap (%)", bendersSolver.getPercentGap());
-            solutionManager.addKpi("number of benders cuts", bendersSolver.getNumBendersCuts());
+            solutionManager.addKpi("benders cuts added", bendersSolver.getNumBendersCuts());
 
             // solutionManager.addKpi("benders theta", Arrays.toString(bendersSolver.getFinalThetaValues()));
             double[] thetas = bendersSolver.getFinalThetaValues();
