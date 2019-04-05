@@ -39,13 +39,6 @@ public class Main {
             // ---- SECTION END ----
             */
 
-            // ---- SECTION START ----
-            // Sujeev: no idea what this tests, check later.
-            // DepSolver ds = new DepSolver();
-            // ds.constructModel(controller.getDataRegistry());
-            // ds.solve();      
-            // ---- SECTION END ----
-
             logger.info("completed optimization.");
         } catch (OptException ex) {
             logger.error(ex);

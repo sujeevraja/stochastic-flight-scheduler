@@ -1,6 +1,6 @@
 package com.stochastic.solver;
 
-public class BendersData {
+class BendersData {
     private double upperBound;
     private double alpha;
     private double[][] beta;
@@ -11,27 +11,23 @@ public class BendersData {
         this.beta = beta;
     }
 
-    public void setUpperBound(double upperBound) {
+    void setUpperBound(double upperBound) {
         this.upperBound = upperBound;
     }
 
-    public double getUpperBound() {
+    double getUpperBound() {
         return upperBound;
     }
 
-    public void setAlpha(double alpha) {
+    void setAlpha(double alpha) {
         this.alpha = alpha;
     }
 
-    public double getAlpha() {
+    double getAlpha() {
         return alpha;
     }
 
-    public void setBeta(double[][] beta) {
-        this.beta = beta;
-    }
-
-    public double[][] getBeta() {
+    double[][] getBeta() {
         return beta;
     }
 }
