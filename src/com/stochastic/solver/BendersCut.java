@@ -1,5 +1,10 @@
 package com.stochastic.solver;
 
+import com.stochastic.utility.Constants;
+import com.sun.xml.internal.bind.v2.runtime.reflect.opt.Const;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.Arrays;
 
 class BendersCut {
@@ -9,7 +14,7 @@ class BendersCut {
      *
      * \beta x + \theta \geq \alpha
      */
-
+    private final static Logger logger = LogManager.getLogger(BendersCut.class);
     private double alpha;
     private double[][] beta;
 
@@ -33,4 +38,28 @@ class BendersCut {
     double[][] getBeta() {
         return beta;
     }
+
+    /**
+     * Check if the given master solution is cut off by the current cut.
+     * @param x master problem reschedule solution values
+     * @param theta benders theta
+     * @return true if cut separates the solution, fales otherwise
+     */
+    boolean separates(double[][] x, double theta) {
+        double lhs = theta;
+        for (int i = 0; i < beta.length; ++i) {
+            for (int j = 0; j < beta[i].length; ++j) {
+                lhs += beta[i][j] * x[i][j];
+            }
+        }
+
+        logger.debug("lhs: " + lhs + " rhs: " + alpha + " violation: " + (lhs - alpha));
+        return lhs <= alpha - 0.01;
+   }
+
+   void clear() {
+        alpha = 0.0;
+        for (double[] row : beta)
+            Arrays.fill(row, 0.0);
+   }
 }

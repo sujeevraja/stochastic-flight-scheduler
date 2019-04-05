@@ -4,8 +4,7 @@ import java.util.ArrayList;
 
 class BendersData {
     private double upperBound;
-    private BendersCut aggregatedCut; // used only in single cut benders
-    private ArrayList<BendersCut> cuts; // used during multicut benders
+    private ArrayList<BendersCut> cuts;
 
     BendersData(double upperBound) {
         this.upperBound = upperBound;
@@ -20,19 +19,15 @@ class BendersData {
         return upperBound;
     }
 
-    void setAggregatedCut(BendersCut aggregatedCut) {
-        this.aggregatedCut = aggregatedCut;
-    }
-
-    BendersCut getAggregatedCut() {
-        return aggregatedCut;
-    }
-
     void addCut(BendersCut cut) {
         cuts.add(cut);
     }
 
     ArrayList<BendersCut> getCuts() {
         return cuts;
+    }
+
+    BendersCut getCut(int cutIndex) {
+        return cuts.get(cutIndex);
     }
 }

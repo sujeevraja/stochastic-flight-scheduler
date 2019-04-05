@@ -46,7 +46,7 @@ public class SubSolverRunnable implements Runnable {
         this.filePrefix = filePrefix;
     }
 
-    public void setBendersData(BendersData bendersData) {
+    void setBendersData(BendersData bendersData) {
         this.bendersData = bendersData;
     }
 
@@ -133,11 +133,9 @@ public class SubSolverRunnable implements Runnable {
                 double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(),
                         ss.getDualsBound(), ss.getDualRisk());
 
-                if (Parameters.isBendersMultiCut()) {}
-                else {
-                    updateAlpha(scenAlpha);
-                    updateBeta(ss.getDualsDelay(), ss.getDualRisk());
-                }
+                final int cutNum = Parameters.isBendersMultiCut() ? scenarioNum : 0;
+                updateAlpha(cutNum, scenAlpha);
+                updateBeta(cutNum, ss.getDualsDelay(), ss.getDualRisk());
                 updateUpperBound(ss.getObjValue());
             }
 
@@ -266,11 +264,9 @@ public class SubSolverRunnable implements Runnable {
             double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(),
                     ss.getDualsBound(), ss.getDualRisk());
 
-            if (Parameters.isBendersMultiCut()) {}
-            else {
-                updateAlpha(scenAlpha);
-                updateBeta(ss.getDualsDelay(), ss.getDualRisk());
-            }
+            final int cutNum = Parameters.isBendersMultiCut() ? scenarioNum : 0;
+            updateAlpha(cutNum, scenAlpha);
+            updateBeta(cutNum, ss.getDualsDelay(), ss.getDualRisk());
             updateUpperBound(ss.getObjValue());
         }
     }
@@ -413,15 +409,15 @@ public class SubSolverRunnable implements Runnable {
         return scenAlpha;
     }
 
-    private synchronized void updateAlpha(double scenAlpha) {
-        BendersCut aggregatedCut = bendersData.getAggregatedCut();
+    private synchronized void updateAlpha(int cutNum, double scenAlpha) {
+        BendersCut aggregatedCut = bendersData.getCut(cutNum);
         aggregatedCut.setAlpha(aggregatedCut.getAlpha() + (scenAlpha * probability));
     }
 
-    private synchronized void updateBeta(double[] dualsDelay, double dualRisk) {
+    private synchronized void updateBeta(int cutNum, double[] dualsDelay, double dualRisk) {
         int[] durations = Parameters.getDurations();
         ArrayList<Leg> legs = dataRegistry.getLegs();
-        double[][] beta = bendersData.getAggregatedCut().getBeta();
+        double[][] beta = bendersData.getCut(cutNum).getBeta();
 
         for (int i = 0; i < durations.length; i++) {
             for (int j = 0; j < legs.size(); j++) {

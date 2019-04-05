@@ -11,7 +11,7 @@ import java.util.concurrent.Executors;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
-public class SubSolverWrapper {
+class SubSolverWrapper {
     /**
      * Wrapper class that can be used to solve the second-stage problems in parallel.
      */
@@ -21,17 +21,17 @@ public class SubSolverWrapper {
     private int iter;
     private BendersData bendersData; // this object will be shared across threads by SubSolverRunnable.
 
-    public SubSolverWrapper(DataRegistry dataRegistry, int[] reschedules, int iter, double uBound) {
+    SubSolverWrapper(DataRegistry dataRegistry, int[] reschedules, int iter, double uBound) {
         this.dataRegistry = dataRegistry;
         this.reschedules = reschedules;
         this.iter = iter;
         this.bendersData = new BendersData(uBound);
-        if (Parameters.isBendersMultiCut()) {}
-        else {
-            BendersCut aggregatedCut = new BendersCut(0.0, Parameters.getNumDurations(),
-                    dataRegistry.getLegs().size());
-            bendersData.setAggregatedCut(aggregatedCut);
-        }
+
+        final int numDurations = Parameters.getNumDurations();
+        final int numLegs = dataRegistry.getLegs().size();
+        final int numCuts = Parameters.isBendersMultiCut() ? dataRegistry.getDelayScenarios().length : 1;
+        for (int i = 0; i < numCuts; ++i)
+            bendersData.addCut(new BendersCut(0.0, numDurations, numLegs));
     }
 
     void solveSequential() {

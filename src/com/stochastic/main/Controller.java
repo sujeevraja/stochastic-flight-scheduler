@@ -39,7 +39,7 @@ public class Controller {
         solutionManager = new SolutionManager(dataRegistry);
     }
 
-    public final void readData() throws OptException {
+    final void readData() throws OptException {
         logger.info("Started reading data...");
 
         // Read leg data and remove unnecessary legs
@@ -59,7 +59,7 @@ public class Controller {
     /**
      * Generates delay realizations and probabilities for second stage scenarios.
      */
-    public final void buildScenarios() {
+    final void buildScenarios() {
         // LogNormalDistribution distribution = new LogNormalDistribution(Parameters.getScale(), Parameters.getShape());
         // DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getTails(), distribution);
 
@@ -75,9 +75,18 @@ public class Controller {
             bendersSolver.solve();
             solutionManager.addRescheduleSolution(bendersSolver.getFinalRescheduleSolution());
             solutionManager.addKpi("benders solution time (seconds)", bendersSolver.getSolutionTime());
-            solutionManager.addKpi("benders theta", bendersSolver.getFinalThetaValue());
             solutionManager.addKpi("benders iterations", bendersSolver.getIteration());
             solutionManager.addKpi("benders gap (%)", bendersSolver.getPercentGap());
+            solutionManager.addKpi("number of benders cuts", bendersSolver.getNumBendersCuts());
+
+            // solutionManager.addKpi("benders theta", Arrays.toString(bendersSolver.getFinalThetaValues()));
+            double[] thetas = bendersSolver.getFinalThetaValues();
+            if (Parameters.isBendersMultiCut()) {
+                for (int i = 0; i < dataRegistry.getDelayScenarios().length; ++i)
+                    solutionManager.addKpi("benders theta (scenario " + i + ")", thetas[i]);
+            }
+            else
+                solutionManager.addKpi("benders theta", thetas[0]);
         } catch (IloException ex) {
             logger.error(ex);
             throw new OptException("CPLEX error in Benders");
@@ -220,7 +229,7 @@ public class Controller {
         dataRegistry.setLegs(newLegs);
     }
 
-    public void processSolution() throws OptException {
+    void processSolution() throws OptException {
         try {
             solutionManager.writeOutput();
             solutionManager.checkSolutionQuality();
