@@ -4,7 +4,6 @@ import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
 import com.stochastic.registry.Parameters;
 import com.stochastic.utility.Constants;
-import com.stochastic.utility.OptException;
 import com.stochastic.utility.Utility;
 import ilog.concert.*;
 import ilog.cplex.IloCplex;
@@ -51,7 +50,7 @@ public class MasterSolver {
         x = new IloIntVar[durations.length][legs.size()];
     }
 
-    public void addColumn() throws IloException {
+    void addColumn() throws IloException {
         cplex.setLinearCoef(obj, theta, 1);
     }
 
@@ -74,19 +73,19 @@ public class MasterSolver {
             thetaValue =  cplex.getValue(theta);
     }
     
-    public double getFirstStageObjValue() {
+    double getFirstStageObjValue() {
     	return objValue - thetaValue;
     }
 
-    public void writeLPFile(String fName) throws IloException {
+    void writeLPFile(String fName) throws IloException {
         cplex.exportModel(fName);
     }
 
-    public void writeCPLEXSolution(String fName) throws IloException {
+    void writeCPLEXSolution(String fName) throws IloException {
         cplex.writeSolution(fName);
     }
 
-    public void constructFirstStage() throws IloException {
+    void constructFirstStage() throws IloException {
         for (int i = 0; i < durations.length; i++)
             for (int j = 0; j < legs.size(); j++) {
                 String varName = "x_" + durations[i] + "_" + legs.get(j).getId();
@@ -161,7 +160,7 @@ public class MasterSolver {
         budgetConstraint.setName("reschedule_time_budget");
     }
 
-    public void constructBendersCut(double alphaValue, double[][] betaValue) throws IloException {
+    void addBendersCut(double alphaValue, double[][] betaValue) throws IloException {
         IloLinearNumExpr cons = cplex.linearNumExpr();
 
         for (int i = 0; i < durations.length; i++)
@@ -177,23 +176,23 @@ public class MasterSolver {
         ++cutCounter;
     }
 
-    public double getObjValue() {
+    double getObjValue() {
         return objValue;
     }
 
-    public double[][] getxValues() {
+    double[][] getxValues() {
         return xValues;
     }
 
-    public int[] getReschedules() {
+    int[] getReschedules() {
         return reschedules;
     }
 
-    public double getThetaValue() {
+    double getThetaValue() {
         return thetaValue;
     }
 
-    public void end() {
+    void end() {
         // CPLEX variables
         x = null;
         theta = null;

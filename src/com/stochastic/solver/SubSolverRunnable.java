@@ -133,8 +133,11 @@ public class SubSolverRunnable implements Runnable {
                 double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(),
                         ss.getDualsBound(), ss.getDualRisk());
 
-                updateAlpha(scenAlpha);
-                updateBeta(ss.getDualsDelay(), ss.getDualRisk());
+                if (Parameters.isBendersMultiCut()) {}
+                else {
+                    updateAlpha(scenAlpha);
+                    updateBeta(ss.getDualsDelay(), ss.getDualRisk());
+                }
                 updateUpperBound(ss.getObjValue());
             }
 
@@ -263,8 +266,11 @@ public class SubSolverRunnable implements Runnable {
             double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(),
                     ss.getDualsBound(), ss.getDualRisk());
 
-            updateAlpha(scenAlpha);
-            updateBeta(ss.getDualsDelay(), ss.getDualRisk());
+            if (Parameters.isBendersMultiCut()) {}
+            else {
+                updateAlpha(scenAlpha);
+                updateBeta(ss.getDualsDelay(), ss.getDualRisk());
+            }
             updateUpperBound(ss.getObjValue());
         }
     }
@@ -408,13 +414,14 @@ public class SubSolverRunnable implements Runnable {
     }
 
     private synchronized void updateAlpha(double scenAlpha) {
-        bendersData.setAlpha(bendersData.getAlpha() + (scenAlpha * probability));
+        BendersCut aggregatedCut = bendersData.getAggregatedCut();
+        aggregatedCut.setAlpha(aggregatedCut.getAlpha() + (scenAlpha * probability));
     }
 
     private synchronized void updateBeta(double[] dualsDelay, double dualRisk) {
         int[] durations = Parameters.getDurations();
         ArrayList<Leg> legs = dataRegistry.getLegs();
-        double[][] beta = bendersData.getBeta();
+        double[][] beta = bendersData.getAggregatedCut().getBeta();
 
         for (int i = 0; i < durations.length; i++) {
             for (int j = 0; j < legs.size(); j++) {

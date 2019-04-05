@@ -25,8 +25,13 @@ public class SubSolverWrapper {
         this.dataRegistry = dataRegistry;
         this.reschedules = reschedules;
         this.iter = iter;
-        this.bendersData = new BendersData(uBound, 0,
-                new double[Parameters.getNumDurations()][dataRegistry.getLegs().size()]);
+        this.bendersData = new BendersData(uBound);
+        if (Parameters.isBendersMultiCut()) {}
+        else {
+            BendersCut aggregatedCut = new BendersCut(0.0, Parameters.getNumDurations(),
+                    dataRegistry.getLegs().size());
+            bendersData.setAggregatedCut(aggregatedCut);
+        }
     }
 
     void solveSequential() {

@@ -127,11 +127,16 @@ public class BendersSolver {
             ssWrapper.solveSequential();
 
         BendersData bendersData = ssWrapper.getBendersData();
-        masterSolver.constructBendersCut(bendersData.getAlpha(), bendersData.getBeta());
+        if (Parameters.isBendersMultiCut()) {}
+        else {
+            BendersCut aggregatedCut = bendersData.getAggregatedCut();
+            masterSolver.addBendersCut(aggregatedCut.getAlpha(), aggregatedCut.getBeta());
+            if (Parameters.isDebugVerbose())
+                writeBendersCut(iteration, aggregatedCut.getBeta(), aggregatedCut.getAlpha());
+        }
 
         if (Parameters.isDebugVerbose()) {
             masterSolver.writeLPFile("logs/master_" + iteration + ".lp");
-            writeBendersCut(iteration, bendersData.getBeta(), bendersData.getAlpha());
         }
 
         masterSolver.solve(iteration);

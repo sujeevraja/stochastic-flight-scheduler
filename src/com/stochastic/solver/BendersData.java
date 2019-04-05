@@ -1,14 +1,15 @@
 package com.stochastic.solver;
 
+import java.util.ArrayList;
+
 class BendersData {
     private double upperBound;
-    private double alpha;
-    private double[][] beta;
+    private BendersCut aggregatedCut; // used only in single cut benders
+    private ArrayList<BendersCut> cuts; // used during multicut benders
 
-    BendersData(double upperBound, double alpha, double[][] beta) {
+    BendersData(double upperBound) {
         this.upperBound = upperBound;
-        this.alpha = alpha;
-        this.beta = beta;
+        cuts = new ArrayList<>();
     }
 
     void setUpperBound(double upperBound) {
@@ -19,15 +20,19 @@ class BendersData {
         return upperBound;
     }
 
-    void setAlpha(double alpha) {
-        this.alpha = alpha;
+    void setAggregatedCut(BendersCut aggregatedCut) {
+        this.aggregatedCut = aggregatedCut;
     }
 
-    double getAlpha() {
-        return alpha;
+    BendersCut getAggregatedCut() {
+        return aggregatedCut;
     }
 
-    double[][] getBeta() {
-        return beta;
+    void addCut(BendersCut cut) {
+        cuts.add(cut);
+    }
+
+    ArrayList<BendersCut> getCuts() {
+        return cuts;
     }
 }
