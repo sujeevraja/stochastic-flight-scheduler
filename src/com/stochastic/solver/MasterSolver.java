@@ -182,13 +182,13 @@ public class MasterSolver {
         for (int i = 0; i < durations.length; i++)
             for (int j = 0; j < legs.size(); j++)
                 if (Math.abs(beta[i][j]) >= Constants.EPS)
-                    cons.addTerm(x[i][j], Utility.roundUp(beta[i][j], 3));
+                    cons.addTerm(x[i][j], beta[i][j]);
 
         cons.addTerm(thetas[thetaIndex], 1);
 
         double alpha = cutData.getAlpha();
         double rhs = Math.abs(alpha) >= Constants.EPS ? alpha : 0.0;
-        IloRange r = cplex.addGe(cons, Utility.roundDown(rhs, 3));
+        IloRange r = cplex.addGe(cons, rhs);
         r.setName("benders_cut_" + numBendersCuts);
         ++numBendersCuts;
     }

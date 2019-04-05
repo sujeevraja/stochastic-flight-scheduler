@@ -77,7 +77,7 @@ public class Controller {
             solutionManager.addKpi("benders solution time (seconds)", bendersSolver.getSolutionTime());
             solutionManager.addKpi("benders iterations", bendersSolver.getIteration());
             solutionManager.addKpi("benders gap (%)", bendersSolver.getPercentGap());
-            solutionManager.addKpi("number of benders cuts", bendersSolver.getNumBendersCuts());
+            solutionManager.addKpi("benders cuts added", bendersSolver.getNumBendersCuts());
 
             // solutionManager.addKpi("benders theta", Arrays.toString(bendersSolver.getFinalThetaValues()));
             double[] thetas = bendersSolver.getFinalThetaValues();
@@ -151,6 +151,7 @@ public class Controller {
             tails.get(i).setIndex(i);
 
         dataRegistry.setTails(tails);
+        dataRegistry.buildIdTailMap();
         logger.info("Number of tails: " + tails.size());
 
         HashMap<Integer, Path> tailPaths = new HashMap<>();
@@ -232,7 +233,8 @@ public class Controller {
     void processSolution() throws OptException {
         try {
             solutionManager.writeOutput();
-            solutionManager.checkSolutionQuality();
+            if (Parameters.isCheckSolutionQuality())
+                solutionManager.checkSolutionQuality();
         } catch (IOException ex) {
             logger.error(ex);
             throw new OptException("error writing solution");

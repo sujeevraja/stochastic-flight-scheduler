@@ -69,11 +69,11 @@ public class SubSolver {
         dualRisk = 0;
     }
 
-    public void setSolveAsMIP(boolean solveAsMIP) {
-        this.solveAsMIP = solveAsMIP;
+    void setSolveAsMIP() {
+        this.solveAsMIP = true;
     }
 
-    public void constructSecondStage(HashMap<Integer, ArrayList<Path>> paths) throws OptException {
+    void constructSecondStage(HashMap<Integer, ArrayList<Path>> paths) throws OptException {
         try {
             // Create containers to build CPLEX model.
             cplex = new IloCplex();
@@ -219,14 +219,14 @@ public class SubSolver {
         }
     }
 
-    public void collectSolution() throws IloException {
+    void collectSolution() throws IloException {
         dValues = cplex.getValues(d);
         yValues = new double[tails.size()][];
         for (int i = 0; i < tails.size(); ++i)
             yValues[i] = cplex.getValues(y[i]);
     }
 
-    public void collectDuals() throws OptException {
+    void collectDuals() throws OptException {
         try {
             for (int i = 0; i < legCoverConstraints.length; i++)
                 dualsLeg[i] = cplex.getDual(legCoverConstraints[i]);
@@ -247,15 +247,15 @@ public class SubSolver {
         }
     }
 
-    public void writeLPFile(String name) throws IloException {
+    void writeLPFile(String name) throws IloException {
         cplex.exportModel(name);
     }
 
-    public void writeCplexSolution(String name) throws IloException {
+    void writeCplexSolution(String name) throws IloException {
         cplex.writeSolution(name);
     }
 
-    public void end() {
+    void end() {
         y = null;
         d = null;
         v = null;
@@ -270,35 +270,35 @@ public class SubSolver {
         cplex = null;
     }
 
-    public double getObjValue() {
+    double getObjValue() {
         return objValue;
     }
 
-    public double[] getdValues() {
+    double[] getdValues() {
         return dValues;
     }
 
-    public double[][] getyValues() {
+    double[][] getyValues() {
         return yValues;
     }
 
-    public double[] getDualsLeg() {
+    double[] getDualsLeg() {
         return dualsLeg;
     }
 
-    public double[] getDualsTail() {
+    double[] getDualsTail() {
         return dualsTail;
     }
 
-    public double[] getDualsDelay() {
+    double[] getDualsDelay() {
         return dualsDelay;
     }
 
-    public double[][] getDualsBound() {
+    double[][] getDualsBound() {
         return dualsBound;
     }
 
-    public double getDualRisk() {
+    double getDualRisk() {
         return dualRisk;
     }
 }

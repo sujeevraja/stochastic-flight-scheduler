@@ -24,6 +24,7 @@ public class SubSolverRunnable implements Runnable {
     private double probability;
     private int[] reschedules;
     private HashMap<Integer, Integer> randomDelays;
+    private PathCache pathCache;
 
     private String filePrefix;
     private BendersData bendersData;
@@ -32,13 +33,14 @@ public class SubSolverRunnable implements Runnable {
     private DelaySolution delaySolution; // used only when checking Benders solution quality
 
     public SubSolverRunnable(DataRegistry dataRegistry, int iter, int scenarioNum, double probability,
-                             int[] reschedules, HashMap<Integer, Integer> randomDelays) {
+                             int[] reschedules, HashMap<Integer, Integer> randomDelays, PathCache pathCache) {
         this.dataRegistry = dataRegistry;
         this.iter = iter;
         this.scenarioNum = scenarioNum;
         this.probability = probability;
         this.reschedules = reschedules;
         this.randomDelays = randomDelays;
+        this.pathCache = pathCache;
         this.filePrefix = null;
     }
 
@@ -95,7 +97,7 @@ public class SubSolverRunnable implements Runnable {
 
             SubSolver ss = new SubSolver(dataRegistry.getTails(), dataRegistry.getLegs(), reschedules, probability);
             if (solveForQuality)
-                ss.setSolveAsMIP(true);
+                ss.setSolveAsMIP();
             ss.constructSecondStage(tailPathsMap);
 
             String name = "dummy";
@@ -153,7 +155,7 @@ public class SubSolverRunnable implements Runnable {
         int[] delays = getTotalDelays();
 
         // Load on-plan paths with propagated delays.
-        HashMap<Integer, ArrayList<Path>> pathsAll = getInitialPaths(delays);
+        HashMap<Integer, ArrayList<Path>> pathsAll = pathCache.getCachedPaths();
 
         // Run the column generation procedure.
         ArrayList<Leg> legs = dataRegistry.getLegs();
@@ -243,7 +245,7 @@ public class SubSolverRunnable implements Runnable {
 
         if (solveForQuality) {
             // Solve problem with all columns as MIP to collect objective value.
-            ss.setSolveAsMIP(true);
+            ss.setSolveAsMIP();
             ss.constructSecondStage(pathsAll);
             ss.solve();
 
@@ -268,52 +270,11 @@ public class SubSolverRunnable implements Runnable {
             updateAlpha(cutNum, scenAlpha);
             updateBeta(cutNum, ss.getDualsDelay(), ss.getDualRisk());
             updateUpperBound(ss.getObjValue());
+
+            // cache best paths for each tail
+            ss.collectSolution();
+            pathCache.addPaths(getBestPaths(ss.getyValues(), pathsAll));
         }
-    }
-
-    private HashMap<Integer, ArrayList<Path>> getInitialPaths(int[] delays) {
-        HashMap<Integer, ArrayList<Path>> initialPaths = new HashMap<>();
-
-        for (Map.Entry<Integer, Path> entry : dataRegistry.getTailOrigPathMap().entrySet()) {
-            int tailId = entry.getKey();
-            Tail tail = dataRegistry.getTail(tailId);
-
-            Path origPath = entry.getValue();
-
-            // The original path of the tail may not be valid due to random delays or reschedules of the first
-            // leg caused by the first stage model. To make the path valid, we need to propagate changes in
-            // departure time of the first leg to the remaining legs on the path. These delayed paths for all
-            // tails will serve as the initial set of columns for the second stage model.
-
-            // Note that the leg coverage constraint in the second-stage model remains feasible even with just
-            // these paths as we assume that there are no open legs in any dataset. This means that each leg
-            // must be on the original path of some tail.
-
-            Path pathWithDelays = new Path(tail);
-            LocalDateTime currentTime = null;
-            for (Leg leg : origPath.getLegs()) {
-                // find delayed departure time due to original delay (planned 1st stange + random 2nd stage)
-                int legDelay = delays[leg.getIndex()];
-                LocalDateTime delayedDepTime = leg.getDepTime().plusMinutes(legDelay);
-
-                // find delayed departure time due to propagated delay
-                if (currentTime != null && currentTime.isAfter(delayedDepTime))
-                    delayedDepTime = currentTime;
-
-                legDelay = (int) Duration.between(leg.getDepTime(), delayedDepTime).toMinutes();
-                pathWithDelays.addLeg(leg, legDelay);
-
-                // update current time based on leg's delayed arrival time and turn time.
-                currentTime = leg.getArrTime().plusMinutes(legDelay).plusMinutes(leg.getTurnTimeInMin());
-            }
-
-            ArrayList<Path> tailPaths = new ArrayList<>();
-            tailPaths.add(new Path(tail)); // add empty path
-            tailPaths.add(pathWithDelays);
-            initialPaths.put(tailId, tailPaths);
-        }
-
-        return initialPaths;
     }
 
     /**
@@ -376,6 +337,32 @@ public class SubSolverRunnable implements Runnable {
 
         delaySolution = new DelaySolution(ss.getObjValue(), primaryDelays, totalDelays, propagatedDelays,
                 ss.getdValues());
+    }
+
+    private HashMap<Integer, Path> getBestPaths(double[][] yValues, HashMap<Integer, ArrayList<Path>> allPaths) {
+        HashMap<Integer, Path> bestPaths = new HashMap<>();
+
+        for (Tail tail : dataRegistry.getTails()) {
+            ArrayList<Path> pathsForTail = allPaths.getOrDefault(tail.getId(), null);
+            if (pathsForTail == null)
+                continue;
+
+            double bestVal = 0.0;
+            Path bestPath = null;
+
+            double[] yValuesForTail = yValues[tail.getIndex()];
+            for (int i =0; i < yValuesForTail.length; ++i) {
+                if (yValuesForTail[i] >= bestVal + Constants.EPS) {
+                    bestVal = yValuesForTail[i];
+                    bestPath = pathsForTail.get(i);
+                }
+            }
+
+            if (bestPath != null)
+                bestPaths.put(tail.getId(), bestPath);
+        }
+
+        return bestPaths;
     }
 
     private double calculateAlpha(double[] dualsLegs, double[] dualsTail, double[] dualsDelay, double[][] dualsBnd,

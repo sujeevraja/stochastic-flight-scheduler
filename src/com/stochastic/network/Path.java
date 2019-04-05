@@ -62,7 +62,7 @@ public class Path {
         return true;
     }
 
-    public static void resetPathCounter() {
+    static void resetPathCounter() {
 	    pathCounter = 0;
     }
 
@@ -96,7 +96,7 @@ public class Path {
 		return index;
 	}    
 
-	public void setIndex(int index) {
+	void setIndex(int index) {
 		this.index = index;
 	}
 
@@ -115,5 +115,4 @@ public class Path {
             logger.info("delay time in minutes: " + delayTimesInMin.get(i));
         }
     }
-	
 }

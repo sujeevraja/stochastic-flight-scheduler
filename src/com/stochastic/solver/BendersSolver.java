@@ -1,7 +1,9 @@
 package com.stochastic.solver;
 
+import com.stochastic.delay.Scenario;
 import com.stochastic.domain.Leg;
 import com.stochastic.domain.Tail;
+import com.stochastic.network.Path;
 import com.stochastic.postopt.RescheduleSolution;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.registry.Parameters;
@@ -15,7 +17,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class BendersSolver {
     /**
@@ -30,6 +35,7 @@ public class BendersSolver {
     private int iteration;
     private double lowerBound;
     private double upperBound;
+    private PathCache[] secondStageCaches;
 
     private RescheduleSolution finalRescheduleSolution;
     private double[] finalThetaValues;
@@ -46,6 +52,7 @@ public class BendersSolver {
         iteration = 0;
         lowerBound = -Double.MAX_VALUE;
         upperBound = Double.MAX_VALUE;
+        secondStageCaches = new PathCache[dataRegistry.getDelayScenarios().length];
         solutionTime = 0.0;
     }
 
@@ -100,6 +107,8 @@ public class BendersSolver {
         else
             logger.info("pricing problem strategy: labeling, " + Parameters.getReducedCostStrategy());
 
+        cacheOnPlanPathsForSecondStage();
+
         // Run Benders iterations until the stopping condition is reached.
         do { runBendersIteration();
         } while (!stoppingConditionReached());
@@ -121,10 +130,23 @@ public class BendersSolver {
         }
     }
 
+    /**
+     * This function caches original paths with propagated delays and empty paths for each scenario.
+     */
+    private void cacheOnPlanPathsForSecondStage() {
+        Scenario[] scenarios = dataRegistry.getDelayScenarios();
+        for (int i = 0; i < scenarios.length; ++i) {
+            secondStageCaches[i] = new PathCache();
+            HashMap<Integer, ArrayList<Path>> origpaths = SolverUtility.getOriginalPaths(dataRegistry.getIdTailMap(),
+                    dataRegistry.getTailOrigPathMap(), scenarios[i].getPrimaryDelays());
+            secondStageCaches[i].setCachedPaths(origpaths);
+        }
+    }
+
     private void runBendersIteration() throws IloException, IOException, OptException {
         ++iteration;
         SubSolverWrapper ssWrapper = new SubSolverWrapper(dataRegistry, masterSolver.getReschedules(), iteration,
-                masterSolver.getRescheduleCost());
+                masterSolver.getRescheduleCost(), secondStageCaches);
 
         if (Parameters.isRunSecondStageInParallel())
             ssWrapper.solveParallel();
