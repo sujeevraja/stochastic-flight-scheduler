@@ -155,7 +155,7 @@ public class SubSolverRunnable implements Runnable {
         int[] delays = getTotalDelays();
 
         // Load on-plan paths with propagated delays.
-        HashMap<Integer, ArrayList<Path>> pathsAll = pathCache.getInitialPaths();
+        HashMap<Integer, ArrayList<Path>> pathsAll = pathCache.getCachedPaths();
 
         // Run the column generation procedure.
         ArrayList<Leg> legs = dataRegistry.getLegs();
@@ -270,6 +270,10 @@ public class SubSolverRunnable implements Runnable {
             updateAlpha(cutNum, scenAlpha);
             updateBeta(cutNum, ss.getDualsDelay(), ss.getDualRisk());
             updateUpperBound(ss.getObjValue());
+
+            // cache best paths for each tail
+            ss.collectSolution();
+            pathCache.addPaths(getBestPaths(ss.getyValues(), pathsAll));
         }
     }
 
@@ -333,6 +337,32 @@ public class SubSolverRunnable implements Runnable {
 
         delaySolution = new DelaySolution(ss.getObjValue(), primaryDelays, totalDelays, propagatedDelays,
                 ss.getdValues());
+    }
+
+    private HashMap<Integer, Path> getBestPaths(double[][] yValues, HashMap<Integer, ArrayList<Path>> allPaths) {
+        HashMap<Integer, Path> bestPaths = new HashMap<>();
+
+        for (Tail tail : dataRegistry.getTails()) {
+            ArrayList<Path> pathsForTail = allPaths.getOrDefault(tail.getId(), null);
+            if (pathsForTail == null)
+                continue;
+
+            double bestVal = 0.0;
+            Path bestPath = null;
+
+            double[] yValuesForTail = yValues[tail.getIndex()];
+            for (int i =0; i < yValuesForTail.length; ++i) {
+                if (yValuesForTail[i] >= bestVal + Constants.EPS) {
+                    bestVal = yValuesForTail[i];
+                    bestPath = pathsForTail.get(i);
+                }
+            }
+
+            if (bestPath != null)
+                bestPaths.put(tail.getId(), bestPath);
+        }
+
+        return bestPaths;
     }
 
     private double calculateAlpha(double[] dualsLegs, double[] dualsTail, double[] dualsDelay, double[][] dualsBnd,

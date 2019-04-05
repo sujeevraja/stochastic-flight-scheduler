@@ -139,7 +139,7 @@ public class BendersSolver {
             secondStageCaches[i] = new PathCache();
             HashMap<Integer, ArrayList<Path>> origpaths = SolverUtility.getOriginalPaths(dataRegistry.getIdTailMap(),
                     dataRegistry.getTailOrigPathMap(), scenarios[i].getPrimaryDelays());
-            secondStageCaches[i].setOriginalPaths(origpaths);
+            secondStageCaches[i].setCachedPaths(origpaths);
         }
     }
 

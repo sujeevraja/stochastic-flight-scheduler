@@ -181,7 +181,7 @@ class QualityChecker {
 
         // solve routing MIP and collect solution
         PathCache pathCache = new PathCache();
-        pathCache.setOriginalPaths(SolverUtility.getOriginalPaths(dataRegistry.getIdTailMap(),
+        pathCache.setCachedPaths(SolverUtility.getOriginalPaths(dataRegistry.getIdTailMap(),
                 dataRegistry.getTailOrigPathMap(), adjustedDelays));
 
         SubSolverRunnable ssr = new SubSolverRunnable(dataRegistry, 0, scenarioNum, scen.getProbability(),

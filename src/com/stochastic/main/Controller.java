@@ -233,7 +233,8 @@ public class Controller {
     void processSolution() throws OptException {
         try {
             solutionManager.writeOutput();
-            solutionManager.checkSolutionQuality();
+            if (Parameters.isCheckSolutionQuality())
+                solutionManager.checkSolutionQuality();
         } catch (IOException ex) {
             logger.error(ex);
             throw new OptException("error writing solution");
