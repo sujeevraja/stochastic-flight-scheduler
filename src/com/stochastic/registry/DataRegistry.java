@@ -17,6 +17,7 @@ public class DataRegistry {
      */
     private ArrayList<Leg> legs;
     private ArrayList<Tail> tails;
+    private HashMap<Integer, Tail> idTailMap;
     private HashMap<Integer, Path> tailOrigPathMap;
     private Network network;
 
@@ -55,12 +56,18 @@ public class DataRegistry {
         return tails;
     }
 
+    public void buildIdTailMap() {
+        idTailMap = new HashMap<>();
+        for (Tail tail : tails)
+            idTailMap.put(tail.getId(), tail);
+    }
+
     public Tail getTail(Integer id) {
-    	for(Tail t: tails)
-    		if(t.getId().equals(id))
-    			return t;
-    	
-        return null;
+        return idTailMap.getOrDefault(id, null);
+    }
+
+    public HashMap<Integer, Tail> getIdTailMap() {
+        return idTailMap;
     }
 
     public void buildConnectionNetwork() {

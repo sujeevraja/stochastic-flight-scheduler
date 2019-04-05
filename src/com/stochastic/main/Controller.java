@@ -151,6 +151,7 @@ public class Controller {
             tails.get(i).setIndex(i);
 
         dataRegistry.setTails(tails);
+        dataRegistry.buildIdTailMap();
         logger.info("Number of tails: " + tails.size());
 
         HashMap<Integer, Path> tailPaths = new HashMap<>();

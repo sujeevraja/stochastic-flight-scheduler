@@ -69,11 +69,11 @@ public class SubSolver {
         dualRisk = 0;
     }
 
-    public void setSolveAsMIP(boolean solveAsMIP) {
-        this.solveAsMIP = solveAsMIP;
+    void setSolveAsMIP() {
+        this.solveAsMIP = true;
     }
 
-    public void constructSecondStage(HashMap<Integer, ArrayList<Path>> paths) throws OptException {
+    void constructSecondStage(HashMap<Integer, ArrayList<Path>> paths) throws OptException {
         try {
             // Create containers to build CPLEX model.
             cplex = new IloCplex();

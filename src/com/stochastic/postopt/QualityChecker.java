@@ -6,6 +6,8 @@ import com.stochastic.delay.Scenario;
 import com.stochastic.domain.Leg;
 import com.stochastic.registry.DataRegistry;
 import com.stochastic.registry.Parameters;
+import com.stochastic.solver.PathCache;
+import com.stochastic.solver.SolverUtility;
 import com.stochastic.solver.SubSolverRunnable;
 import com.stochastic.utility.CSVHelper;
 import org.apache.commons.math3.distribution.LogNormalDistribution;
@@ -178,8 +180,12 @@ class QualityChecker {
         }
 
         // solve routing MIP and collect solution
+        PathCache pathCache = new PathCache();
+        pathCache.setOriginalPaths(SolverUtility.getOriginalPaths(dataRegistry.getIdTailMap(),
+                dataRegistry.getTailOrigPathMap(), adjustedDelays));
+
         SubSolverRunnable ssr = new SubSolverRunnable(dataRegistry, 0, scenarioNum, scen.getProbability(),
-                zeroReschedules, adjustedDelays);
+                zeroReschedules, adjustedDelays, pathCache);
         ssr.setFilePrefix(slnName);
         ssr.setSolveForQuality(true);
 
@@ -195,55 +201,6 @@ class QualityChecker {
             leg.revertReschedule();
 
         return delaySolution;
-    }
-
-    void testSolution(String slnName, int[] reschedules) {
-        reset();
-
-        // update leg departure time according to reschedule values.
-        if (reschedules != null) {
-            for (Leg leg : dataRegistry.getLegs())
-                leg.reschedule(reschedules[leg.getIndex()]);
-        }
-
-        for (int i = 0; i < testScenarios.length; ++i) {
-            Scenario scen = testScenarios[i];
-
-            // update primary delays using reschedules.
-            HashMap<Integer, Integer> adjustedDelays;
-            if (reschedules != null) {
-                adjustedDelays = new HashMap<>();
-                HashMap<Integer, Integer> primaryDelays = scen.getPrimaryDelays();
-                for (Map.Entry<Integer, Integer> entry : primaryDelays.entrySet()) {
-                    Integer adjustedDelay = Math.max(entry.getValue() - reschedules[entry.getKey()], 0);
-                    adjustedDelays.put(entry.getKey(), adjustedDelay);
-                }
-            } else {
-                adjustedDelays = scen.getPrimaryDelays();
-            }
-
-            // solve routing MIP and collect solution
-            SubSolverRunnable ssr = new SubSolverRunnable(dataRegistry, 0, i, scen.getProbability(),
-                    zeroReschedules, adjustedDelays);
-            ssr.setFilePrefix(slnName);
-            ssr.setSolveForQuality(true);
-
-            Instant start = Instant.now();
-            ssr.run();
-            double slntime = Duration.between(start, Instant.now()).toMillis() / 1000.0;
-            solutionTimesInSeconds[i] = slntime;
-
-            DelaySolution delaySolution = ssr.getDelaySolution();
-            double obj = delaySolution.getDelayCost();
-            objectives[i] = obj;
-            expectedObjective += (scen.getProbability() * obj);
-            logger.info("tested " + slnName + " schedule with scenario " + (i+1) + " of " + testScenarios.length);
-        }
-        averageSolutionTime = Arrays.stream(solutionTimesInSeconds).average().orElse(Double.NaN);
-
-        // undo reschedules
-        for (Leg leg : dataRegistry.getLegs())
-            leg.revertReschedule();
     }
 
     private void reset() {
