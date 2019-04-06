@@ -48,6 +48,15 @@ tasks {
         sourcesMain.allSource.forEach { println("add from sources: ${it.name}") }
         from(sourcesMain.output)
     }
+
+    register("cleanfiles", Delete::class.java) {
+        delete(fileTree("logs") {
+           include("*.log")
+        })
+        delete(fileTree("solution") {
+            include("*.yaml", "*.csv")
+        })
+    }
 }
 
 application {
