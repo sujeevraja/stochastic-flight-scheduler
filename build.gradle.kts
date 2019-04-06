@@ -25,7 +25,10 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-core:2.11.2")
     implementation("org.apache.commons:commons-math3:3.0")
     implementation("org.yaml:snakeyaml:1.8")
-    compile(files("libs/cplex.jar"))
+
+    val cplexJarPath: String by project
+    compile(files(cplexJarPath))
+    /* compile(files("libs/cplex.jar")) */
 
     // Use JUnit test framework
     testImplementation("junit:junit:4.12")
@@ -51,8 +54,10 @@ application {
     // Define the main class for the application
     mainClassName = "stochastic.main.Main"
 
+    val cplexLibPath : String by project
     applicationDefaultJvmArgs = listOf(
         "-Xms32m",
         "-Xmx4g",
-        "-Djava.library.path=/Applications/CPLEX_Studio128/cplex/bin/x86-64_osx")
+        "-Djava.library.path=$cplexLibPath")
 }
+

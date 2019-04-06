@@ -1,6 +1,5 @@
 *.lp
 *.txt
-libs
 logs/
 !logs/.gitkeep
 out/
@@ -17,3 +16,6 @@ solution/
 
 # Ignore Gradle build output directory
 build
+
+# Ignore gradle properties file as they contain user-specific paths
+gradle.properties
