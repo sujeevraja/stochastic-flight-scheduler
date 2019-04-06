@@ -1,5 +1,6 @@
 *.lp
 *.txt
+libs
 logs/
 !logs/.gitkeep
 out/
@@ -10,3 +11,9 @@ solution/
 # Idea ignores
 .idea/
 *.iml
+
+# Ignore Gradle project-specific cache directory
+.gradle
+
+# Ignore Gradle build output directory
+build
