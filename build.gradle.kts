@@ -50,4 +50,9 @@ tasks {
 application {
     // Define the main class for the application
     mainClassName = "stochastic.main.Main"
+
+    applicationDefaultJvmArgs = listOf(
+        "-Xms32m",
+        "-Xmx4g",
+        "-Djava.library.path=/Applications/CPLEX_Studio128/cplex/bin/x86-64_osx")
 }
