@@ -19,37 +19,62 @@ Given a flight schedule XML file, this solver can be used to:
 ## Dependencies
 
 - CPLEX
-- commons math3 3.6.1 (included in repo in `lib` folder)
-- log4j 2.10.0 (included in repo in `lib` folder)
-- snakeyaml 1.23 (included in repo in `lib` folder)
+- Gradle (installation optional)
+- commons math3 3.6.1 (obtained by Gradle)
+- log4j 2.10.0 (obtained by Gradle)
+- snakeyaml 1.23 (obtained by Gradle)
 
 ## Usage
 
-- Clone the repository.
-- Add cplex.jar as a dependency and the path to the cplex dll file as
-    `-Djava.library.path=/path/to/cplex/dll/folder`.
-- Add all libraries provided as JAR files in the `lib` folder as dependencies.
-- Run the project using the `main()` function in the `Main` class.
+Clone the repository. Create a file named `gradle.properties` in the root
+folder. Add the following two lines to the file:
 
-### Running with Intellij
+```
+cplexJarPath=/file/path/to/cplex/jar
+cplexLibPath=/folder/path/to/cplex/library
+```
 
-- Use the Intellij option to create project from existing sources by pointing it to the repository
-  folder.
-- Right-click on the "robust-flight-scheduler" module in the project explorer pane on the left.
-- In the "Project Structure" dialog, click on "Modules".
-- There will be three tabs on the right pane called "Sources", "Paths" and "Dependencies".
-- Click on the "Dependencies" tab.
-- There should be a + sign on the right beside the table that has titles "Export" and "Scope".
-- Clicking on this sign allows us to add JARs or directories as dependencies.
-- Click on it, select "JARs or directories" and add cplex.jar.
-- If needed, repeat this dependency addition procedure with all JAR files in the lib folder.
-- Click on the "Apply" and "OK" buttons in the bottom right of the dialog. This should close it.
-- Then, click on the "Run -> Edit Configurations -> Main".
-- If there are no configurations available, create a new one.
-- Add the following line to the "VM options" text box after changing the path appropriately:
+The key `cplexJarPath` specifies the complete path to the CPLEX JAR file. It
+must end with `cplex.jar`. The `cplexLibPath` should point to the path that
+holds the CPLEX library (file with dll/a/so extension). This path should be
+a folder path and NOT a file path. It usually points to a folder within the
+CPLEX bin folder. For example, the paths could look like so on a Mac:
 
-`-Xms32m -Xmx4g -Djava.library.path=\path\to\cplex\dll\folder`
+```
+cplexJarPath=/Applications/CPLEX_Studio128/cplex/lib/cplex.jar
+cplexLibPath=/Applications/CPLEX_Studio128/cplex/bin/x86-64_osx
+```
 
-- Click on "Apply" and "Ok".
+Open a terminal and make the `./gradlew` file executable if necessary. Run
+`./gradlew build` to compile and `./gradlew run` to run the code. The latter
+task can also be run directly. Two other useful tasks are `./gradlew clean`,
+which cleans the gradle build files and `./gradlew cleanfiles` which cleans
+logs and solution files. If Gradle is installed, `./gradlew` can be replaced
+with `gradle` in all the above commands.
 
-- Now, the project can be run with "Run -> Run Main" or "Run -> Run ... -> Main".
+## Running with Intellij
+
+- Open Intellij, select `Import Project` and point it to the repo folder.
+- Select `Import Project from external model -> Gradle`.
+- Check the following checkboxes:
+    + `Use auto-import`
+    + `Create directories for empty content roots automatically`
+- Select the `Use default gradle wrapper`
+- Clock on the `Finish` button on the bottom right.
+
+That's it, nothing else is needed. Ignore complaints about modules that were
+removed. To run the project for the first time, select
+`View -> Tool Windows -> Gradle`. The Gradle window should open up on the
+right. Expand the tree and double-click on `Tasks -> application -> run`.
+For subsequent runnning, we can continue doing the same thing, or select
+this configuration from the `Run` menu. Debugging can also be done with this
+configuration from the same menu. After the first run, this task will show
+up as something like `Run project-name [run]` and `Debug project-name [run]`
+in the `Run` manu, where `project-name` is the name of the project.
+
+## Additional notes
+
+CPLEX and other dependencies have been set up correctly in `build.gradle`. In
+case some depdendencies need access to config files, the files can be placed
+in `src/main/resources`. This folder alredy holds `log4j2.xml`, the config
+file for the `log4j` logging utility.

@@ -28,7 +28,6 @@ dependencies {
 
     val cplexJarPath: String by project
     compile(files(cplexJarPath))
-    /* compile(files("libs/cplex.jar")) */
 
     // Use JUnit test framework
     testImplementation("junit:junit:4.12")
