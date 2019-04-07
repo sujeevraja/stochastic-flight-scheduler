@@ -127,7 +127,7 @@ class PricingProblemSolver {
     private void runLabelSettingAlgorithm() {
         while (!unprocessedLabels.isEmpty()) {
             Label label = unprocessedLabels.remove();
-            Integer legIndex = label.getVertex();
+            final int legIndex = label.getVertex();
             ArrayList<Integer> neighbors = network.getNeighbors(legIndex);
             if (neighbors != null) {
                 generateFeasibleExtensions(label, neighbors);
@@ -147,7 +147,7 @@ class PricingProblemSolver {
             if (!tail.getSourcePort().equals(leg.getDepPort()))
                 continue;
 
-            int totalDelay = delays[i];
+            final int totalDelay = delays[i];
 
             double reducedCost = getReducedCostForLeg(i, totalDelay);
             Label label = new Label(leg, null, totalDelay, reducedCost, legs.size());

@@ -2,7 +2,6 @@ package stochastic.dao;
 
 import stochastic.domain.Leg;
 import stochastic.utility.OptException;
-import stochastic.utility.Utility;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -61,12 +60,12 @@ public class ScheduleDAO {
     }
 
     private Leg buildLeg(Element legElem) {
-        Integer id = Utility.getInt(legElem, "id");
-        Integer depPort = Utility.getInt(legElem, "depPort");
-        Integer arrPort = Utility.getInt(legElem, "arrPort");
-        Integer turnTime = Utility.getInt(legElem, "turnTime");
-        Integer tail = Utility.getInt(legElem, "tail");
-        Integer fltNum = Utility.getInt(legElem, "fltNum");
+        Integer id = getInt(legElem, "id");
+        Integer depPort = getInt(legElem, "depPort");
+        Integer arrPort = getInt(legElem, "arrPort");
+        Integer turnTime = getInt(legElem, "turnTime");
+        Integer tail = getInt(legElem, "tail");
+        Integer fltNum = getInt(legElem, "fltNum");
 
         String depTimeStr = legElem.getElementsByTagName("depTime").item(0).getTextContent();
         LocalDateTime depTime = LocalDateTime.parse(depTimeStr, format);
@@ -75,5 +74,9 @@ public class ScheduleDAO {
         LocalDateTime arrTime = LocalDateTime.parse(arrTimeStr, format);
 
         return new Leg(id, fltNum, depPort, arrPort, turnTime, tail, depTime, arrTime);
+    }
+
+    private static Integer getInt(Element elem, String tag) {
+        return Integer.parseInt(elem.getElementsByTagName(tag).item(0).getTextContent());
     }
 }

@@ -70,7 +70,7 @@ public class MasterSolver {
         cplex.solve();
         objValue = cplex.getObjValue();
 
-        logger.debug("master objective: " + objValue);
+        logger.info("master objective: " + objValue);
         xValues = new double[durations.length][legs.size()];
         Arrays.fill(reschedules, 0);
 
