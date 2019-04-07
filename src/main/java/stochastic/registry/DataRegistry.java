@@ -21,8 +21,8 @@ public class DataRegistry {
     private HashMap<Integer, Path> tailOrigPathMap;
     private Network network;
 
-    // origSlacks[i][j] = dep_j - (arr_i + turn_i) for connecting flights i, j. All times used are original times
-    // i.e. before rescheduling.
+    // origSlacks[i][j] = dep_j - (arr_i + turn_i) for connecting flights with indices i, j. All times used are
+    // original times i.e. before rescheduling.
     private Integer[][] origSlacks;
 
     private Scenario[] delayScenarios;

@@ -77,10 +77,8 @@ public class PathEnumerator {
 
         // if the last leg on the path can connect to the sink node, store the current path
         Leg leg = legs.get(legIndex);
-        if(leg.getArrPort().equals(tail.getSinkPort())) {
-            LocalDateTime newArrTime = leg.getArrTime().plusMinutes(delayTimeInMin);
+        if(leg.getArrPort().equals(tail.getSinkPort()))
             storeCurrentPath();
-        }
 
         // dive to current node's neighbors
         if(adjacencyList.containsKey(legIndex)) {
@@ -122,9 +120,5 @@ public class PathEnumerator {
 
     private LocalDateTime getNewDepTime(Leg leg)  {
         return leg.getDepTime().plusMinutes(delays[leg.getIndex()]);
-    }
-
-    private LocalDateTime getNewArrTime(Leg leg) {
-        return leg.getArrTime().plusMinutes(delays[leg.getIndex()]);
     }
 }

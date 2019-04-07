@@ -2,7 +2,6 @@ package stochastic.network;
 
 import stochastic.domain.Leg;
 import stochastic.domain.Tail;
-import stochastic.utility.CostUtility;
 
 import java.util.ArrayList;
 
@@ -18,7 +17,6 @@ public class Path {
     private Tail tail;
     private ArrayList<Leg> legs;
     private ArrayList<Integer> delayTimesInMin;
-    private double cost;
     private static int pathCounter = 0;
     private int index;
     
@@ -26,7 +24,6 @@ public class Path {
         this.tail = tail;
         legs = new ArrayList<>();
         delayTimesInMin = new ArrayList<>();
-        cost = 0.0;
         index = pathCounter;
         pathCounter++;
     }
@@ -49,21 +46,6 @@ public class Path {
         return pathStr.toString();
     }
 
-    public boolean equals(Path other) {
-	    if (legs.size() != other.legs.size())
-	        return false;
-
-	    for (int i = 0; i < legs.size(); ++i) {
-	        if (!legs.get(i).getId().equals(other.legs.get(i).getId()))
-	            return false;
-
-	        if (!delayTimesInMin.get(i).equals(other.delayTimesInMin.get(i)))
-	            return false;
-        }
-
-        return true;
-    }
-
     static void resetPathCounter() {
 	    pathCounter = 0;
     }
@@ -75,7 +57,6 @@ public class Path {
         	delayTimeInMin = 0;
         
         delayTimesInMin.add(delayTimeInMin);
-        cost += CostUtility.getAssignCostForLegToTail(leg, tail, delayTimeInMin);
     }
 
     public Tail getTail() {
@@ -86,28 +67,12 @@ public class Path {
         return legs;
     }
 
-    public void setCost(double cost) {
-        this.cost = cost;
-    }
-
-    public double getCost() {
-        return cost;
-    }    
-
     public int getIndex() {
 		return index;
-	}    
-
-	void setIndex(int index) {
-		this.index = index;
 	}
 
 	public ArrayList<Integer> getDelayTimesInMin() {
 		return delayTimesInMin;
-	}
-
-	public void setDelayTimesInMin(ArrayList<Integer> delayTimesInMin) {
-		this.delayTimesInMin = delayTimesInMin;
 	}
 
 	public void print() {

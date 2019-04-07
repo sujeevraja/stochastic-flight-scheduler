@@ -139,7 +139,8 @@ public class SubSolverRunnable implements Runnable {
                 updateUpperBound(ss.getObjValue());
             }
 
-            logger.debug("Iter " + iter + ": subproblem objective value: " + ss.getObjValue());
+            logger.info("Total number of paths: " + allPaths.size());
+            logger.info("Iter " + iter + ": subproblem objective value: " + ss.getObjValue());
             ss.end();
         } catch (OptException oe) {
             logger.error("submodel run for scenario " + scenarioNum + " failed.");
@@ -184,7 +185,6 @@ public class SubSolverRunnable implements Runnable {
 
             ss.solve();
             ss.collectDuals();
-            logger.debug("Iter " + iter + ": subproblem objective value: " + ss.getObjValue());
 
             if (Parameters.isDebugVerbose())
                 ss.writeCplexSolution(name + ".xml");
@@ -226,20 +226,18 @@ public class SubSolverRunnable implements Runnable {
                 }
             }
 
-            int numPaths = 0;
-            for (Map.Entry<Integer, ArrayList<Path>> entry : pathsAll.entrySet())
-                numPaths += entry.getValue().size();
-
-            logger.debug("Iter " + iter + ": number of paths: " + numPaths);
-            logger.debug("Iter " + iter + ": completed column-gen iteration " + columnGenIter);
-
             // Cleanup CPLEX continers of the SubSolver object.
             if (!optimal)
                 ss.end();
             ++columnGenIter;
         }
 
-        logger.info("Iter " + iter + ": reached sub-problem LP optimality");
+        int numPaths = 0;
+        for (Map.Entry<Integer, ArrayList<Path>> entry : pathsAll.entrySet())
+            numPaths += entry.getValue().size();
+
+        logger.info("Total number of paths: " + numPaths);
+        logger.info("Iter " + iter + ": subproblem objective value: " + ss.getObjValue());
 
         if (solveForQuality) {
             // Solve problem with all columns as MIP to collect objective value.

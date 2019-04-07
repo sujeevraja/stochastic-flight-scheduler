@@ -26,10 +26,6 @@ class BendersData {
         cuts.add(cut);
     }
 
-    ArrayList<BendersCut> getCuts() {
-        return cuts;
-    }
-
     BendersCut getCut(int cutIndex) {
         return cuts.get(cutIndex);
     }

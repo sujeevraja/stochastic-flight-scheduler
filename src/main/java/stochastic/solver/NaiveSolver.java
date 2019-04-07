@@ -155,7 +155,7 @@ public class NaiveSolver {
             cplex.writeSolution("logs/naive_solution.xml");
 
         final double cplexObjValue = cplex.getObjValue();
-        logger.debug("naive model CPLEX objective: " + cplexObjValue);
+        logger.info("naive model CPLEX objective: " + cplexObjValue);
 
         double[] vValues = cplex.getValues(v);
         double excessDelayPenalty = 0.0;
@@ -163,7 +163,7 @@ public class NaiveSolver {
             if (vValues[i] >= Constants.EPS)
                 excessDelayPenalty += (vValues[i] * legs.get(i).getDelayCostPerMin());
         }
-        logger.debug("excess delay penalty: " + excessDelayPenalty);
+        logger.info("excess delay penalty: " + excessDelayPenalty);
 
         double[][] xValues = new double[durations.length][legs.size()];
         int[] reschedules = new int[legs.size()];

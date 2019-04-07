@@ -11,8 +11,6 @@ import stochastic.solver.SolverUtility;
 import stochastic.solver.SubSolverRunnable;
 import stochastic.utility.CSVHelper;
 import org.apache.commons.math3.distribution.LogNormalDistribution;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -27,50 +25,14 @@ class QualityChecker {
      * QualityChecker generates random delays to compare different reschedule solutions including the original
      * schedule (i.e no reschedule). This is done by running the second-stage model as a MIP.
      */
-    private final static Logger logger = LogManager.getLogger(QualityChecker.class);
     private DataRegistry dataRegistry;
     private int[] zeroReschedules;
     private Scenario[] testScenarios;
-
-    private double[] objectives;
-    private double[] solutionTimesInSeconds;
-    private double expectedObjective;
-    private double averageSolutionTime;
 
     QualityChecker(DataRegistry dataRegistry) {
         this.dataRegistry = dataRegistry;
         zeroReschedules = new int[dataRegistry.getLegs().size()];
         Arrays.fill(zeroReschedules, 0);
-    }
-
-    public double[] getObjectives() {
-        return objectives;
-    }
-
-    public double[] getSolutionTimesInSeconds() {
-        return solutionTimesInSeconds;
-    }
-
-    public double getExpectedObjective() {
-        return expectedObjective;
-    }
-
-    public double getAverageSolutionTime() {
-        return averageSolutionTime;
-    }
-
-    ArrayList<String> getComparisonRow(String name) {
-        ArrayList<String> row = new ArrayList<>();
-        row.add(name);
-
-        for (int i = 0; i < objectives.length; ++i) {
-            row.add(Double.toString(objectives[i]));
-            row.add(Double.toString(solutionTimesInSeconds[i]));
-        }
-
-        row.add(Double.toString(expectedObjective));
-        row.add(Double.toString(averageSolutionTime));
-        return row;
     }
 
     void generateTestDelays() {
@@ -110,7 +72,7 @@ class QualityChecker {
                        delaySolution.getSolutionTimeInSeconds()};
 
                 ArrayList<String> row = new ArrayList<>();
-                row.add("scenario " + Integer.toString(i));
+                row.add("scenario " + i);
                 row.add(Double.toString(probability));
                 row.add(rescheduleSolution.getName());
 
@@ -158,8 +120,6 @@ class QualityChecker {
     }
 
     private DelaySolution getDelaySolution(Scenario scen, int scenarioNum, String slnName, int[] reschedules) {
-        reset();
-
         // update leg departure time according to reschedule values.
         if (reschedules != null) {
             for (Leg leg : dataRegistry.getLegs())
@@ -201,12 +161,5 @@ class QualityChecker {
             leg.revertReschedule();
 
         return delaySolution;
-    }
-
-    private void reset() {
-        objectives = new double[testScenarios.length];
-        solutionTimesInSeconds = new double[testScenarios.length];
-        expectedObjective = 0.0;
-        averageSolutionTime = 0.0;
     }
 }
