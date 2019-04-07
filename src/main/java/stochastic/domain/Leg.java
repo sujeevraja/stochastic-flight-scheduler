@@ -14,7 +14,6 @@ public class Leg {
     private Integer arrPort;
     private int turnTimeInMin;
     private Integer origTailId;
-    private int blockTimeInMin;
     private double rescheduleCostPerMin; // first stage reschedule cost
     private double delayCostPerMin; // second stage reschedule cost
 
@@ -34,7 +33,7 @@ public class Leg {
         this.arrPort = arrPort;
         this.turnTimeInMin = turnTimeInMin;
         this.origTailId = origTailId;
-        this.blockTimeInMin = (int) Duration.between(depTime, arrTime).toMinutes();
+        int blockTimeInMin = (int) Duration.between(depTime, arrTime).toMinutes();
         this.rescheduleCostPerMin = 0.1 * blockTimeInMin;
         this.delayCostPerMin = 0.5 * blockTimeInMin;
 
@@ -76,10 +75,6 @@ public class Leg {
 
     public Integer getOrigTailId() {
         return origTailId;
-    }
-
-    public int getBlockTimeInMin() {
-        return blockTimeInMin;
     }
 
     public double getRescheduleCostPerMin() {

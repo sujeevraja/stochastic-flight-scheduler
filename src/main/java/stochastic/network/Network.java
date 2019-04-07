@@ -46,7 +46,6 @@ public class Network {
             ArrayList<Path> tailPaths = pe.generatePaths();
             paths.addAll(tailPaths);
         }
-        logger.info("Total number of paths: " + paths.size());
         Path.resetPathCounter();
         return paths;
     }
@@ -55,7 +54,7 @@ public class Network {
         // Builds leg adjacency list by evaluating connections including delays.
         logger.info("started building adjacency list...");
         adjacencyList = new HashMap<>();
-        final Integer numLegs = legs.size();
+        final int numLegs = legs.size();
         for(int i = 0; i < numLegs - 1; ++i) {
             Leg currLeg = legs.get(i);
 

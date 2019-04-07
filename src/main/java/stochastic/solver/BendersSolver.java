@@ -156,7 +156,6 @@ public class BendersSolver {
 
         BendersData bendersData = ssWrapper.getBendersData();
         if (Parameters.isBendersMultiCut()) {
-            ArrayList<BendersCut> cuts = bendersData.getCuts();
             double[] thetaValues = masterSolver.getThetaValues();
 
             for (int i = 0; i < dataRegistry.getDelayScenarios().length; ++i) {
