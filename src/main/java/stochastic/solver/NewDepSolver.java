@@ -1,7 +1,6 @@
 package stochastic.solver;
 
 import ilog.concert.IloException;
-import ilog.concert.IloIntVar;
 import ilog.concert.IloLinearNumExpr;
 import ilog.cplex.IloCplex;
 import org.apache.logging.log4j.LogManager;
@@ -27,12 +26,9 @@ public class NewDepSolver {
                 cplex.setOut(null);
 
             // master model
-            int[] durations = Parameters.getDurations();
             ArrayList<Leg> legs = dataRegistry.getLegs();
-            IloIntVar[][] x = new IloIntVar[durations.length][legs.size()];
-
             ArrayList<Tail> tails = dataRegistry.getTails();
-            MasterModelBuilder masterModelBuilder = new MasterModelBuilder(cplex, x, legs, tails);
+            MasterModelBuilder masterModelBuilder = new MasterModelBuilder(legs, tails, cplex);
 
             masterModelBuilder.buildVariables();
 
@@ -44,9 +40,10 @@ public class NewDepSolver {
 
 
             // solving
-
            cplex.addMinimize(objExpr);
            cplex.solve();
+           double obj = cplex.getObjValue();
+           logger.info("DEP objective: " + obj);
         } catch (IloException ex) {
             logger.error(ex);
             throw new OptException("cplex error solving DEP model");

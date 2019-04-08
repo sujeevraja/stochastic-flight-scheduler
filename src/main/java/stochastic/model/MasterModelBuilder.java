@@ -10,19 +10,20 @@ import java.time.Duration;
 import java.util.ArrayList;
 
 public class MasterModelBuilder {
-    private IloCplex cplex;
-    private IloIntVar[][] x; // x[i][j] = 1 if durations[i] selected for leg[j] reschedule, 0 otherwise.
-
     private ArrayList<Leg> legs;
     private ArrayList<Tail> tails;
     private int[] durations;
 
-    public MasterModelBuilder(IloCplex cplex, IloIntVar[][] x, ArrayList<Leg> legs, ArrayList<Tail> tails) {
-        this.cplex = cplex;
-        this.x = x;
+    private IloCplex cplex;
+    private IloIntVar[][] x; // x[i][j] = 1 if durations[i] selected for leg[j] reschedule, 0 otherwise.
+
+    public MasterModelBuilder(ArrayList<Leg> legs, ArrayList<Tail> tails, IloCplex cplex) {
         this.legs = legs;
         this.tails = tails;
         this.durations = Parameters.getDurations();
+
+        this.cplex = cplex;
+        x = new IloIntVar[durations.length][legs.size()];
     }
 
     public void buildVariables() throws IloException {
@@ -100,5 +101,17 @@ public class MasterModelBuilder {
 
         IloRange budgetConstraint = cplex.addLe(budgetExpr, (double) Parameters.getRescheduleTimeBudget());
         budgetConstraint.setName("reschedule_time_budget");
+    }
+
+    public IloIntVar[][] getX() {
+        return x;
+    }
+
+    public double[][] getxValues() throws IloException {
+        double[][] xValues = new double[durations.length][];
+        for (int i = 0; i < durations.length; i++) {
+            xValues[i] = cplex.getValues(x[i]);
+        }
+        return xValues;
     }
 }

@@ -25,7 +25,6 @@ public class MasterSolver {
 
     // CPLEX variables
     private IloCplex cplex;
-    private IloIntVar[][] x; // x[i][j] = 1 if durations[i] selected for leg[j] reschedule, 0 otherwise.
     private IloObjective obj;
     private IloNumVar[] thetas;
     private MasterModelBuilder masterModelBuilder;
@@ -48,9 +47,7 @@ public class MasterSolver {
         if (!Parameters.isDebugVerbose())
             cplex.setOut(null);
 
-        x = new IloIntVar[durations.length][legs.size()];
-
-        masterModelBuilder = new MasterModelBuilder(cplex, x, legs, tails);
+        masterModelBuilder = new MasterModelBuilder(legs, tails, cplex);
     }
 
     void constructFirstStage() throws IloException {
@@ -75,14 +72,12 @@ public class MasterSolver {
     public void solve(int iter) throws IloException {
         cplex.solve();
         objValue = cplex.getObjValue();
-
         logger.info("master objective: " + objValue);
-        xValues = new double[durations.length][legs.size()];
+        xValues = masterModelBuilder.getxValues();
         Arrays.fill(reschedules, 0);
 
         rescheduleCost = 0;
         for (int i = 0; i < durations.length; i++) {
-            xValues[i] = cplex.getValues(x[i]);
             for (int j = 0; j < legs.size(); ++j)
                 if (xValues[i][j] >= Constants.EPS) {
                     reschedules[j] = durations[i];
@@ -109,8 +104,9 @@ public class MasterSolver {
     void addBendersCut(BendersCut cutData, int thetaIndex) throws IloException {
         IloLinearNumExpr cons = cplex.linearNumExpr();
 
-        // TODO remove rounding in this function
         double[][] beta = cutData.getBeta();
+        IloIntVar[][] x = masterModelBuilder.getX();
+
         for (int i = 0; i < durations.length; i++)
             for (int j = 0; j < legs.size(); j++)
                 if (Math.abs(beta[i][j]) >= Constants.EPS)
@@ -142,10 +138,6 @@ public class MasterSolver {
     }
 
     void end() {
-        // CPLEX variables
-        x = null;
-        thetas = null;
-        obj = null;
         cplex.end();
     }
 
