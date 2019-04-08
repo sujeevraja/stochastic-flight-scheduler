@@ -2,12 +2,12 @@ package stochastic.solver;
 
 import stochastic.domain.Leg;
 import stochastic.domain.Tail;
+import stochastic.model.MasterModelBuilder;
 import stochastic.registry.Parameters;
 import stochastic.utility.Constants;
 import ilog.concert.*;
 import ilog.cplex.IloCplex;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -20,7 +20,6 @@ public class MasterSolver {
      */
     private final static Logger logger = LogManager.getLogger(MasterSolver.class);
     private ArrayList<Leg> legs;
-    private ArrayList<Tail> tails;
     private int[] durations;
     private int numScenarios;
 
@@ -28,8 +27,8 @@ public class MasterSolver {
     private IloCplex cplex;
     private IloIntVar[][] x; // x[i][j] = 1 if durations[i] selected for leg[j] reschedule, 0 otherwise.
     private IloObjective obj;
-
     private IloNumVar[] thetas;
+    private MasterModelBuilder masterModelBuilder;
 
     private double objValue;
     private double[][] xValues;
@@ -41,7 +40,6 @@ public class MasterSolver {
 
     MasterSolver(ArrayList<Leg> legs, ArrayList<Tail> tails, int[] durations, int numScenarios) throws IloException {
         this.legs = legs;
-        this.tails = tails;
         this.durations = durations;
         this.numScenarios = numScenarios;
         this.reschedules = new int[legs.size()];
@@ -51,6 +49,14 @@ public class MasterSolver {
             cplex.setOut(null);
 
         x = new IloIntVar[durations.length][legs.size()];
+
+        masterModelBuilder = new MasterModelBuilder(cplex, x, legs, tails);
+    }
+
+    void constructFirstStage() throws IloException {
+        masterModelBuilder.buildVariables();
+        obj = cplex.addMinimize(masterModelBuilder.getObjExpr());
+        masterModelBuilder.constructFirstStage();
     }
 
     void addTheta() throws IloException {
@@ -98,79 +104,6 @@ public class MasterSolver {
 
     void writeCPLEXSolution(String fName) throws IloException {
         cplex.writeSolution(fName);
-    }
-
-    void constructFirstStage() throws IloException {
-        for (int i = 0; i < durations.length; i++)
-            for (int j = 0; j < legs.size(); j++) {
-                String varName = "x_" + durations[i] + "_" + legs.get(j).getId();
-                x[i][j] = cplex.boolVar(varName);
-            }
-
-        addObjective();
-        addDurationCoverConstraints();
-        addOriginalRoutingConstraints();
-        addBudgetConstraint();
-    }
-
-    private void addObjective() throws IloException {
-        // Ensure that reschedule costing is cheaper than delay costing. Otherwise, there is no difference between
-        // planning (first stage) and recourse (second stage).
-
-        IloLinearNumExpr cons = cplex.linearNumExpr();
-        for (int i = 0; i < durations.length; i++)
-            for (int j = 0; j < legs.size(); j++)
-                cons.addTerm(x[i][j], durations[i] * legs.get(j).getRescheduleCostPerMin());
-
-        obj = cplex.addMinimize(cons);
-    }
-
-    private void addDurationCoverConstraints() throws IloException {
-        for (int i = 0; i < legs.size(); i++) {
-            IloLinearNumExpr cons = cplex.linearNumExpr();
-
-            for (int j = 0; j < durations.length; j++)
-                cons.addTerm(x[j][i], 1);
-
-            IloRange r = cplex.addLe(cons, 1);
-            r.setName("duration_cover_" + legs.get(i).getId());
-        }
-    }
-
-    private void addOriginalRoutingConstraints() throws IloException {
-        for(Tail tail : tails) {
-            ArrayList<Leg> tailLegs = tail.getOrigSchedule();
-            if(tailLegs.size() <= 1)
-                continue;
-
-            for(int i = 0; i < tailLegs.size() - 1; ++i) {
-                Leg currLeg = tailLegs.get(i);
-                Leg nextLeg = tailLegs.get(i + 1);
-                int currLegIndex = currLeg.getIndex();
-                int nextLegIndex = nextLeg.getIndex();
-
-                IloLinearNumExpr cons = cplex.linearNumExpr();
-                for (int j = 0; j < durations.length; j++) {
-                    cons.addTerm(x[j][currLegIndex], durations[j]);
-                    cons.addTerm(x[j][nextLegIndex], -durations[j]);
-                }
-
-                int rhs = (int) Duration.between(currLeg.getArrTime(), nextLeg.getDepTime()).toMinutes();
-                rhs -= currLeg.getTurnTimeInMin();
-                IloRange r = cplex.addLe(cons, (double) rhs);
-                r.setName("connect_" + currLeg.getId() + "_" + nextLeg.getId());
-            }
-        }
-    }
-
-    private void addBudgetConstraint() throws IloException {
-        IloLinearNumExpr budgetExpr = cplex.linearNumExpr();
-        for (int i = 0; i < durations.length; ++i)
-            for (int j = 0; j < legs.size(); ++j)
-                budgetExpr.addTerm(x[i][j], durations[i]);
-
-        IloRange budgetConstraint = cplex.addLe(budgetExpr, (double) Parameters.getRescheduleTimeBudget());
-        budgetConstraint.setName("reschedule_time_budget");
     }
 
     void addBendersCut(BendersCut cutData, int thetaIndex) throws IloException {
