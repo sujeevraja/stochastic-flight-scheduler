@@ -13,7 +13,7 @@ import stochastic.registry.DataRegistry;
 import stochastic.registry.Parameters;
 import stochastic.solver.BendersSolver;
 import stochastic.solver.NaiveSolver;
-import stochastic.solver.NewDepSolver;
+import stochastic.solver.DepSolver;
 import stochastic.utility.OptException;
 import ilog.concert.IloException;
 import org.apache.commons.math3.distribution.LogNormalDistribution;
@@ -109,8 +109,8 @@ public class Controller {
     }
 
     final void solveWithDEP() throws OptException {
-        NewDepSolver newDepSolver = new NewDepSolver();
-        newDepSolver.solve(dataRegistry);
+        DepSolver depSolver = new DepSolver();
+        depSolver.solve(dataRegistry);
     }
 
     /**
