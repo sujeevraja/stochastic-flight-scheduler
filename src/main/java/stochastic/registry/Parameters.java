@@ -4,8 +4,25 @@ public class Parameters {
     private static String instancePath;
     private static int rescheduleTimeBudget;
     private static int numScenariosToGenerate;
+
     private static double scale;
     private static double shape;
+
+    public enum DistributionType { EXPONENTIAL, TRUNCATED_NORMAL, LOGNORMAL }
+    private static DistributionType distributionType;
+    private static double distributionMean;
+    private static double distributionVariance;
+
+    /**
+     * FlightPickStrategy specifies the strategy to select flights with primary delays.
+     *
+     * ALL: pick all flights.
+     * HUB: all flights departing from the airport that has the most departures.
+     * RUSH_TIME: pick flights in the first quarter of the day.
+     */
+    public enum FlightPickStrategy { ALL, HUB, RUSH_TIME }
+    private static FlightPickStrategy flightPickStrategy;
+
     private static int[] durations;
     private static boolean solveDEP;
     private static boolean bendersMultiCut;
@@ -21,11 +38,7 @@ public class Parameters {
      *
      * The number of paths for the BEST_PATHS and FIRST_PATHS strategy is specified using "numReducedCostPaths."
      */
-    public enum ReducedCostStrategy {
-        ALL_PATHS,
-        BEST_PATHS,
-        FIRST_PATHS,
-    }
+    public enum ReducedCostStrategy { ALL_PATHS, BEST_PATHS, FIRST_PATHS, }
     private static ReducedCostStrategy reducedCostStrategy;
     private static int numReducedCostPaths; // number of reduced cost paths to collect in second stage.
 
@@ -82,6 +95,38 @@ public class Parameters {
 
     public static double getShape() {
         return shape;
+    }
+
+    public static void setDistributionType(DistributionType distributionType) {
+        Parameters.distributionType = distributionType;
+    }
+
+    public static DistributionType getDistributionType() {
+        return distributionType;
+    }
+
+    public static void setDistributionMean(double distributionMean) {
+        Parameters.distributionMean = distributionMean;
+    }
+
+    public static double getDistributionMean() {
+        return distributionMean;
+    }
+
+    public static void setDistributionVariance(double distributionVariance) {
+        Parameters.distributionVariance = distributionVariance;
+    }
+
+    public static double getDistributionVariance() {
+        return distributionVariance;
+    }
+
+    public static void setFlightPickStrategy(FlightPickStrategy flightPickStrategy) {
+        Parameters.flightPickStrategy = flightPickStrategy;
+    }
+
+    public static FlightPickStrategy getFlightPickStrategy() {
+        return flightPickStrategy;
     }
 
     public static void setDurations(int[] durations) {
@@ -152,6 +197,14 @@ public class Parameters {
         return fullEnumeration;
     }
 
+    public static void setDebugVerbose(boolean debugVerbose) {
+        Parameters.debugVerbose = debugVerbose;
+    }
+
+    public static boolean isDebugVerbose() {
+        return debugVerbose;
+    }
+
     public static void setRunSecondStageInParallel(boolean runSecondStageInParallel) {
         Parameters.runSecondStageInParallel = runSecondStageInParallel;
     }
@@ -206,13 +259,5 @@ public class Parameters {
 
     public static double getExcessTarget() {
         return excessTarget;
-    }
-
-    public static void setDebugVerbose(boolean debugVerbose) {
-        Parameters.debugVerbose = debugVerbose;
-    }
-
-    public static boolean isDebugVerbose() {
-        return debugVerbose;
     }
 }

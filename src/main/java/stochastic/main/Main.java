@@ -40,6 +40,12 @@ public class Main {
         Parameters.setNumScenariosToGenerate(10);
         Parameters.setScale(3.5);
         Parameters.setShape(0.25);
+
+        Parameters.setDistributionType(Parameters.DistributionType.EXPONENTIAL);
+        Parameters.setDistributionMean(5);
+        Parameters.setDistributionVariance(10); // ignored for exponentials.
+        Parameters.setFlightPickStrategy(Parameters.FlightPickStrategy.ALL);
+
         Parameters.setDurations(new int[]{5, 10, 15, 20, 25, 30});
         // Parameters.setDurations(new int[]{5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60});
         Parameters.setSolveDEP(true);
