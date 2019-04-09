@@ -20,6 +20,8 @@ public class Main {
             controller.readData();
             controller.buildScenarios();
             controller.solveWithNaiveApproach();
+            if (Parameters.isSolveDEP())
+                controller.solveWithDEP();
             controller.solveWithBenders();
             controller.processSolution();
 
@@ -56,6 +58,7 @@ public class Main {
         Parameters.setShape(0.25);
         Parameters.setDurations(new int[]{5, 10, 15, 20, 25, 30});
         // Parameters.setDurations(new int[]{5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60});
+        Parameters.setSolveDEP(true);
 
         Parameters.setBendersMultiCut(true);
         Parameters.setBendersTolerance(1e-3);
@@ -67,7 +70,7 @@ public class Main {
         Parameters.setNumReducedCostPaths(10);
 
         // Debugging parameter
-        Parameters.setDebugVerbose(false); // Set to true to see CPLEX logs, lp files and solution xml files.
+        Parameters.setDebugVerbose(true); // Set to true to see CPLEX logs, lp files and solution xml files.
 
         // Multi-threading parameters
         Parameters.setRunSecondStageInParallel(false);

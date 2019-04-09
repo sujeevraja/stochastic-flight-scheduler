@@ -26,7 +26,6 @@ public class SubSolver {
     private ArrayList<Tail> tails;
     private ArrayList<Leg> legs;
     private int[] reschedules;  // reschedules[i] is the first-stage reschedule chosen for legs[i].
-    private double probability;
     private boolean solveAsMIP;
 
     private IloCplex cplex;
@@ -42,11 +41,10 @@ public class SubSolver {
     private double[][] dualsBound;
     private double dualRisk;
 
-    SubSolver(ArrayList<Tail> tails, ArrayList<Leg> legs, int[] reschedules, double probability) {
+    SubSolver(ArrayList<Tail> tails, ArrayList<Leg> legs, int[] reschedules) {
         this.tails = tails;
         this.legs = legs;
         this.reschedules = reschedules;
-        this.probability = probability;
         solveAsMIP = false;
     }
 

@@ -120,14 +120,37 @@ public class SubModelBuilder {
                 delayRHS[i] += reschedules[i];
 
         if (Parameters.isExpectedExcess()) {
-            double xVal = Arrays.stream(reschedules).sum();
-            IloLinearNumExpr riskExpr = cplex.linearNumExpr();
+            double xVal = 0;
+            for (int i = 0; i < numLegs; ++i)
+                if (reschedules[i] > 0)
+                    xVal += reschedules[i] * legs.get(i).getRescheduleCostPerMin();
 
+            IloLinearNumExpr riskExpr = cplex.linearNumExpr();
             for (int i = 0; i < numLegs; i++)
-                riskExpr.addTerm(d[i], 1.5);
+                riskExpr.addTerm(d[i], legs.get(i).getDelayCostPerMin());
 
             riskExpr.addTerm(v, -1);
             riskConstraint = cplex.addLe(riskExpr, Parameters.getExcessTarget() - xVal, "risk");
+        }
+    }
+
+    public void updateModelWithFirstStageVars(IloIntVar[][] x) throws IloException {
+        int[] durations = Parameters.getDurations();
+        for (int i = 0; i < x.length; ++i)
+            for (int j = 0; j < numLegs; ++j)
+                delayExprs[j].addTerm(x[i][j], -durations[i]);
+
+        if (Parameters.isExpectedExcess()) {
+            IloLinearNumExpr riskExpr = cplex.linearNumExpr();
+            for (int i = 0; i < x.length; ++i)
+                for (int j = 0; j < x[i].length; ++j)
+                    riskExpr.addTerm(x[i][j],  durations[i] * legs.get(j).getRescheduleCostPerMin());
+
+            for (int i = 0; i < numLegs; i++)
+                riskExpr.addTerm(d[i], legs.get(i).getDelayCostPerMin());
+
+            riskExpr.addTerm(v, -1);
+            riskConstraint = cplex.addLe(riskExpr, Parameters.getExcessTarget(), "risk");
         }
     }
 
