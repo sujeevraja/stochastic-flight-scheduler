@@ -77,6 +77,8 @@ public class Controller {
             outputManager.addRescheduleSolution(bendersSolver.getFinalRescheduleSolution());
             outputManager.addKpi("benders solution time (seconds)", bendersSolver.getSolutionTime());
             outputManager.addKpi("benders iterations", bendersSolver.getIteration());
+            outputManager.addKpi("benders lower bound", bendersSolver.getLowerBound());
+            outputManager.addKpi("benders upper bound", bendersSolver.getUpperBound());
             outputManager.addKpi("benders gap (%)", bendersSolver.getPercentGap());
             outputManager.addKpi("benders cuts added", bendersSolver.getNumBendersCuts());
 
@@ -111,6 +113,8 @@ public class Controller {
     final void solveWithDEP() throws OptException {
         DepSolver depSolver = new DepSolver();
         depSolver.solve(dataRegistry);
+        outputManager.addKpi("dep solution time (seconds)", depSolver.getSolutionTimeInSeconds());
+        outputManager.addKpi("dep objective", depSolver.getObjValue());
     }
 
     /**

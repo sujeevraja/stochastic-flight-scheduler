@@ -15,16 +15,21 @@ import stochastic.registry.DataRegistry;
 import stochastic.registry.Parameters;
 import stochastic.utility.OptException;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public class DepSolver {
     private final static Logger logger = LogManager.getLogger(MasterSolver.class);
+    private double objValue;
+    private double solutionTimeInSeconds;
 
     public DepSolver() {}
 
     public void solve(DataRegistry dataRegistry) throws OptException {
         try {
+            Instant start = Instant.now();
             logger.info("starting DEP...");
             IloCplex cplex = new IloCplex();
             if (!Parameters.isDebugVerbose())
@@ -64,15 +69,25 @@ public class DepSolver {
            if (Parameters.isDebugVerbose())
                cplex.exportModel("logs/dep.lp");
            cplex.solve();
-           double obj = cplex.getObjValue();
-            logger.info("DEP objective: " + obj);
+           objValue = cplex.getObjValue();
+            logger.info("DEP objective: " + objValue);
            if (Parameters.isDebugVerbose())
                cplex.writeSolution("logs/dep_solution.xml");
            cplex.end();
            logger.info("completed DEP");
+
+           solutionTimeInSeconds = Duration.between(start, Instant.now()).toMillis() / 1000.0;
         } catch (IloException ex) {
             logger.error(ex);
             throw new OptException("cplex error solving DEP model");
         }
+    }
+
+    public double getObjValue() {
+        return objValue;
+    }
+
+    public double getSolutionTimeInSeconds() {
+        return solutionTimeInSeconds;
     }
 }
