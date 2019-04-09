@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class DepSolver {
-    private final static Logger logger = LogManager.getLogger(MasterSolver.class);
+    private final static Logger logger = LogManager.getLogger(DepSolver.class);
     private double objValue;
     private double solutionTimeInSeconds;
 
@@ -70,13 +70,14 @@ public class DepSolver {
                cplex.exportModel("logs/dep.lp");
            cplex.solve();
            objValue = cplex.getObjValue();
-            logger.info("DEP objective: " + objValue);
+           logger.info("DEP objective: " + objValue);
            if (Parameters.isDebugVerbose())
                cplex.writeSolution("logs/dep_solution.xml");
            cplex.end();
            logger.info("completed DEP");
 
            solutionTimeInSeconds = Duration.between(start, Instant.now()).toMillis() / 1000.0;
+            logger.info("DEP solution time (seconds): " + solutionTimeInSeconds);
         } catch (IloException ex) {
             logger.error(ex);
             throw new OptException("cplex error solving DEP model");
