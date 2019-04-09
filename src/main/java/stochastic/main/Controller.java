@@ -13,6 +13,7 @@ import stochastic.registry.DataRegistry;
 import stochastic.registry.Parameters;
 import stochastic.solver.BendersSolver;
 import stochastic.solver.NaiveSolver;
+import stochastic.solver.DepSolver;
 import stochastic.utility.OptException;
 import ilog.concert.IloException;
 import org.apache.commons.math3.distribution.LogNormalDistribution;
@@ -76,6 +77,8 @@ public class Controller {
             outputManager.addRescheduleSolution(bendersSolver.getFinalRescheduleSolution());
             outputManager.addKpi("benders solution time (seconds)", bendersSolver.getSolutionTime());
             outputManager.addKpi("benders iterations", bendersSolver.getIteration());
+            outputManager.addKpi("benders lower bound", bendersSolver.getLowerBound());
+            outputManager.addKpi("benders upper bound", bendersSolver.getUpperBound());
             outputManager.addKpi("benders gap (%)", bendersSolver.getPercentGap());
             outputManager.addKpi("benders cuts added", bendersSolver.getNumBendersCuts());
 
@@ -105,6 +108,13 @@ public class Controller {
             logger.error(ex);
             throw new OptException("exception solving naive model");
         }
+    }
+
+    final void solveWithDEP() throws OptException {
+        DepSolver depSolver = new DepSolver();
+        depSolver.solve(dataRegistry);
+        outputManager.addKpi("dep solution time (seconds)", depSolver.getSolutionTimeInSeconds());
+        outputManager.addKpi("dep objective", depSolver.getObjValue());
     }
 
     /**

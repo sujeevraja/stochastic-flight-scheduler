@@ -50,7 +50,7 @@ tasks {
 
     register("cleanfiles", Delete::class.java) {
         delete(fileTree("logs") {
-           include("*.log")
+           include("*.csv", "*.lp", "*.log", "*.xml")
         })
         delete(fileTree("solution") {
             include("*.yaml", "*.csv")

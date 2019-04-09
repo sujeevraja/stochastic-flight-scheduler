@@ -271,4 +271,12 @@ public class BendersSolver {
         row.add(Double.toString(alpha));
         CSVHelper.writeLine(cutWriter, row);
     }
+
+    public double getLowerBound() {
+        return lowerBound;
+    }
+
+    public double getUpperBound() {
+        return upperBound;
+    }
 }

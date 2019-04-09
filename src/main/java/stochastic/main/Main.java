@@ -20,24 +20,10 @@ public class Main {
             controller.readData();
             controller.buildScenarios();
             controller.solveWithNaiveApproach();
+            if (Parameters.isSolveDEP())
+                controller.solveWithDEP();
             controller.solveWithBenders();
             controller.processSolution();
-
-            /*
-            // ---- SECTION START ----
-            // Sujeev: uncomment this section later, for now, we don't need this.
-            int numTestScenarios = 50;
-            controller.generateDelays(numTestScenarios);
-            controller.processSolution(true, MasterSolver.getxValues(), numTestScenarios);
-            
-            Controller.expExcess = true;            
-            controller.solve(); //BD
-            long tsRARuntime  = (System.currentTimeMillis() - t1)/1000;
-            
-            Controller.expExcess = false;            
-            controller.processSolution(true, MasterSolver.getxValues(), numTestScenarios);
-            // ---- SECTION END ----
-            */
 
             logger.info("completed optimization.");
         } catch (OptException ex) {
@@ -56,6 +42,7 @@ public class Main {
         Parameters.setShape(0.25);
         Parameters.setDurations(new int[]{5, 10, 15, 20, 25, 30});
         // Parameters.setDurations(new int[]{5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60});
+        Parameters.setSolveDEP(true);
 
         Parameters.setBendersMultiCut(true);
         Parameters.setBendersTolerance(1e-3);

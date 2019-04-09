@@ -80,20 +80,16 @@ public class SubSolverRunnable implements Runnable {
     private void solveWithFullEnumeration() throws IloException {
         try {
             // Enumerate all paths for each tail.
-            int[] delays = getTotalDelays();
+            int[] delays = SolverUtility.getTotalDelays(randomDelays, dataRegistry.getLegs().size());
 
             ArrayList<Path> allPaths = dataRegistry.getNetwork().enumeratePathsForTails(
                     dataRegistry.getTails(), delays);
 
             // Store paths for each tail separately. Also add empty paths for each tail.
-            HashMap<Integer, ArrayList<Path>> tailPathsMap = new HashMap<>();
-            for (Tail t : dataRegistry.getTails())
-                tailPathsMap.put(t.getId(), new ArrayList<>(Collections.singletonList(new Path(t))));
+            HashMap<Integer, ArrayList<Path>> tailPathsMap = SolverUtility.getPathsForFullEnum(allPaths,
+                    dataRegistry.getTails());
 
-            for(Path p : allPaths)
-                tailPathsMap.get(p.getTail().getId()).add(p);
-
-            SubSolver ss = new SubSolver(dataRegistry.getTails(), dataRegistry.getLegs(), reschedules, probability);
+            SubSolver ss = new SubSolver(scenarioNum, dataRegistry.getTails(), dataRegistry.getLegs(), reschedules);
             if (solveForQuality)
                 ss.setSolveAsMIP();
             ss.constructSecondStage(tailPathsMap);
@@ -150,8 +146,8 @@ public class SubSolverRunnable implements Runnable {
     }
 
     private void solveWithLabeling() throws IloException, OptException {
-        SubSolver ss = new SubSolver(dataRegistry.getTails(), dataRegistry.getLegs(), reschedules, probability);
-        int[] delays = getTotalDelays();
+        SubSolver ss = new SubSolver(scenarioNum, dataRegistry.getTails(), dataRegistry.getLegs(), reschedules);
+        int[] delays = SolverUtility.getTotalDelays(randomDelays, dataRegistry.getLegs().size());
 
         // Load on-plan paths with propagated delays.
         HashMap<Integer, ArrayList<Path>> pathsAll = pathCache.getCachedPaths();
@@ -271,24 +267,6 @@ public class SubSolverRunnable implements Runnable {
             ss.collectSolution();
             pathCache.addPaths(getBestPaths(ss.getyValues(), pathsAll));
         }
-    }
-
-    /**
-     * Return the total delay time in minutes of each leg for the second stage.
-     *
-     * @return map with leg indices as keys, total delay times as corresponding values.
-     */
-    private int[] getTotalDelays() {
-        ArrayList<Leg> legs = dataRegistry.getLegs();
-        int[] delays = new int[legs.size()];
-        for (int i = 0; i < legs.size(); ++i) {
-            delays[i] = randomDelays.getOrDefault(i, 0);
-
-            // if (reschedules[i] > 0 && delays[i] < reschedules[i])
-            //    delays[i] = reschedules[i];
-        }
-
-        return delays;
     }
 
     private void buildDelaySolution(SubSolver ss, int[] primaryDelays, HashMap<Integer, ArrayList<Path>> tailPaths) {

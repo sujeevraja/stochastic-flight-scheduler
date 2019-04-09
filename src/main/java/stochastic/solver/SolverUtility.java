@@ -7,6 +7,7 @@ import stochastic.network.Path;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -65,5 +66,33 @@ public class SolverUtility {
         }
 
         return initialPaths;
+    }
+
+    /**
+     * Return the total delay time in minutes of each leg for the second stage.
+     *
+     * @return map with leg indices as keys, total delay times as corresponding values.
+     */
+    static int[] getTotalDelays(HashMap<Integer, Integer> randomDelays, int numLegs) {
+        int[] delays = new int[numLegs];
+        for (int i = 0; i < numLegs; ++i) {
+            delays[i] = randomDelays.getOrDefault(i, 0);
+
+            // if (reschedules[i] > 0 && delays[i] < reschedules[i])
+            //    delays[i] = reschedules[i];
+        }
+
+        return delays;
+    }
+
+    static HashMap<Integer, ArrayList<Path>> getPathsForFullEnum(ArrayList<Path> paths, ArrayList<Tail> tails) {
+        HashMap<Integer, ArrayList<Path>> tailPathsMap = new HashMap<>();
+        for (Tail t : tails)
+            tailPathsMap.put(t.getId(), new ArrayList<>(Collections.singletonList(new Path(t))));
+
+        for(Path p : paths)
+            tailPathsMap.get(p.getTail().getId()).add(p);
+
+        return tailPathsMap;
     }
 }
