@@ -89,7 +89,7 @@ public class SubSolverRunnable implements Runnable {
             HashMap<Integer, ArrayList<Path>> tailPathsMap = SolverUtility.getPathsForFullEnum(allPaths,
                     dataRegistry.getTails());
 
-            SubSolver ss = new SubSolver(dataRegistry.getTails(), dataRegistry.getLegs(), reschedules);
+            SubSolver ss = new SubSolver(scenarioNum, dataRegistry.getTails(), dataRegistry.getLegs(), reschedules);
             if (solveForQuality)
                 ss.setSolveAsMIP();
             ss.constructSecondStage(tailPathsMap);
@@ -146,7 +146,7 @@ public class SubSolverRunnable implements Runnable {
     }
 
     private void solveWithLabeling() throws IloException, OptException {
-        SubSolver ss = new SubSolver(dataRegistry.getTails(), dataRegistry.getLegs(), reschedules);
+        SubSolver ss = new SubSolver(scenarioNum, dataRegistry.getTails(), dataRegistry.getLegs(), reschedules);
         int[] delays = SolverUtility.getTotalDelays(randomDelays, dataRegistry.getLegs().size());
 
         // Load on-plan paths with propagated delays.

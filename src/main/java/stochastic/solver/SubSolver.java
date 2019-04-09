@@ -22,7 +22,7 @@ public class SubSolver {
      * SubSolver solves the second-stage problem of minimizing excess recourse delays using a given set of paths.
      */
     private static final Logger logger = LogManager.getLogger(SubSolver.class);
-
+    private int scenarioNum;
     private ArrayList<Tail> tails;
     private ArrayList<Leg> legs;
     private int[] reschedules;  // reschedules[i] is the first-stage reschedule chosen for legs[i].
@@ -41,7 +41,8 @@ public class SubSolver {
     private double[][] dualsBound;
     private double dualRisk;
 
-    SubSolver(ArrayList<Tail> tails, ArrayList<Leg> legs, int[] reschedules) {
+    SubSolver(int scenarioNum, ArrayList<Tail> tails, ArrayList<Leg> legs, int[] reschedules) {
+        this.scenarioNum = scenarioNum;
         this.tails = tails;
         this.legs = legs;
         this.reschedules = reschedules;
@@ -58,7 +59,7 @@ public class SubSolver {
             if (!Parameters.isDebugVerbose())
                 cplex.setOut(null);
 
-            subModelBuilder = new SubModelBuilder(legs, tails, paths, cplex);
+            subModelBuilder = new SubModelBuilder(scenarioNum, legs, tails, paths, cplex);
 
             IloLinearNumExpr objExpr = cplex.linearNumExpr();
             subModelBuilder.buildObjective(objExpr, null);

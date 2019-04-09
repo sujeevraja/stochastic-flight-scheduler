@@ -25,22 +25,6 @@ public class Main {
             controller.solveWithBenders();
             controller.processSolution();
 
-            /*
-            // ---- SECTION START ----
-            // Sujeev: uncomment this section later, for now, we don't need this.
-            int numTestScenarios = 50;
-            controller.generateDelays(numTestScenarios);
-            controller.processSolution(true, MasterSolver.getxValues(), numTestScenarios);
-            
-            Controller.expExcess = true;            
-            controller.solve(); //BD
-            long tsRARuntime  = (System.currentTimeMillis() - t1)/1000;
-            
-            Controller.expExcess = false;            
-            controller.processSolution(true, MasterSolver.getxValues(), numTestScenarios);
-            // ---- SECTION END ----
-            */
-
             logger.info("completed optimization.");
         } catch (OptException ex) {
             logger.error(ex);
@@ -81,7 +65,7 @@ public class Main {
         Parameters.setNumTestScenarios(3);
 
         // Expected excess parameters
-        Parameters.setExpectedExcess(false);
+        Parameters.setExpectedExcess(true);
         Parameters.setRho(0.9);
         Parameters.setExcessTarget(40);
     }

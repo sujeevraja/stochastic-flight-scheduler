@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 public class SubModelBuilder {
+    private String prefix;
     private ArrayList<Leg> legs;
     private int numLegs;
     private ArrayList<Tail> tails;
@@ -35,8 +36,9 @@ public class SubModelBuilder {
     private IloLinearNumExpr[] delayExprs;
     private double[] delayRHS;
 
-    public SubModelBuilder(ArrayList<Leg> legs, ArrayList<Tail> tails, HashMap<Integer, ArrayList<Path>> paths,
-                           IloCplex cplex) throws IloException {
+    public SubModelBuilder(int scenarioNum, ArrayList<Leg> legs, ArrayList<Tail> tails,
+                           HashMap<Integer, ArrayList<Path>> paths, IloCplex cplex) throws IloException {
+        prefix = "s" + scenarioNum + "_";
         this.legs = legs;
         numLegs = legs.size();
         this.tails = tails;
@@ -70,7 +72,7 @@ public class SubModelBuilder {
     public void buildObjective(IloLinearNumExpr objExpr, Double probability) throws IloException {
         for (int i = 0; i < numLegs; i++) {
             Leg leg = legs.get(i);
-            d[i] = cplex.numVar(0, Double.MAX_VALUE, "d_" + leg.getId());
+            d[i] = cplex.numVar(0, Double.MAX_VALUE, prefix + "d_" + leg.getId());
 
             legCoverExprs[i] = cplex.linearNumExpr();
             delayExprs[i] = cplex.linearNumExpr();
@@ -83,7 +85,7 @@ public class SubModelBuilder {
         }
 
         if (Parameters.isExpectedExcess()) {
-            v = cplex.numVar(0, Double.MAX_VALUE, "v");
+            v = cplex.numVar(0, Double.MAX_VALUE, prefix + "v");
             if (probability != null)
                 objExpr.addTerm(v, probability * Parameters.getRho());
             else
@@ -94,7 +96,7 @@ public class SubModelBuilder {
     public void addPathVarsToConstraints() throws IloException {
         for (int i = 0; i < numTails; i++) {
             for (int j = 0; j < y[i].length; j++) {
-                y[i][j] = cplex.numVar(0, Double.MAX_VALUE, "y_" + tails.get(i).getId() + "_" + j);
+                y[i][j] = cplex.numVar(0, Double.MAX_VALUE, prefix + "y_" + tails.get(i).getId() + "_" + j);
 
                 Tail tail = tails.get(i);
                 tailCoverExprs[tail.getIndex()].addTerm(y[i][j], 1.0);
@@ -114,6 +116,12 @@ public class SubModelBuilder {
         }
     }
 
+    /**
+     * This function updates the second stage model using fixed values of the first stage variables (x[i][j]).
+     *
+     * @param reschedules the selected reschedule values for each leg (i.e \sum_p g_p x_{pf} for leg f)
+     * @throws IloException if cplex causes an issue
+     */
     public void updateModelWithRescheduleValues(int[] reschedules) throws IloException {
         for (int i = 0; i < numLegs; i++)
             if (reschedules[i] > 0)
@@ -130,10 +138,16 @@ public class SubModelBuilder {
                 riskExpr.addTerm(d[i], legs.get(i).getDelayCostPerMin());
 
             riskExpr.addTerm(v, -1);
-            riskConstraint = cplex.addLe(riskExpr, Parameters.getExcessTarget() - xVal, "risk");
+            riskConstraint = cplex.addLe(riskExpr, Parameters.getExcessTarget() - xVal, prefix + "risk");
         }
     }
 
+    /**
+     * This function adds CPLEX first stage variables to second stage model constraints.
+     *
+     * @param x CPLEX variables for reschedules to select for each leg
+     * @throws IloException if cplex causes an issue
+     */
     public void updateModelWithFirstStageVars(IloIntVar[][] x) throws IloException {
         int[] durations = Parameters.getDurations();
         for (int i = 0; i < x.length; ++i)
@@ -150,28 +164,28 @@ public class SubModelBuilder {
                 riskExpr.addTerm(d[i], legs.get(i).getDelayCostPerMin());
 
             riskExpr.addTerm(v, -1);
-            riskConstraint = cplex.addLe(riskExpr, Parameters.getExcessTarget(), "risk");
+            riskConstraint = cplex.addLe(riskExpr, Parameters.getExcessTarget(), prefix + "risk");
         }
     }
 
     public void addConstraintsToModel() throws IloException {
         for (int i = 0; i < numTails; ++i)
             onePathPerTailConstraints[i] = cplex.addEq(
-                    tailCoverExprs[i], 1.0, "tail_" + i + "_" + tails.get(i).getId());
+                    tailCoverExprs[i], 1.0, prefix +"tail_" + i + "_" + tails.get(i).getId());
 
         for (int i = 0; i < numLegs; ++i) {
             legCoverConstraints[i] = cplex.addEq(
-                    legCoverExprs[i], 1.0, "leg_" + i + "_" + legs.get(i).getId());
+                    legCoverExprs[i], 1.0, prefix + "leg_" + i + "_" + legs.get(i).getId());
         }
 
         for (int i = 0; i < numLegs; ++i) {
             legDelayLinkConstraints[i] = cplex.addLe(
-                    delayExprs[i], delayRHS[i], "delay_" + i + "_" + legs.get(i).getId());
+                    delayExprs[i], delayRHS[i], prefix + "delay_" + i + "_" + legs.get(i).getId());
         }
 
         for (int i = 0; i < numTails; i++) {
             for (int j = 0; j < y[i].length; j++) {
-                String name = "bound_" + tails.get(i).getId() + "_j";
+                String name = prefix + "bound_" + tails.get(i).getId() + "_j";
                 boundConstraints[i][j] = cplex.addLe(y[i][j], 1, name);
             }
         }
