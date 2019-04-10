@@ -68,9 +68,8 @@ public class NaiveSolver {
             cplex.setOut(null);
 
         ArrayList<Leg> legs = dataRegistry.getLegs();
-        int[] durations = Parameters.getDurations();
-        IloNumVar[] v = new IloNumVar[dataRegistry.getLegs().size()];
-        IloIntVar[][] x = new IloIntVar[durations.length][legs.size()];
+        IloNumVar[] v = new IloNumVar[legs.size()];
+        IloNumVar[] x = new IloIntVar[legs.size()];
 
         // Add objective
         IloLinearNumExpr objExpr = cplex.linearNumExpr();
@@ -79,11 +78,9 @@ public class NaiveSolver {
             v[j] = cplex.numVar(0, Double.MAX_VALUE, "v_" + leg.getId());
             objExpr.addTerm(v[j], leg.getDelayCostPerMin());
 
-            for (int i = 0; i < durations.length; ++i) {
-                String varName = "x_" + durations[i] + "_" + legs.get(j).getId();
-                x[i][j] = cplex.boolVar(varName);
-                objExpr.addTerm(x[i][j], durations[i] * leg.getRescheduleCostPerMin());
-            }
+            String varName = "x_" + legs.get(j).getId();
+            x[j] = cplex.numVar(0, Parameters.getFlightRescheduleBound(), IloNumVarType.Int, varName);
+            objExpr.addTerm(x[j], leg.getRescheduleCostPerMin());
         }
         cplex.addMinimize(objExpr);
 
@@ -94,21 +91,8 @@ public class NaiveSolver {
 
             IloLinearNumExpr expr = cplex.linearNumExpr();
             expr.addTerm(v[i], 1.0);
-
-            for (int j = 0; j < durations.length; ++j)
-                expr.addTerm(x[j][i], durations[j]);
-
+            expr.addTerm(x[i], 1.0);
             cplex.addGe(expr, expectedDelays[i], "delay_reschedule_link_" + legs.get(i).getId());
-        }
-
-        // Add duration cover constraints
-        for (int i = 0; i < legs.size(); i++) {
-            IloLinearNumExpr cons = cplex.linearNumExpr();
-
-            for (int j = 0; j < durations.length; j++)
-                cons.addTerm(x[j][i], 1);
-
-            cplex.addLe(cons, 1, "duration_cover_" + legs.get(i).getId());
         }
 
         // Add original routing constraints
@@ -124,10 +108,8 @@ public class NaiveSolver {
                 int nextLegIndex = nextLeg.getIndex();
 
                 IloLinearNumExpr cons = cplex.linearNumExpr();
-                for (int j = 0; j < durations.length; j++) {
-                    cons.addTerm(x[j][currLegIndex], durations[j]);
-                    cons.addTerm(x[j][nextLegIndex], -durations[j]);
-                }
+                cons.addTerm(x[currLegIndex], 1);
+                cons.addTerm(x[nextLegIndex], -1);
 
                 int rhs = (int) Duration.between(currLeg.getArrTime(), nextLeg.getDepTime()).toMinutes();
                 rhs -= currLeg.getTurnTimeInMin();
@@ -137,9 +119,8 @@ public class NaiveSolver {
 
         // Add budget constraint
         IloLinearNumExpr budgetExpr = cplex.linearNumExpr();
-        for (int i = 0; i < durations.length; ++i)
-            for (int j = 0; j < legs.size(); ++j)
-                budgetExpr.addTerm(x[i][j], durations[i]);
+        for (int j = 0; j < legs.size(); ++j)
+            budgetExpr.addTerm(x[j], 1);
 
         cplex.addLe(budgetExpr, (double) Parameters.getRescheduleTimeBudget(), "reschedule_time_budget");
 
@@ -163,19 +144,19 @@ public class NaiveSolver {
             if (vValues[i] >= Constants.EPS)
                 excessDelayPenalty += (vValues[i] * legs.get(i).getDelayCostPerMin());
         }
-        logger.info("excess delay penalty: " + excessDelayPenalty);
+        logger.info("naive model excess delay penalty: " + excessDelayPenalty);
 
-        double[][] xValues = new double[durations.length][legs.size()];
+        double[] xValues = cplex.getValues(x);
         int[] reschedules = new int[legs.size()];
         double rescheduleCost = 0;
 
-        for (int i = 0; i < durations.length; i++) {
-            xValues[i] = cplex.getValues(x[i]);
-            for (int j = 0; j < legs.size(); ++j)
-                if (xValues[i][j] >= Constants.EPS) {
-                    reschedules[j] = durations[i];
-                    rescheduleCost += (durations[i] * legs.get(j).getRescheduleCostPerMin());
-                }
+        for (int i = 0; i < reschedules.length; ++i) {
+            if (xValues[i] >= Constants.EPS) {
+                reschedules[i] = (int) Math.round(xValues[i]);
+                rescheduleCost += (reschedules[i] * legs.get(i).getRescheduleCostPerMin());
+            }
+            else
+                reschedules[i] = 0;
         }
 
         logger.info("naive model obj - excess delay: " + (cplexObjValue - excessDelayPenalty));

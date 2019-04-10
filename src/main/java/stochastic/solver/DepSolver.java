@@ -82,25 +82,22 @@ public class DepSolver {
             if (Parameters.isDebugVerbose())
                 cplex.writeSolution("logs/dep_solution.xml");
 
-            double[][] xValues = masterModelBuilder.getxValues();
-            cplex.end();
-
-            double rescheduleCost = 0;
             int[] reschedules = new int[legs.size()];
-            int[] durations = Parameters.getDurations();
-
-            for (int j = 0; j < legs.size(); ++j) {
-                reschedules[j] = 0;
-                for (int i = 0; i < durations.length; ++i) {
-                    if (xValues[i][j] >= Constants.EPS) {
-                        reschedules[j] = durations[i];
-                        rescheduleCost += durations[i] * legs.get(j).getRescheduleCostPerMin();
-                        break;
-                    }
+            double[] xValues = masterModelBuilder.getxValues();
+            double rescheduleCost = 0;
+            for (int i = 0; i < xValues.length; ++i) {
+                if (xValues[i] >= Constants.EPS) {
+                    reschedules[i] = (int) Math.round(xValues[i]);
+                    rescheduleCost += legs.get(i).getRescheduleCostPerMin() * reschedules[i];
+                } else {
+                    reschedules[i] = 0;
                 }
             }
 
+            logger.info("DEP reschedule cost: " + rescheduleCost);
             depSolution = new RescheduleSolution("dep", rescheduleCost, reschedules);
+            cplex.end();
+
             logger.info("completed DEP");
         } catch (IloException ex) {
             logger.error(ex);

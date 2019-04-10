@@ -15,15 +15,12 @@ class BendersCut {
      */
     private final static Logger logger = LogManager.getLogger(BendersCut.class);
     private double alpha;
-    private double[][] beta;
+    private double[] beta;
 
-    BendersCut(double alpha, int dim1, int dim2) {
+    BendersCut(double alpha, int dim) {
         this.alpha = alpha;
-        this.beta = new double[dim1][];
-        for (int i = 0; i < dim1; ++i) {
-            beta[i] = new double[dim2];
-            Arrays.fill(beta[i], 0.0);
-        }
+        this.beta = new double[dim];
+        Arrays.fill(beta, 0.0);
     }
 
     void setAlpha(double alpha) {
@@ -34,7 +31,7 @@ class BendersCut {
         return alpha;
     }
 
-    double[][] getBeta() {
+    double[] getBeta() {
         return beta;
     }
 
@@ -44,12 +41,10 @@ class BendersCut {
      * @param theta benders theta
      * @return true if cut separates the solution, fales otherwise
      */
-    boolean separates(double[][] x, double theta) {
+    boolean separates(double[] x, double theta) {
         double lhs = theta;
         for (int i = 0; i < beta.length; ++i) {
-            for (int j = 0; j < beta[i].length; ++j) {
-                lhs += beta[i][j] * x[i][j];
-            }
+            lhs += beta[i] * x[i];
         }
 
         logger.debug("lhs: " + lhs + " rhs: " + alpha + " violation: " + (lhs - alpha));

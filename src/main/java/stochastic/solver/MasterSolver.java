@@ -30,7 +30,7 @@ public class MasterSolver {
     private MasterModelBuilder masterModelBuilder;
 
     private double objValue;
-    private double[][] xValues;
+    private double[] xValues;
     private int[] reschedules; // reschedules[i] is the selected reschedule duration for legs[i].
     private double rescheduleCost; // this is \sum_({p,f} c_f g_p x_{pf} and will be used for the Benders upper bound.
     private double[] thetaValues;
@@ -77,13 +77,11 @@ public class MasterSolver {
         Arrays.fill(reschedules, 0);
 
         rescheduleCost = 0;
-        for (int i = 0; i < durations.length; i++) {
-            for (int j = 0; j < legs.size(); ++j)
-                if (xValues[i][j] >= Constants.EPS) {
-                    reschedules[j] = durations[i];
-                    rescheduleCost += legs.get(j).getRescheduleCostPerMin() * durations[i];
-                }
-        }
+        for (int j = 0; j < legs.size(); ++j)
+            if (xValues[j] >= Constants.EPS) {
+                reschedules[j] = (int) Math.round(xValues[j]);
+                rescheduleCost += legs.get(j).getRescheduleCostPerMin() * reschedules[j];
+            }
 
         if(iter > 0)
             thetaValues = cplex.getValues(thetas);
@@ -104,13 +102,12 @@ public class MasterSolver {
     void addBendersCut(BendersCut cutData, int thetaIndex) throws IloException {
         IloLinearNumExpr cons = cplex.linearNumExpr();
 
-        double[][] beta = cutData.getBeta();
-        IloIntVar[][] x = masterModelBuilder.getX();
+        double[] beta = cutData.getBeta();
+        IloNumVar[] x = masterModelBuilder.getX();
 
-        for (int i = 0; i < durations.length; i++)
-            for (int j = 0; j < legs.size(); j++)
-                if (Math.abs(beta[i][j]) >= Constants.EPS)
-                    cons.addTerm(x[i][j], beta[i][j]);
+        for (int j = 0; j < legs.size(); j++)
+            if (Math.abs(beta[j]) >= Constants.EPS)
+                cons.addTerm(x[j], beta[j]);
 
         cons.addTerm(thetas[thetaIndex], 1);
 
@@ -125,7 +122,7 @@ public class MasterSolver {
         return objValue;
     }
 
-    double[][] getxValues() {
+    double[] getxValues() {
         return xValues;
     }
 

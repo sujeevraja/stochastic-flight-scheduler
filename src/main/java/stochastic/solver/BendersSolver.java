@@ -237,35 +237,28 @@ public class BendersSolver {
         CSVHelper.writeLine(cutWriter, cutRow);
     }
 
-    private void writeMasterSolution(int iter, double[][] xValues) throws IOException {
-        int[] durations = Parameters.getDurations();
+    private void writeMasterSolution(int iter, double[] xValues) throws IOException {
         ArrayList<Leg> legs = dataRegistry.getLegs();
 
         ArrayList<String> row = new ArrayList<>();
         row.add(Integer.toString(iter));
 
-        for (int i = 0; i < durations.length; ++i) {
-            for (int j = 0; j < legs.size(); ++j) {
-                row.add(Double.toString(xValues[i][j]));
-            }
-        }
+        for (int j = 0; j < legs.size(); ++j)
+            row.add(Double.toString(xValues[j]));
 
         row.add("\n");
         CSVHelper.writeLine(slnWriter, row);
     }
 
-    private void writeBendersCut(int iter, int cutIndex, double[][] beta, double alpha) throws IOException {
-        int[] durations = Parameters.getDurations();
+    private void writeBendersCut(int iter, int cutIndex, double[] beta, double alpha) throws IOException {
         ArrayList<Leg> legs = dataRegistry.getLegs();
 
         ArrayList<String> row = new ArrayList<>();
         row.add(Integer.toString(iter));
         row.add(Integer.toString(cutIndex));
 
-        for (int i = 0; i < durations.length; ++i) {
-            for (int j = 0; j < legs.size(); ++j) {
-                row.add(Double.toString(beta[i][j]));
-            }
+        for (int j = 0; j < legs.size(); ++j) {
+            row.add(Double.toString(beta[j]));
         }
 
         row.add(Double.toString(alpha));

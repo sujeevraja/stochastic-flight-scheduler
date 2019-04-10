@@ -148,17 +148,14 @@ public class SubModelBuilder {
      * @param x CPLEX variables for reschedules to select for each leg
      * @throws IloException if cplex causes an issue
      */
-    public void updateModelWithFirstStageVars(IloIntVar[][] x) throws IloException {
-        int[] durations = Parameters.getDurations();
+    public void updateModelWithFirstStageVars(IloNumVar[] x) throws IloException {
         for (int i = 0; i < x.length; ++i)
-            for (int j = 0; j < numLegs; ++j)
-                delayExprs[j].addTerm(x[i][j], -durations[i]);
+                delayExprs[i].addTerm(x[i], -1);
 
         if (Parameters.isExpectedExcess()) {
             IloLinearNumExpr riskExpr = cplex.linearNumExpr();
             for (int i = 0; i < x.length; ++i)
-                for (int j = 0; j < x[i].length; ++j)
-                    riskExpr.addTerm(x[i][j],  durations[i] * legs.get(j).getRescheduleCostPerMin());
+                riskExpr.addTerm(x[i],  legs.get(i).getRescheduleCostPerMin());
 
             for (int i = 0; i < numLegs; i++)
                 riskExpr.addTerm(d[i], legs.get(i).getDelayCostPerMin());
