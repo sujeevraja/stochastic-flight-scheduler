@@ -68,8 +68,14 @@ class QualityChecker {
                 "delay cost",
                 "total cost",
                 "total flight delay",
+                "maximum flight delay",
+                "average flight delay",
                 "total propagated delay",
-                "total excess delay"
+                "maximum propagated delay",
+                "average propagated delay",
+                "total excess delay",
+                "maximum excess delay",
+                "average excess delay"
         ));
 
         ArrayList<String> headerRow = new ArrayList<>(Arrays.asList("name", "probability", "reschedule type",
