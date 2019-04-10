@@ -34,8 +34,15 @@ public class Leg {
         this.turnTimeInMin = turnTimeInMin;
         this.origTailId = origTailId;
         int blockTimeInMin = (int) Duration.between(depTime, arrTime).toMinutes();
-        this.rescheduleCostPerMin = 0.1 * blockTimeInMin;
-        this.delayCostPerMin = 0.5 * blockTimeInMin;
+
+        // this.rescheduleCostPerMin = 100 - (0.1 * blockTimeInMin);
+        // this.delayCostPerMin = 500 - (0.1 * blockTimeInMin);
+
+        // this.rescheduleCostPerMin = 1;
+        // this.delayCostPerMin = 5;
+
+        this.rescheduleCostPerMin = 100 - (0.1 * blockTimeInMin);
+        this.delayCostPerMin = rescheduleCostPerMin * 10;
 
         this.origDepTime = depTime;
         this.depTime = depTime;
