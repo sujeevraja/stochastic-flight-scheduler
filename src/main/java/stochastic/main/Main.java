@@ -52,7 +52,7 @@ public class Main {
 
         Parameters.setBendersMultiCut(true);
         Parameters.setBendersTolerance(1e-3);
-        Parameters.setNumBendersIterations(30);
+        Parameters.setNumBendersIterations(10);
 
         // Second-stage parameters
         Parameters.setFullEnumeration(false);
@@ -68,7 +68,7 @@ public class Main {
 
         // Solution quality parameters
         Parameters.setCheckSolutionQuality(true);
-        Parameters.setNumTestScenarios(3);
+        Parameters.setNumTestScenarios(5);
 
         // Expected excess parameters
         Parameters.setExpectedExcess(false);
