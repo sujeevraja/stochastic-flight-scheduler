@@ -19,41 +19,95 @@ public class DelaySolution {
     private int[] totalDelays;
     private int[] propagatedDelays;
     private int[] excessDelays;
-    private int totalDelaySum;
-    private int propagatedDelaySum;
-    private int excessDelaySum;
+
+    private int sumTotalDelay;
+    private int maxTotalDelay;
+    private double avgTotalDelay;
+
+    private int sumPropagatedDelay;
+    private int maxPropagatedDelay;
+    private double avgPropagatedDelay;
+
+    private int sumExcessDelay;
+    private int maxExcessDelay;
+    private double avgExcessDelay;
+
     private double solutionTimeInSeconds;
 
     public DelaySolution(double delayCost, int[] primaryDelays, int[] totalDelays, int[] propagatedDelays,
                          double[] recourseDelays) {
         this.delayCost = delayCost;
         this.primaryDelays = primaryDelays;
+
         this.totalDelays = totalDelays;
+        sumTotalDelay = 0;
+        maxTotalDelay = 0;
+        for(int delay : totalDelays) {
+            sumTotalDelay += delay;
+            if (maxTotalDelay < delay)
+                maxTotalDelay = delay;
+        }
+        avgTotalDelay = ((double) sumTotalDelay) / totalDelays.length;
+
+
         this.propagatedDelays = propagatedDelays;
+        for(int delay : propagatedDelays) {
+            sumPropagatedDelay += delay;
+            if (maxPropagatedDelay < delay)
+                maxPropagatedDelay = delay;
+        }
+        avgPropagatedDelay = ((double) sumPropagatedDelay) / propagatedDelays.length;
 
         excessDelays = new int[recourseDelays.length];
-        for (int i = 0; i < excessDelays.length; ++i)
+        sumExcessDelay = 0;
+        maxExcessDelay = 0;
+        for (int i = 0; i < excessDelays.length; ++i) {
             excessDelays[i] = (int) Math.round(recourseDelays[i]);
-
-        totalDelaySum = Arrays.stream(totalDelays).sum();
-        propagatedDelaySum = Arrays.stream(propagatedDelays).sum();
-        excessDelaySum = Arrays.stream(excessDelays).sum();
+            sumExcessDelay += excessDelays[i];
+            if (maxExcessDelay < excessDelays[i])
+                maxExcessDelay = excessDelays[i];
+        }
+        avgExcessDelay = ((double) sumExcessDelay) / excessDelays.length;
     }
 
     double getDelayCost() {
         return delayCost;
     }
 
-    int getTotalDelaySum() {
-        return totalDelaySum;
+    int getSumTotalDelay() {
+        return sumTotalDelay;
     }
 
-    int getPropagatedDelaySum() {
-        return propagatedDelaySum;
+    int getMaxTotalDelay() {
+        return maxTotalDelay;
     }
 
-    int getExcessDelaySum() {
-        return excessDelaySum;
+    double getAvgTotalDelay() {
+        return avgTotalDelay;
+    }
+
+    int getSumPropagatedDelay() {
+        return sumPropagatedDelay;
+    }
+
+    int getMaxPropagatedDelay() {
+        return maxPropagatedDelay;
+    }
+
+    double getAvgPropagatedDelay() {
+        return avgPropagatedDelay;
+    }
+
+    int getSumExcessDelay() {
+        return sumExcessDelay;
+    }
+
+    int getMaxExcessDelay() {
+        return maxExcessDelay;
+    }
+
+    double getAvgExcessDelay() {
+        return avgExcessDelay;
     }
 
     void setSolutionTimeInSeconds(double solutionTimeInSeconds) {

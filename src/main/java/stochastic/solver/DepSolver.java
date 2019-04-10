@@ -11,8 +11,10 @@ import stochastic.domain.Tail;
 import stochastic.model.MasterModelBuilder;
 import stochastic.model.SubModelBuilder;
 import stochastic.network.Path;
+import stochastic.output.RescheduleSolution;
 import stochastic.registry.DataRegistry;
 import stochastic.registry.Parameters;
+import stochastic.utility.Constants;
 import stochastic.utility.OptException;
 
 import java.time.Duration;
@@ -24,12 +26,12 @@ public class DepSolver {
     private final static Logger logger = LogManager.getLogger(DepSolver.class);
     private double objValue;
     private double solutionTimeInSeconds;
+    private RescheduleSolution depSolution;
 
     public DepSolver() {}
 
     public void solve(DataRegistry dataRegistry) throws OptException {
         try {
-            Instant start = Instant.now();
             logger.info("starting DEP...");
             IloCplex cplex = new IloCplex();
             if (!Parameters.isDebugVerbose())
@@ -68,15 +70,37 @@ public class DepSolver {
             cplex.addMinimize(objExpr);
             if (Parameters.isDebugVerbose())
                 cplex.exportModel("logs/dep.lp");
-            cplex.solve();
-            objValue = cplex.getObjValue();
-            logger.info("DEP objective: " + objValue);
-            if (Parameters.isDebugVerbose())
-                cplex.writeSolution("logs/dep_solution.xml");
-            cplex.end();
 
+            Instant start = Instant.now();
+            cplex.solve();
             solutionTimeInSeconds = Duration.between(start, Instant.now()).toMillis() / 1000.0;
             logger.info("DEP solution time (seconds): " + solutionTimeInSeconds);
+
+            objValue = cplex.getObjValue();
+            logger.info("DEP objective: " + objValue);
+
+            if (Parameters.isDebugVerbose())
+                cplex.writeSolution("logs/dep_solution.xml");
+
+            double[][] xValues = masterModelBuilder.getxValues();
+            cplex.end();
+
+            double rescheduleCost = 0;
+            int[] reschedules = new int[legs.size()];
+            int[] durations = Parameters.getDurations();
+
+            for (int j = 0; j < legs.size(); ++j) {
+                reschedules[j] = 0;
+                for (int i = 0; i < durations.length; ++i) {
+                    if (xValues[i][j] >= Constants.EPS) {
+                        reschedules[j] = durations[i];
+                        rescheduleCost += durations[i] * legs.get(j).getRescheduleCostPerMin();
+                        break;
+                    }
+                }
+            }
+
+            depSolution = new RescheduleSolution("dep", rescheduleCost, reschedules);
             logger.info("completed DEP");
         } catch (IloException ex) {
             logger.error(ex);
@@ -90,5 +114,9 @@ public class DepSolver {
 
     public double getSolutionTimeInSeconds() {
         return solutionTimeInSeconds;
+    }
+
+    public RescheduleSolution getDepSolution() {
+        return depSolution;
     }
 }

@@ -49,10 +49,8 @@ public class NaiveSolver {
     }
 
     public void solve() throws IloException {
-        Instant start = Instant.now();
         buildAveragePrimaryDelays();
         solveModel();
-        solutionTime = Duration.between(start, Instant.now()).toMinutes() / 60.0;
     }
 
     private void buildAveragePrimaryDelays() {
@@ -149,7 +147,9 @@ public class NaiveSolver {
             cplex.exportModel("logs/naive_model.lp");
 
         // Solve model and extract solution
+        Instant start = Instant.now();
         cplex.solve();
+        solutionTime = Duration.between(start, Instant.now()).toMinutes() / 60.0;
 
         if (Parameters.isDebugVerbose())
             cplex.writeSolution("logs/naive_solution.xml");
@@ -167,14 +167,20 @@ public class NaiveSolver {
 
         double[][] xValues = new double[durations.length][legs.size()];
         int[] reschedules = new int[legs.size()];
-        Arrays.fill(reschedules, 0);
+        double rescheduleCost = 0;
 
         for (int i = 0; i < durations.length; i++) {
             xValues[i] = cplex.getValues(x[i]);
             for (int j = 0; j < legs.size(); ++j)
-                if (xValues[i][j] >= Constants.EPS)
+                if (xValues[i][j] >= Constants.EPS) {
                     reschedules[j] = durations[i];
+                    rescheduleCost += (durations[i] * legs.get(j).getRescheduleCostPerMin());
+                }
         }
+
+        logger.info("naive model obj - excess delay: " + (cplexObjValue - excessDelayPenalty));
+        logger.info("naive model reschedule cost (for validation): " + rescheduleCost);
+        logger.info("naive model solution time (seconds): " + solutionTime);
 
         finalRescheduleSolution = new RescheduleSolution("naive_model",
                 cplexObjValue - excessDelayPenalty, reschedules);
