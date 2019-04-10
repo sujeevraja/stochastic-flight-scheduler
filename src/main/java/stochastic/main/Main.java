@@ -32,17 +32,17 @@ public class Main {
     }
 
     private static void setParameters() {
-        // String path = "data/20171115022840-v2";
-        String path = "data/instance1";
+        String path = "data/20171115022840-v2";
+        // String path = "data/instance1";
 
         Parameters.setInstancePath(path);
         Parameters.setRescheduleTimeBudget(300);
-        Parameters.setNumScenariosToGenerate(10);
+        Parameters.setNumScenariosToGenerate(5);
         Parameters.setScale(3.5);
         Parameters.setShape(0.25);
 
         Parameters.setDistributionType(Parameters.DistributionType.EXPONENTIAL);
-        Parameters.setDistributionMean(5);
+        Parameters.setDistributionMean(15);
         Parameters.setDistributionVariance(10); // ignored for exponentials.
         Parameters.setFlightPickStrategy(Parameters.FlightPickStrategy.ALL);
 
@@ -55,7 +55,7 @@ public class Main {
         Parameters.setNumBendersIterations(30);
 
         // Second-stage parameters
-        Parameters.setFullEnumeration(true);
+        Parameters.setFullEnumeration(false);
         Parameters.setReducedCostStrategy(Parameters.ReducedCostStrategy.FIRST_PATHS);
         Parameters.setNumReducedCostPaths(10);
 

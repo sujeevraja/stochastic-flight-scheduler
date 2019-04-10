@@ -1,9 +1,8 @@
 package stochastic.main;
 
-import stochastic.delay.DelayGenerator;
-import stochastic.delay.FirstFlightDelayGenerator;
-import stochastic.delay.Scenario;
-import stochastic.delay.TestDelayGenerator;
+import org.apache.commons.math3.distribution.ExponentialDistribution;
+import org.apache.commons.math3.distribution.RealDistribution;
+import stochastic.delay.*;
 import stochastic.domain.Leg;
 import stochastic.dao.ScheduleDAO;
 import stochastic.domain.Tail;
@@ -64,7 +63,21 @@ public class Controller {
         // LogNormalDistribution distribution = new LogNormalDistribution(Parameters.getScale(), Parameters.getShape());
         // DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getTails(), distribution);
 
-        DelayGenerator dgen = new TestDelayGenerator(dataRegistry.getTails());
+        // DelayGenerator dgen = new TestDelayGenerator(dataRegistry.getTails());
+
+        // TODO correct distributions later.
+        RealDistribution distribution;
+        switch (Parameters.getDistributionType()) {
+            case EXPONENTIAL:
+                distribution = new ExponentialDistribution(Parameters.getDistributionMean());
+            case TRUNCATED_NORMAL:
+                distribution = new ExponentialDistribution(Parameters.getDistributionMean());
+            case LOGNORMAL:
+                distribution = new ExponentialDistribution(Parameters.getDistributionMean());
+            default:
+                distribution = new ExponentialDistribution(Parameters.getDistributionMean());
+        }
+        NewDelayGenerator dgen = new NewDelayGenerator(distribution, dataRegistry.getLegs());
 
         Scenario[] scenarios = dgen.generateScenarios(Parameters.getNumScenariosToGenerate());
         dataRegistry.setDelayScenarios(scenarios);

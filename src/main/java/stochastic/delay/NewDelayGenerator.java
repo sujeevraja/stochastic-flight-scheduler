@@ -19,7 +19,7 @@ public class NewDelayGenerator implements DelayGenerator {
     private ArrayList<Leg> legs;
     private Parameters.FlightPickStrategy flightPickStrategy;
 
-    NewDelayGenerator(RealDistribution distribution, ArrayList<Leg> legs) {
+    public NewDelayGenerator(RealDistribution distribution, ArrayList<Leg> legs) {
         this.distribution = distribution;
         this.legs = legs;
         flightPickStrategy = Parameters.getFlightPickStrategy();
@@ -28,7 +28,7 @@ public class NewDelayGenerator implements DelayGenerator {
     @Override
     public Scenario[] generateScenarios(int numSamples) {
         ArrayList<Leg> selectedLegs = selectLegs();
-        final double probability = 1 / numSamples;
+        final double probability = 1.0 / numSamples;
         Scenario[] scenarios = new Scenario[numSamples];
 
         for (int i = 0; i < numSamples; ++i) {

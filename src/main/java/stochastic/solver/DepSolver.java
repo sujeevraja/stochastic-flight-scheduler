@@ -60,24 +60,24 @@ public class DepSolver {
                 subModelBuilder.addPathVarsToConstraints();
                 subModelBuilder.updateModelWithFirstStageVars(masterModelBuilder.getX());
                 subModelBuilder.addConstraintsToModel();
-                logger.info("added terms for scenario " + (i+1) + " of " + scenarios.length);
+                logger.info("added terms for scenario " + (i + 1) + " of " + scenarios.length);
             }
 
             // solving
             logger.info("starting to solve DEP");
-           cplex.addMinimize(objExpr);
-           if (Parameters.isDebugVerbose())
-               cplex.exportModel("logs/dep.lp");
-           cplex.solve();
-           objValue = cplex.getObjValue();
-           logger.info("DEP objective: " + objValue);
-           if (Parameters.isDebugVerbose())
-               cplex.writeSolution("logs/dep_solution.xml");
-           cplex.end();
-           logger.info("completed DEP");
+            cplex.addMinimize(objExpr);
+            if (Parameters.isDebugVerbose())
+                cplex.exportModel("logs/dep.lp");
+            cplex.solve();
+            objValue = cplex.getObjValue();
+            logger.info("DEP objective: " + objValue);
+            if (Parameters.isDebugVerbose())
+                cplex.writeSolution("logs/dep_solution.xml");
+            cplex.end();
 
-           solutionTimeInSeconds = Duration.between(start, Instant.now()).toMillis() / 1000.0;
+            solutionTimeInSeconds = Duration.between(start, Instant.now()).toMillis() / 1000.0;
             logger.info("DEP solution time (seconds): " + solutionTimeInSeconds);
+            logger.info("completed DEP");
         } catch (IloException ex) {
             logger.error(ex);
             throw new OptException("cplex error solving DEP model");
