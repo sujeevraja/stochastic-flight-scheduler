@@ -126,6 +126,7 @@ public class Controller {
     final void solveWithDEP() throws OptException {
         DepSolver depSolver = new DepSolver();
         depSolver.solve(dataRegistry);
+        outputManager.addRescheduleSolution(depSolver.getDepSolution());
         outputManager.addKpi("dep solution time (seconds)", depSolver.getSolutionTimeInSeconds());
         outputManager.addKpi("dep objective", depSolver.getObjValue());
     }
