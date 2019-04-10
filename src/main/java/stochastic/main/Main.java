@@ -37,6 +37,7 @@ public class Main {
 
         Parameters.setInstancePath(path);
         Parameters.setRescheduleTimeBudget(300);
+        Parameters.setFlightRescheduleBound(30);
         Parameters.setNumScenariosToGenerate(5);
         Parameters.setScale(3.5);
         Parameters.setShape(0.25);

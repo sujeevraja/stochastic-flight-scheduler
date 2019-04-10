@@ -3,6 +3,7 @@ package stochastic.registry;
 public class Parameters {
     private static String instancePath;
     private static int rescheduleTimeBudget;
+    private static int flightRescheduleBound;
     private static int numScenariosToGenerate;
 
     private static double scale;
@@ -71,6 +72,14 @@ public class Parameters {
 
     public static int getRescheduleTimeBudget() {
         return rescheduleTimeBudget;
+    }
+
+    public static void setFlightRescheduleBound(int flightRescheduleBound) {
+        Parameters.flightRescheduleBound = flightRescheduleBound;
+    }
+
+    public static int getFlightRescheduleBound() {
+        return flightRescheduleBound;
     }
 
     public static void setNumScenariosToGenerate(int numScenariosToGenerate) {
