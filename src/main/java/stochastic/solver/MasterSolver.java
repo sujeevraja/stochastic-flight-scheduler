@@ -20,7 +20,6 @@ public class MasterSolver {
      */
     private final static Logger logger = LogManager.getLogger(MasterSolver.class);
     private ArrayList<Leg> legs;
-    private int[] durations;
     private int numScenarios;
 
     // CPLEX variables
@@ -35,11 +34,8 @@ public class MasterSolver {
     private double rescheduleCost; // this is \sum_({p,f} c_f g_p x_{pf} and will be used for the Benders upper bound.
     private double[] thetaValues;
 
-    private int numBendersCuts = 0; // Benders cut counter
-
-    MasterSolver(ArrayList<Leg> legs, ArrayList<Tail> tails, int[] durations, int numScenarios) throws IloException {
+    MasterSolver(ArrayList<Leg> legs, ArrayList<Tail> tails, int numScenarios) throws IloException {
         this.legs = legs;
-        this.durations = durations;
         this.numScenarios = numScenarios;
         this.reschedules = new int[legs.size()];
 
@@ -100,7 +96,7 @@ public class MasterSolver {
         cplex.writeSolution(fName);
     }
 
-    void addBendersCut(BendersCut cutData, int thetaIndex) throws IloException {
+    void addBendersCut(BendersCut cutData, int thetaIndex, int cutIndex) throws IloException {
         IloLinearNumExpr cons = cplex.linearNumExpr();
 
         double[] beta = cutData.getBeta();
@@ -115,8 +111,7 @@ public class MasterSolver {
         double alpha = cutData.getAlpha();
         double rhs = Math.abs(alpha) >= Constants.EPS ? alpha : 0.0;
         IloRange r = cplex.addGe(cons, rhs);
-        r.setName("benders_cut_" + numBendersCuts);
-        ++numBendersCuts;
+        r.setName("benders_cut_" + cutIndex);
     }
 
     double getObjValue() {
@@ -137,9 +132,5 @@ public class MasterSolver {
 
     void end() {
         cplex.end();
-    }
-
-    int getNumBendersCuts() {
-        return numBendersCuts;
     }
 }

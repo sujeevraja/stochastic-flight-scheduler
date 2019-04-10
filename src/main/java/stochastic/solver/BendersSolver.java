@@ -85,10 +85,9 @@ public class BendersSolver {
         Instant start = Instant.now();
         ArrayList<Leg> legs = dataRegistry.getLegs();
         ArrayList<Tail> tails = dataRegistry.getTails();
-        int[] durations = Parameters.getDurations();
 
         // Solve master problem once to initialize the algorithm.
-        masterSolver = new MasterSolver(legs, tails, durations, dataRegistry.getDelayScenarios().length);
+        masterSolver = new MasterSolver(legs, tails, dataRegistry.getDelayScenarios().length);
         masterSolver.constructFirstStage();
 
         if (Parameters.isDebugVerbose()) {
@@ -155,13 +154,18 @@ public class BendersSolver {
             ssWrapper.solveSequential();
 
         BendersData bendersData = ssWrapper.getBendersData();
-        if (Parameters.isBendersMultiCut()) {
-            double[] thetaValues = masterSolver.getThetaValues();
+        double[] thetaValues = masterSolver.getThetaValues();
+        double[] xValues = masterSolver.getxValues();
 
+        if (Parameters.isBendersMultiCut()) {
             for (int i = 0; i < dataRegistry.getDelayScenarios().length; ++i) {
                 BendersCut cut = bendersData.getCut(i);
-                if (thetaValues == null || cut.separates(masterSolver.getxValues(), thetaValues[i])) {
-                    masterSolver.addBendersCut(cut, i);
+                Double thetaValue = thetaValues != null ? thetaValues[i] : null;
+
+                if (isCutEffective(cut, xValues, thetaValue)) {
+                    masterSolver.addBendersCut(cut, i, numBendersCuts);
+                    ++numBendersCuts;
+
                     if (Parameters.isDebugVerbose())
                         writeBendersCut(iteration, i, cut.getBeta(), cut.getAlpha());
                 }
@@ -169,9 +173,15 @@ public class BendersSolver {
         }
         else {
             BendersCut cut = bendersData.getCut(0);
-            masterSolver.addBendersCut(cut, 0);
-            if (Parameters.isDebugVerbose())
-                writeBendersCut(iteration, -1, cut.getBeta(), cut.getAlpha());
+            Double thetaValue = thetaValues != null ? thetaValues[0] : null;
+
+            if (isCutEffective(cut, xValues, thetaValue)) {
+                masterSolver.addBendersCut(cut, 0, numBendersCuts);
+                ++numBendersCuts;
+
+                if (Parameters.isDebugVerbose())
+                    writeBendersCut(iteration, -1, cut.getBeta(), cut.getAlpha());
+            }
         }
 
         if (Parameters.isDebugVerbose()) {
@@ -191,12 +201,16 @@ public class BendersSolver {
         logger.info("----- lower bound: " + lowerBound);
         logger.info("----- upper bound: " + upperBound);
         logger.info("----- upper bound from subsolver: " + bendersData.getUpperBound());
-        logger.info("----- number of cuts added: " + masterSolver.getNumBendersCuts());
+        logger.info("----- number of cuts added: " + numBendersCuts);
 
         if (bendersData.getUpperBound() < upperBound)
             upperBound = bendersData.getUpperBound();
 
         logger.info("----- updated upper bound: " + upperBound);
+    }
+
+    private boolean isCutEffective(BendersCut cut, double[] xValues, Double thetaValue) {
+        return thetaValue == null || cut.separates(xValues, thetaValue);
     }
 
     private boolean stoppingConditionReached() {
@@ -216,20 +230,16 @@ public class BendersSolver {
         finalRescheduleSolution = new RescheduleSolution("benders", masterSolver.getRescheduleCost(),
                 masterSolver.getReschedules());
         finalThetaValues = masterSolver.getThetaValues();
-        numBendersCuts = masterSolver.getNumBendersCuts();
     }
 
     private void writeCsvHeaders() throws IOException {
         ArrayList<String> cutRow = new ArrayList<>(Arrays.asList("iter", "scenario"));
         ArrayList<String> slnRow = new ArrayList<>(Collections.singletonList("iter"));
-        int[] durations = Parameters.getDurations();
         ArrayList<Leg> legs = dataRegistry.getLegs();
-        for (int duration : durations) {
-            for (Leg leg : legs) {
-                String name = "x_" + duration + "_" + leg.getId();
-                cutRow.add(name);
-                slnRow.add(name);
-            }
+        for (Leg leg : legs) {
+            String name = "x_" + leg.getId();
+            cutRow.add(name);
+            slnRow.add(name);
         }
 
         CSVHelper.writeLine(slnWriter, slnRow);

@@ -12,7 +12,6 @@ import java.util.ArrayList;
 public class MasterModelBuilder {
     private ArrayList<Leg> legs;
     private ArrayList<Tail> tails;
-    private int[] durations;
 
     private IloCplex cplex;
     private IloNumVar[] x; // x[i] = #minutes of reschedule of flight i.
@@ -20,8 +19,6 @@ public class MasterModelBuilder {
     public MasterModelBuilder(ArrayList<Leg> legs, ArrayList<Tail> tails, IloCplex cplex) {
         this.legs = legs;
         this.tails = tails;
-        this.durations = Parameters.getDurations();
-
         this.cplex = cplex;
         x = new IloIntVar[legs.size()];
     }
