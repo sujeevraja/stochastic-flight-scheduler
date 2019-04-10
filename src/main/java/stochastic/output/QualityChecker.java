@@ -78,7 +78,14 @@ class QualityChecker {
                 "average excess delay"
         ));
 
-        ArrayList<String> headerRow = new ArrayList<>(Arrays.asList("name", "probability", "reschedule type",
+        ArrayList<String> headerRow = new ArrayList<>(Arrays.asList(
+                "name",
+                "distribution",
+                "mean",
+                "variance",
+                "strategy",
+                "probability",
+                "reschedule type",
                 "reschedule cost"));
 
         for (String name : comparableStatNames) {
@@ -91,7 +98,7 @@ class QualityChecker {
 
         ArrayList<ArrayList<Double>> averageRows = new ArrayList<>();
         for (int i = 0; i < rescheduleSolutions.size(); ++i)
-            averageRows.add(new ArrayList<>(Collections.nCopies(headerRow.size() - 3, 0.0)));
+            averageRows.add(new ArrayList<>(Collections.nCopies(headerRow.size() - 7, 0.0)));
 
         for (int i = 0; i < testScenarios.length; ++i) {
             double probability = testScenarios[i].getProbability();
@@ -109,6 +116,18 @@ class QualityChecker {
 
                 ArrayList<String> row = new ArrayList<>();
                 row.add("scenario " + i);
+                row.add(Parameters.getDistributionType().toString());
+                row.add(Double.toString(Parameters.getDistributionMean()));
+
+                if (Parameters.getDistributionType() == Parameters.DistributionType.EXPONENTIAL) {
+                    double variance = Parameters.getDistributionMean() * Parameters.getDistributionMean();
+                    row.add(Double.toString(variance));
+                } else {
+                    row.add(Double.toString(Parameters.getDistributionVariance()));
+                }
+
+                row.add(Parameters.getFlightPickStrategy().toString());
+
                 row.add(Double.toString(probability));
                 row.add(rescheduleSolution.getName());
                 row.add(Double.toString(rescheduleSolution.getRescheduleCost()));
@@ -142,8 +161,12 @@ class QualityChecker {
 
         for (int i = 0; i < averageRows.size(); ++i) {
             ArrayList<Double> avgRow = averageRows.get(i);
-            ArrayList<String> row = new ArrayList<>(Arrays.asList("average", "-",
-                    rescheduleSolutions.get(i).getName()));
+            ArrayList<String> row = new ArrayList<>();
+            row.add("average");
+            for (int j = 0; j < 5; ++j)
+                row.add("-");
+
+            row.add( rescheduleSolutions.get(i).getName());
             row.addAll(avgRow.stream().map(val -> Double.toString(val)).collect(Collectors.toList()));
             CSVHelper.writeLine(csvWriter, row);
         }
