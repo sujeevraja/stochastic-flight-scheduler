@@ -78,28 +78,30 @@ public class DepSolver {
 
             objValue = cplex.getObjValue();
             logger.info("DEP objective: " + objValue);
+
             if (Parameters.isDebugVerbose())
                 cplex.writeSolution("logs/dep_solution.xml");
 
             double[][] xValues = masterModelBuilder.getxValues();
+            cplex.end();
+
             double rescheduleCost = 0;
             int[] reschedules = new int[legs.size()];
             int[] durations = Parameters.getDurations();
-            for(int i = 0; i < durations.length; ++i) {
-                for (int j = 0; j < legs.size(); ++j) {
+
+            for (int j = 0; j < legs.size(); ++j) {
+                reschedules[j] = 0;
+                for (int i = 0; i < durations.length; ++i) {
                     if (xValues[i][j] >= Constants.EPS) {
                         reschedules[j] = durations[i];
                         rescheduleCost += durations[i] * legs.get(j).getRescheduleCostPerMin();
-                    }
-                    else {
-                        reschedules[j] = 0;
+                        logger.debug("DEP: reschedule for leg " + j + ": " + durations[i]);
+                        break;
                     }
                 }
             }
 
             depSolution = new RescheduleSolution("dep", rescheduleCost, reschedules);
-
-            cplex.end();
             logger.info("completed DEP");
         } catch (IloException ex) {
             logger.error(ex);
