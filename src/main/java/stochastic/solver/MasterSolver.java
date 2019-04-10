@@ -70,6 +70,7 @@ public class MasterSolver {
     }
 
     public void solve(int iter) throws IloException {
+        cplex.setParam(IloCplex.Param.MIP.Tolerances.MIPGap, 0.001);
         cplex.solve();
         objValue = cplex.getObjValue();
         logger.info("master objective: " + objValue);
