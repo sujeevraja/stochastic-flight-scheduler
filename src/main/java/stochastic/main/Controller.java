@@ -81,6 +81,13 @@ public class Controller {
 
         Scenario[] scenarios = dgen.generateScenarios(Parameters.getNumScenariosToGenerate());
         dataRegistry.setDelayScenarios(scenarios);
+
+        double avgTotalPrimaryDelay = 0.0;
+        for (Scenario s : scenarios)
+            avgTotalPrimaryDelay += s.getTotalPrimaryDelay();
+        avgTotalPrimaryDelay /= scenarios.length;
+
+        logger.info("average total primary delay (minutes): " + avgTotalPrimaryDelay);
     }
 
     final void solveWithBenders() throws OptException {
