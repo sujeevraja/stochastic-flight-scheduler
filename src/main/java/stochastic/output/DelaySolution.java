@@ -19,6 +19,7 @@ public class DelaySolution {
     private int[] totalDelays;
     private int[] propagatedDelays;
     private int[] excessDelays;
+
     private int totalDelaySum;
     private int propagatedDelaySum;
     private int excessDelaySum;

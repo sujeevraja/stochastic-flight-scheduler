@@ -95,7 +95,6 @@ public class DepSolver {
                     if (xValues[i][j] >= Constants.EPS) {
                         reschedules[j] = durations[i];
                         rescheduleCost += durations[i] * legs.get(j).getRescheduleCostPerMin();
-                        logger.debug("DEP: reschedule for leg " + j + ": " + durations[i]);
                         break;
                     }
                 }

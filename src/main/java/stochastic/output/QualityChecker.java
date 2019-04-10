@@ -64,42 +64,71 @@ class QualityChecker {
         String compareFileName = "solution/" + timeStamp + "__comparison.csv";
         BufferedWriter csvWriter = new BufferedWriter(new FileWriter(compareFileName));
 
-        ArrayList<String> headers = new ArrayList<>(Arrays.asList("name", "probability", "reschedule type",
-                "reschedule cost", "delay cost", "total cost", "total flight delay", "total propagated delay",
-                "total excess delay", "delay solution time (sec)"));
-        CSVHelper.writeLine(csvWriter, headers);
+        ArrayList<String> comparableStatNames = new ArrayList<>(Arrays.asList(
+                "delay cost",
+                "total cost",
+                "total flight delay",
+                "total propagated delay",
+                "total excess delay"
+        ));
+
+        ArrayList<String> headerRow = new ArrayList<>(Arrays.asList("name", "probability", "reschedule type",
+                "reschedule cost"));
+
+        for (String name : comparableStatNames) {
+            headerRow.add(name);
+            headerRow.add("decrease (%)");
+        }
+        headerRow.add("delay solution time (sec)");
+
+        CSVHelper.writeLine(csvWriter, headerRow);
 
         ArrayList<ArrayList<Double>> averageRows = new ArrayList<>();
         for (int i = 0; i < rescheduleSolutions.size(); ++i)
-            averageRows.add(new ArrayList<>(Collections.nCopies(headers.size() - 3, 0.0)));
+            averageRows.add(new ArrayList<>(Collections.nCopies(headerRow.size() - 3, 0.0)));
 
         for (int i = 0; i < testScenarios.length; ++i) {
             double probability = testScenarios[i].getProbability();
+            ComparableStats baseStats = null;
+
             for (int j = 0; j < rescheduleSolutions.size(); ++j) {
                 RescheduleSolution rescheduleSolution = rescheduleSolutions.get(j);
                 DelaySolution delaySolution = delaySolutions[i][j];
 
-                double[] rowValues = new double[] {
-                       rescheduleSolution.getRescheduleCost(),
-                       delaySolution.getDelayCost(),
-                       rescheduleSolution.getRescheduleCost() + delaySolution.getDelayCost(),
-                       (double) delaySolution.getTotalDelaySum(),
-                       (double) delaySolution.getPropagatedDelaySum(),
-                       (double) delaySolution.getExcessDelaySum(),
-                       delaySolution.getSolutionTimeInSeconds()};
+                ComparableStats stats = new ComparableStats(rescheduleSolution, delaySolution);
+                if (baseStats == null)
+                    baseStats = stats;
+                else
+                    stats.setPercentageDecreases(baseStats);
 
                 ArrayList<String> row = new ArrayList<>();
                 row.add("scenario " + i);
                 row.add(Double.toString(probability));
                 row.add(rescheduleSolution.getName());
+                row.add(Double.toString(rescheduleSolution.getRescheduleCost()));
 
                 ArrayList<Double> averageRow = averageRows.get(j);
+                int avgRowIndex = 0;
+                averageRow.set(avgRowIndex,
+                        averageRow.get(avgRowIndex) + probability * rescheduleSolution.getRescheduleCost());
+                ++avgRowIndex;
 
-                for (int k = 0; k < rowValues.length; ++k) {
-                    double val = rowValues[k];
-                    row.add(Double.toString(val));
-                    averageRow.set(k, averageRow.get(k) + (probability * val));
+                double[] values = stats.getValues();
+                double[] decreases = stats.getPercentageDecreases();
+
+                for (int k = 0; k < values.length; ++k) {
+                    row.add(Double.toString(values[k]));
+                    row.add(Double.toString(decreases[k]));
+
+                    averageRow.set(avgRowIndex, averageRow.get(avgRowIndex) + (probability * values[k]));
+                    ++avgRowIndex;
+                    averageRow.set(avgRowIndex, averageRow.get(avgRowIndex) + (probability * decreases[k]));
+                    ++avgRowIndex;
                 }
+
+                row.add(Double.toString(delaySolution.getSolutionTimeInSeconds()));
+                averageRow.set(avgRowIndex,
+                        averageRow.get(avgRowIndex) + (probability * delaySolution.getSolutionTimeInSeconds()));
 
                 CSVHelper.writeLine(csvWriter, row);
             }
