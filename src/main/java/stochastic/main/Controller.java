@@ -93,7 +93,10 @@ class Controller {
     final void solveWithBenders() throws OptException {
         try {
             BendersSolver bendersSolver = new BendersSolver(dataRegistry);
-            bendersSolver.solve(naiveModelSolution);
+            if (Parameters.isWarmStartBenders())
+                bendersSolver.solve(naiveModelSolution);
+            else
+                bendersSolver.solve(null);
             outputManager.addRescheduleSolution(bendersSolver.getFinalRescheduleSolution());
             outputManager.addKpi("benders solution time (seconds)", bendersSolver.getSolutionTime());
             outputManager.addKpi("benders iterations", bendersSolver.getIteration());

@@ -52,6 +52,7 @@ public class Main {
         Parameters.setBendersMultiCut(true);
         Parameters.setBendersTolerance(1e-3);
         Parameters.setNumBendersIterations(30);
+        Parameters.setWarmStartBenders(false);
 
         // Second-stage parameters
         Parameters.setFullEnumeration(false);
