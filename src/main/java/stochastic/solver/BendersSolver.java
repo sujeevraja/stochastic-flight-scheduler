@@ -81,7 +81,7 @@ public class BendersSolver {
         return percentGap;
     }
 
-    public void solve() throws IloException, IOException, OptException {
+    public void solve(RescheduleSolution warmStartSolution) throws IloException, IOException, OptException {
         if (Parameters.isDebugVerbose())
             writeCsvHeaders();
 
@@ -91,7 +91,10 @@ public class BendersSolver {
                 dataRegistry.getDelayScenarios().length);
         masterSolver.constructFirstStage();
         masterSolver.addTheta();
-        masterSolver.initInitialSolution();
+        if (warmStartSolution != null)
+            masterSolver.setInitialSolution(warmStartSolution.getRescheduleCost(), warmStartSolution.getReschedules());
+        else
+            masterSolver.initInitialSolution();
 
         logger.info("algorithm starts.");
         if (Parameters.isFullEnumeration())

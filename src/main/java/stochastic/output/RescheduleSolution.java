@@ -28,11 +28,11 @@ public class RescheduleSolution {
         return name;
     }
 
-    double getRescheduleCost() {
+    public double getRescheduleCost() {
         return rescheduleCost;
     }
 
-    int[] getReschedules() {
+    public int[] getReschedules() {
         return reschedules;
     }
 
