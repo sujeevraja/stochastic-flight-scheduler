@@ -12,26 +12,22 @@ import java.util.ArrayList;
 public class MasterModelBuilder {
     private ArrayList<Leg> legs;
     private ArrayList<Tail> tails;
-    private int[] durations;
 
     private IloCplex cplex;
-    private IloIntVar[][] x; // x[i][j] = 1 if durations[i] selected for leg[j] reschedule, 0 otherwise.
+    private IloNumVar[] x; // x[i] = #minutes of reschedule of flight i.
 
     public MasterModelBuilder(ArrayList<Leg> legs, ArrayList<Tail> tails, IloCplex cplex) {
         this.legs = legs;
         this.tails = tails;
-        this.durations = Parameters.getDurations();
-
         this.cplex = cplex;
-        x = new IloIntVar[durations.length][legs.size()];
+        x = new IloIntVar[legs.size()];
     }
 
     public void buildVariables() throws IloException {
-        for (int i = 0; i < durations.length; i++) {
-            for (int j = 0; j < legs.size(); j++) {
-                String varName = "x_" + durations[i] + "_" + legs.get(j).getId();
-                x[i][j] = cplex.boolVar(varName);
-            }
+        for (int j = 0; j < legs.size(); j++) {
+            String varName = "x_" + legs.get(j).getId();
+            x[j] = cplex.numVar(0, Parameters.getFlightRescheduleBound(), IloNumVarType.Int, varName);
+
         }
     }
 
@@ -40,31 +36,17 @@ public class MasterModelBuilder {
         // planning (first stage) and recourse (second stage).
 
         IloLinearNumExpr cons = cplex.linearNumExpr();
-        for (int i = 0; i < durations.length; i++) {
-            for (int j = 0; j < legs.size(); j++) {
-                cons.addTerm(x[i][j], durations[i] * legs.get(j).getRescheduleCostPerMin());
-            }
+        for (int j = 0; j < legs.size(); j++) {
+            cons.addTerm(x[j], legs.get(j).getRescheduleCostPerMin());
         }
 
         return cons;
     }
 
     public void constructFirstStage() throws IloException {
-        addDurationCoverConstraints();
+        // addDurationCoverConstraints();
         addOriginalRoutingConstraints();
         addBudgetConstraint();
-    }
-
-    private void addDurationCoverConstraints() throws IloException {
-        for (int i = 0; i < legs.size(); i++) {
-            IloLinearNumExpr cons = cplex.linearNumExpr();
-
-            for (int j = 0; j < durations.length; j++)
-                cons.addTerm(x[j][i], 1);
-
-            IloRange r = cplex.addLe(cons, 1);
-            r.setName("duration_cover_" + legs.get(i).getId());
-        }
     }
 
     private void addOriginalRoutingConstraints() throws IloException {
@@ -80,10 +62,8 @@ public class MasterModelBuilder {
                 int nextLegIndex = nextLeg.getIndex();
 
                 IloLinearNumExpr cons = cplex.linearNumExpr();
-                for (int j = 0; j < durations.length; j++) {
-                    cons.addTerm(x[j][currLegIndex], durations[j]);
-                    cons.addTerm(x[j][nextLegIndex], -durations[j]);
-                }
+                cons.addTerm(x[currLegIndex], 1);
+                cons.addTerm(x[nextLegIndex], -1);
 
                 int rhs = (int) Duration.between(currLeg.getArrTime(), nextLeg.getDepTime()).toMinutes();
                 rhs -= currLeg.getTurnTimeInMin();
@@ -95,23 +75,18 @@ public class MasterModelBuilder {
 
     private void addBudgetConstraint() throws IloException {
         IloLinearNumExpr budgetExpr = cplex.linearNumExpr();
-        for (int i = 0; i < durations.length; ++i)
-            for (int j = 0; j < legs.size(); ++j)
-                budgetExpr.addTerm(x[i][j], durations[i]);
+        for (int j = 0; j < legs.size(); ++j)
+            budgetExpr.addTerm(x[j], 1);
 
         IloRange budgetConstraint = cplex.addLe(budgetExpr, (double) Parameters.getRescheduleTimeBudget());
         budgetConstraint.setName("reschedule_time_budget");
     }
 
-    public IloIntVar[][] getX() {
+    public IloNumVar[] getX() {
         return x;
     }
 
-    public double[][] getxValues() throws IloException {
-        double[][] xValues = new double[durations.length][];
-        for (int i = 0; i < durations.length; i++) {
-            xValues[i] = cplex.getValues(x[i]);
-        }
-        return xValues;
+    public double[] getxValues() throws IloException {
+        return cplex.getValues(x);
     }
 }

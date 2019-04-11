@@ -20,7 +20,6 @@ public class MasterSolver {
      */
     private final static Logger logger = LogManager.getLogger(MasterSolver.class);
     private ArrayList<Leg> legs;
-    private int[] durations;
     private int numScenarios;
 
     // CPLEX variables
@@ -30,16 +29,13 @@ public class MasterSolver {
     private MasterModelBuilder masterModelBuilder;
 
     private double objValue;
-    private double[][] xValues;
+    private double[] xValues;
     private int[] reschedules; // reschedules[i] is the selected reschedule duration for legs[i].
     private double rescheduleCost; // this is \sum_({p,f} c_f g_p x_{pf} and will be used for the Benders upper bound.
     private double[] thetaValues;
 
-    private int numBendersCuts = 0; // Benders cut counter
-
-    MasterSolver(ArrayList<Leg> legs, ArrayList<Tail> tails, int[] durations, int numScenarios) throws IloException {
+    MasterSolver(ArrayList<Leg> legs, ArrayList<Tail> tails, int numScenarios) throws IloException {
         this.legs = legs;
-        this.durations = durations;
         this.numScenarios = numScenarios;
         this.reschedules = new int[legs.size()];
 
@@ -70,6 +66,7 @@ public class MasterSolver {
     }
 
     public void solve(int iter) throws IloException {
+        cplex.setParam(IloCplex.Param.MIP.Tolerances.MIPGap, 0.001);
         cplex.solve();
         objValue = cplex.getObjValue();
         logger.info("master objective: " + objValue);
@@ -77,13 +74,11 @@ public class MasterSolver {
         Arrays.fill(reschedules, 0);
 
         rescheduleCost = 0;
-        for (int i = 0; i < durations.length; i++) {
-            for (int j = 0; j < legs.size(); ++j)
-                if (xValues[i][j] >= Constants.EPS) {
-                    reschedules[j] = durations[i];
-                    rescheduleCost += legs.get(j).getRescheduleCostPerMin() * durations[i];
-                }
-        }
+        for (int j = 0; j < legs.size(); ++j)
+            if (xValues[j] >= Constants.EPS) {
+                reschedules[j] = (int) Math.round(xValues[j]);
+                rescheduleCost += legs.get(j).getRescheduleCostPerMin() * reschedules[j];
+            }
 
         if(iter > 0)
             thetaValues = cplex.getValues(thetas);
@@ -101,31 +96,29 @@ public class MasterSolver {
         cplex.writeSolution(fName);
     }
 
-    void addBendersCut(BendersCut cutData, int thetaIndex) throws IloException {
+    void addBendersCut(BendersCut cutData, int thetaIndex, int cutIndex) throws IloException {
         IloLinearNumExpr cons = cplex.linearNumExpr();
 
-        double[][] beta = cutData.getBeta();
-        IloIntVar[][] x = masterModelBuilder.getX();
+        double[] beta = cutData.getBeta();
+        IloNumVar[] x = masterModelBuilder.getX();
 
-        for (int i = 0; i < durations.length; i++)
-            for (int j = 0; j < legs.size(); j++)
-                if (Math.abs(beta[i][j]) >= Constants.EPS)
-                    cons.addTerm(x[i][j], beta[i][j]);
+        for (int j = 0; j < legs.size(); j++)
+            if (Math.abs(beta[j]) >= Constants.EPS)
+                cons.addTerm(x[j], beta[j]);
 
         cons.addTerm(thetas[thetaIndex], 1);
 
         double alpha = cutData.getAlpha();
         double rhs = Math.abs(alpha) >= Constants.EPS ? alpha : 0.0;
         IloRange r = cplex.addGe(cons, rhs);
-        r.setName("benders_cut_" + numBendersCuts);
-        ++numBendersCuts;
+        r.setName("benders_cut_" + cutIndex);
     }
 
     double getObjValue() {
         return objValue;
     }
 
-    double[][] getxValues() {
+    double[] getxValues() {
         return xValues;
     }
 
@@ -139,9 +132,5 @@ public class MasterSolver {
 
     void end() {
         cplex.end();
-    }
-
-    int getNumBendersCuts() {
-        return numBendersCuts;
     }
 }

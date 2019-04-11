@@ -376,18 +376,15 @@ public class SubSolverRunnable implements Runnable {
     }
 
     private synchronized void updateBeta(int cutNum, double[] dualsDelay, double dualRisk) {
-        int[] durations = Parameters.getDurations();
         ArrayList<Leg> legs = dataRegistry.getLegs();
-        double[][] beta = bendersData.getCut(cutNum).getBeta();
+        double[] beta = bendersData.getCut(cutNum).getBeta();
 
-        for (int i = 0; i < durations.length; i++) {
-            for (int j = 0; j < legs.size(); j++) {
-                if (Math.abs(dualsDelay[j]) >= Constants.EPS)
-                    beta[i][j] += (dualsDelay[j] * -durations[i] * probability);
+        for (int j = 0; j < legs.size(); j++) {
+            if (Math.abs(dualsDelay[j]) >= Constants.EPS)
+                beta[j] += (-dualsDelay[j] * probability);
 
-                if (Parameters.isExpectedExcess() && Math.abs(dualRisk) >= Constants.EPS)
-                    beta[i][j] += (dualRisk * durations[i] * probability);
-            }
+            if (Parameters.isExpectedExcess() && Math.abs(dualRisk) >= Constants.EPS)
+                beta[j] += (dualRisk * probability);
         }
     }
 

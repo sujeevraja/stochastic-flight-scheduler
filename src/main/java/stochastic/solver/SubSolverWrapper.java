@@ -29,11 +29,10 @@ class SubSolverWrapper {
         this.pathCaches = pathCaches;
         this.bendersData = new BendersData(uBound);
 
-        final int numDurations = Parameters.getNumDurations();
         final int numLegs = dataRegistry.getLegs().size();
         final int numCuts = Parameters.isBendersMultiCut() ? dataRegistry.getDelayScenarios().length : 1;
         for (int i = 0; i < numCuts; ++i)
-            bendersData.addCut(new BendersCut(0.0, numDurations, numLegs));
+            bendersData.addCut(new BendersCut(0.0, numLegs));
     }
 
     void solveSequential() {

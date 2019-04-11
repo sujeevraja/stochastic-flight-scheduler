@@ -36,8 +36,9 @@ public class Main {
         // String path = "data/instance1";
 
         Parameters.setInstancePath(path);
-        Parameters.setRescheduleTimeBudget(300);
-        Parameters.setNumScenariosToGenerate(5);
+        Parameters.setRescheduleTimeBudget(1500);
+        Parameters.setFlightRescheduleBound(30);
+        Parameters.setNumScenariosToGenerate(10);
         Parameters.setScale(3.5);
         Parameters.setShape(0.25);
 
@@ -46,13 +47,11 @@ public class Main {
         Parameters.setDistributionVariance(10); // ignored for exponentials.
         Parameters.setFlightPickStrategy(Parameters.FlightPickStrategy.ALL);
 
-        Parameters.setDurations(new int[]{5, 10, 15, 20, 25, 30});
-        // Parameters.setDurations(new int[]{5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60});
         Parameters.setSolveDEP(true);
 
         Parameters.setBendersMultiCut(true);
         Parameters.setBendersTolerance(1e-3);
-        Parameters.setNumBendersIterations(10);
+        Parameters.setNumBendersIterations(30);
 
         // Second-stage parameters
         Parameters.setFullEnumeration(false);
@@ -68,7 +67,7 @@ public class Main {
 
         // Solution quality parameters
         Parameters.setCheckSolutionQuality(true);
-        Parameters.setNumTestScenarios(5);
+        Parameters.setNumTestScenarios(10);
 
         // Expected excess parameters
         Parameters.setExpectedExcess(false);

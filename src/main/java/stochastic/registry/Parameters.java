@@ -3,6 +3,7 @@ package stochastic.registry;
 public class Parameters {
     private static String instancePath;
     private static int rescheduleTimeBudget;
+    private static int flightRescheduleBound;
     private static int numScenariosToGenerate;
 
     private static double scale;
@@ -23,7 +24,6 @@ public class Parameters {
     public enum FlightPickStrategy { ALL, HUB, RUSH_TIME }
     private static FlightPickStrategy flightPickStrategy;
 
-    private static int[] durations;
     private static boolean solveDEP;
     private static boolean bendersMultiCut;
     private static double bendersTolerance;
@@ -71,6 +71,14 @@ public class Parameters {
 
     public static int getRescheduleTimeBudget() {
         return rescheduleTimeBudget;
+    }
+
+    public static void setFlightRescheduleBound(int flightRescheduleBound) {
+        Parameters.flightRescheduleBound = flightRescheduleBound;
+    }
+
+    public static int getFlightRescheduleBound() {
+        return flightRescheduleBound;
     }
 
     public static void setNumScenariosToGenerate(int numScenariosToGenerate) {
@@ -127,18 +135,6 @@ public class Parameters {
 
     public static FlightPickStrategy getFlightPickStrategy() {
         return flightPickStrategy;
-    }
-
-    public static void setDurations(int[] durations) {
-        Parameters.durations = durations;
-    }
-
-    public static int[] getDurations() {
-        return durations;
-    }
-
-    public static int getNumDurations() {
-        return durations.length;
     }
 
     public static void setSolveDEP(boolean solveDEP) {
