@@ -24,15 +24,13 @@ import java.util.*;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
-public class Controller {
+class Controller {
     /**
      * Class that controls the entire solution process from reading data to writing output.
      */
     private final static Logger logger = LogManager.getLogger(Controller.class);
     private DataRegistry dataRegistry;
     private OutputManager outputManager;
-
-    public static int[][] sceVal;
 
     Controller() {
         dataRegistry = new DataRegistry();

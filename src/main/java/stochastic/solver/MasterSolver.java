@@ -37,7 +37,6 @@ public class MasterSolver {
     MasterSolver(ArrayList<Leg> legs, ArrayList<Tail> tails, int numScenarios) throws IloException {
         this.legs = legs;
         this.numScenarios = numScenarios;
-        this.reschedules = new int[legs.size()];
 
         cplex = new IloCplex();
         if (!Parameters.isDebugVerbose())
@@ -65,7 +64,15 @@ public class MasterSolver {
             cplex.setLinearCoef(obj, theta, 1);
     }
 
-    public void solve(int iter) throws IloException {
+    void initInitialSolution() {
+        rescheduleCost = 0;
+        reschedules = new int[legs.size()];
+        Arrays.fill(reschedules, 0);
+        xValues = Arrays.stream(reschedules).asDoubleStream().toArray();
+        thetaValues = null;
+    }
+
+    public void solve() throws IloException {
         cplex.setParam(IloCplex.Param.MIP.Tolerances.MIPGap, 0.001);
         cplex.solve();
         objValue = cplex.getObjValue();
@@ -80,8 +87,7 @@ public class MasterSolver {
                 rescheduleCost += legs.get(j).getRescheduleCostPerMin() * reschedules[j];
             }
 
-        if(iter > 0)
-            thetaValues = cplex.getValues(thetas);
+        thetaValues = cplex.getValues(thetas);
     }
     
     double getRescheduleCost() {

@@ -82,24 +82,16 @@ public class BendersSolver {
     }
 
     public void solve() throws IloException, IOException, OptException {
-        Instant start = Instant.now();
-        ArrayList<Leg> legs = dataRegistry.getLegs();
-        ArrayList<Tail> tails = dataRegistry.getTails();
-
-        // Solve master problem once to initialize the algorithm.
-        masterSolver = new MasterSolver(legs, tails, dataRegistry.getDelayScenarios().length);
-        masterSolver.constructFirstStage();
-
-        if (Parameters.isDebugVerbose()) {
-            writeCsvHeaders();
-            masterSolver.writeLPFile("logs/master__before_cuts.lp");
-        }
-
-        masterSolver.solve(iteration);
         if (Parameters.isDebugVerbose())
-            writeMasterSolution(iteration, masterSolver.getxValues());
+            writeCsvHeaders();
 
+        Instant start = Instant.now();
+
+        masterSolver = new MasterSolver(dataRegistry.getLegs(), dataRegistry.getTails(),
+                dataRegistry.getDelayScenarios().length);
+        masterSolver.constructFirstStage();
         masterSolver.addTheta();
+        masterSolver.initInitialSolution();
 
         logger.info("algorithm starts.");
         if (Parameters.isFullEnumeration())
@@ -109,7 +101,6 @@ public class BendersSolver {
 
         cacheOnPlanPathsForSecondStage();
 
-        // Run Benders iterations until the stopping condition is reached.
         do { runBendersIteration();
         } while (!stoppingConditionReached());
 
@@ -188,7 +179,7 @@ public class BendersSolver {
             masterSolver.writeLPFile("logs/master_" + iteration + ".lp");
         }
 
-        masterSolver.solve(iteration);
+        masterSolver.solve();
 
         if (Parameters.isDebugVerbose()) {
             masterSolver.writeCPLEXSolution("logs/master_" + iteration + ".xml");
@@ -201,12 +192,12 @@ public class BendersSolver {
         logger.info("----- lower bound: " + lowerBound);
         logger.info("----- upper bound: " + upperBound);
         logger.info("----- upper bound from subsolver: " + bendersData.getUpperBound());
-        logger.info("----- number of cuts added: " + numBendersCuts);
 
         if (bendersData.getUpperBound() < upperBound)
             upperBound = bendersData.getUpperBound();
 
         logger.info("----- updated upper bound: " + upperBound);
+        logger.info("----- number of cuts added: " + numBendersCuts);
     }
 
     private boolean isCutEffective(BendersCut cut, double[] xValues, Double thetaValue) {
