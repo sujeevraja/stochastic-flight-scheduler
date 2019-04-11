@@ -8,6 +8,7 @@ import stochastic.dao.ScheduleDAO;
 import stochastic.domain.Tail;
 import stochastic.network.Path;
 import stochastic.output.OutputManager;
+import stochastic.output.RescheduleSolution;
 import stochastic.registry.DataRegistry;
 import stochastic.registry.Parameters;
 import stochastic.solver.BendersSolver;
@@ -31,6 +32,7 @@ class Controller {
     private final static Logger logger = LogManager.getLogger(Controller.class);
     private DataRegistry dataRegistry;
     private OutputManager outputManager;
+    private RescheduleSolution naiveModelSolution;
 
     Controller() {
         dataRegistry = new DataRegistry();
@@ -91,7 +93,10 @@ class Controller {
     final void solveWithBenders() throws OptException {
         try {
             BendersSolver bendersSolver = new BendersSolver(dataRegistry);
-            bendersSolver.solve();
+            if (Parameters.isWarmStartBenders())
+                bendersSolver.solve(naiveModelSolution);
+            else
+                bendersSolver.solve(null);
             outputManager.addRescheduleSolution(bendersSolver.getFinalRescheduleSolution());
             outputManager.addKpi("benders solution time (seconds)", bendersSolver.getSolutionTime());
             outputManager.addKpi("benders iterations", bendersSolver.getIteration());
@@ -120,7 +125,8 @@ class Controller {
         try {
             NaiveSolver naiveSolver = new NaiveSolver(dataRegistry);
             naiveSolver.solve();
-            outputManager.addRescheduleSolution(naiveSolver.getFinalRescheduleSolution());
+            naiveModelSolution = naiveSolver.getFinalRescheduleSolution();
+            outputManager.addRescheduleSolution(naiveModelSolution);
             outputManager.addKpi("naive model solution time (seconds)", naiveSolver.getSolutionTime());
         } catch (IloException ex) {
             logger.error(ex);

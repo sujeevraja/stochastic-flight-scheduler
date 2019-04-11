@@ -30,7 +30,10 @@ class ComparableStats {
 
     void setPercentageDecreases(ComparableStats other) {
         for (int i = 0;  i < values.length;  ++i) {
-            percentageDecreases[i] = (other.values[i] - values[i]) * 100.0 / other.values[i];
+            if (other.values[i] == 0)
+                percentageDecreases[i] = Double.NaN;
+            else
+                percentageDecreases[i] = (other.values[i] - values[i]) * 100.0 / other.values[i];
         }
     }
 

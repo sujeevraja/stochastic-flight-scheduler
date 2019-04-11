@@ -64,6 +64,13 @@ public class MasterSolver {
             cplex.setLinearCoef(obj, theta, 1);
     }
 
+    void setInitialSolution(double rescheduleCost, int[] reschedules) {
+        this.rescheduleCost = rescheduleCost;
+        this.reschedules = reschedules.clone();
+        xValues = Arrays.stream(reschedules).asDoubleStream().toArray();
+        thetaValues = null;
+    }
+
     void initInitialSolution() {
         rescheduleCost = 0;
         reschedules = new int[legs.size()];
