@@ -1,7 +1,7 @@
 package stochastic.output;
 
-import org.apache.commons.math3.distribution.ExponentialDistribution;
-import org.apache.commons.math3.distribution.RealDistribution;
+import stochastic.delay.DelayGenerator;
+import stochastic.delay.FirstFlightDelayGenerator;
 import stochastic.delay.StrategicDelayGenerator;
 import stochastic.delay.Scenario;
 import stochastic.domain.Leg;
@@ -37,10 +37,8 @@ class QualityChecker {
     }
 
     void generateTestDelays() {
-        // LogNormalDistribution distribution = new LogNormalDistribution(Parameters.getScale(), Parameters.getShape());
-        // DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getTails(), distribution);
-
-        StrategicDelayGenerator dgen = new StrategicDelayGenerator(dataRegistry.getLegs());
+        // DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getLegs().size(), dataRegistry.getTails());
+        DelayGenerator dgen = new StrategicDelayGenerator(dataRegistry.getLegs());
         testScenarios = dgen.generateScenarios(Parameters.getNumTestScenarios());
     }
 

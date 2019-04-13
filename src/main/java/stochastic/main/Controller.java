@@ -1,7 +1,5 @@
 package stochastic.main;
 
-import org.apache.commons.math3.distribution.ExponentialDistribution;
-import org.apache.commons.math3.distribution.RealDistribution;
 import stochastic.delay.*;
 import stochastic.domain.Leg;
 import stochastic.dao.ScheduleDAO;
@@ -59,12 +57,9 @@ class Controller {
      * Generates delay realizations and probabilities for second stage scenarios.
      */
     final void buildScenarios() {
-        // LogNormalDistribution distribution = new LogNormalDistribution(Parameters.getScale(), Parameters.getShape());
-        // DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getTails(), distribution);
-
-        // DelayGenerator dgen = new TestDelayGenerator(dataRegistry.getTails());
-
-        StrategicDelayGenerator dgen = new StrategicDelayGenerator(dataRegistry.getLegs());
+        // DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getLegs().size(), dataRegistry.getTails());
+        // DelayGenerator dgen = new TestDelayGenerator(dataRegistry.getLegs().size(), dataRegistry.getTails());
+        DelayGenerator dgen = new StrategicDelayGenerator(dataRegistry.getLegs());
 
         Scenario[] scenarios = dgen.generateScenarios(Parameters.getNumScenariosToGenerate());
         dataRegistry.setDelayScenarios(scenarios);

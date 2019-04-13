@@ -10,9 +10,12 @@ import java.util.HashMap;
 public class TestDelayGenerator extends FirstFlightDelayGenerator {
     /**
      * Class that generates specified delays for the first flight of each tail.
+     *
+     * @param numLegs number of legs for FirstFlightDelayGenerator.
+     * @param tails tails for which the first flights on original routes will get random delays.
      */
     public TestDelayGenerator(int numLegs, ArrayList<Tail> tails) {
-        super(numLegs, tails, null);
+        super(numLegs, tails);
     }
 
     @Override

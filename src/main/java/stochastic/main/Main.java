@@ -40,8 +40,6 @@ public class Main {
         Parameters.setRescheduleTimeBudget(1500);
         Parameters.setFlightRescheduleBound(30);
         Parameters.setNumScenariosToGenerate(10);
-        Parameters.setScale(3.5);
-        Parameters.setShape(0.25);
 
         Parameters.setDistributionType(Enums.DistributionType.EXPONENTIAL);
         Parameters.setDistributionMean(15);

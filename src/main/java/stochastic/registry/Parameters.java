@@ -8,9 +8,6 @@ public class Parameters {
     private static int flightRescheduleBound;
     private static int numScenariosToGenerate;
 
-    private static double scale;
-    private static double shape;
-
     private static Enums.DistributionType distributionType;
     private static double distributionMean;
     private static double distributionSd; // standard deviation
@@ -71,22 +68,6 @@ public class Parameters {
 
     public static int getNumScenariosToGenerate() {
         return numScenariosToGenerate;
-    }
-
-    public static void setScale(double scale) {
-        Parameters.scale = scale;
-    }
-
-    public static double getScale() {
-        return scale;
-    }
-
-    public static void setShape(double shape) {
-        Parameters.shape = shape;
-    }
-
-    public static double getShape() {
-        return shape;
     }
 
     public static void setDistributionType(Enums.DistributionType distributionType) {

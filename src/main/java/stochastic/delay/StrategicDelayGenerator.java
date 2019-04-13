@@ -13,8 +13,8 @@ import java.util.Map;
 
 public class StrategicDelayGenerator implements DelayGenerator {
     /**
-     * StrategicDelayGenerator can be used to generate random primary delays for flights based on a specified
-     * distribution and flight selection strategy.
+     * StrategicDelayGenerator can be used to generate random primary delays for flights based on a flight strategy
+     * and distribution details specified in Parameters.
      */
     private ArrayList<Leg> legs;
     private Enums.FlightPickStrategy flightPickStrategy;

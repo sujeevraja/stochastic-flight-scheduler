@@ -2,14 +2,11 @@ package stochastic.delay;
 
 import stochastic.domain.Leg;
 import stochastic.domain.Tail;
-import org.apache.commons.math3.distribution.AbstractRealDistribution;
-import org.apache.commons.math3.distribution.LogNormalDistribution;
 
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 
 public class FirstFlightDelayGenerator implements DelayGenerator {
     /**
@@ -17,12 +14,12 @@ public class FirstFlightDelayGenerator implements DelayGenerator {
      */
     private int numLegs;
     private ArrayList<Tail> tails;
-    private LogNormalDistribution distribution;
+    private Sampler sampler;
 
-    public FirstFlightDelayGenerator(int numLegs, ArrayList<Tail> tails, LogNormalDistribution distribution) {
+    public FirstFlightDelayGenerator(int numLegs, ArrayList<Tail> tails) {
         this.numLegs = numLegs;
         this.tails = tails;
-        this.distribution = distribution;
+        this.sampler = new Sampler();
     }
 
     @Override
@@ -30,7 +27,7 @@ public class FirstFlightDelayGenerator implements DelayGenerator {
         // generate sample delays.
         int[] delayTimes = new int[numSamples];
         for (int i = 0; i < numSamples; ++i)
-            delayTimes[i] = (int) Math.round(distribution.sample());
+            delayTimes[i] = sampler.sample();
 
         // round delays, aggregate them and corresponding probabilities.
         Arrays.sort(delayTimes);
