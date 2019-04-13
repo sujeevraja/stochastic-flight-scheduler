@@ -23,7 +23,7 @@ public class SolverUtility {
      */
     public static HashMap<Integer, ArrayList<Path>> getOriginalPaths(HashMap<Integer, Tail> tailHashMap,
                                                                      HashMap<Integer, Path> originalPathMap,
-                                                                     HashMap<Integer, Integer> primaryDelays) {
+                                                                     int[] primaryDelays) {
         HashMap<Integer, ArrayList<Path>> initialPaths = new HashMap<>();
 
         for (Map.Entry<Integer, Path> entry : originalPathMap.entrySet()) {
@@ -44,7 +44,7 @@ public class SolverUtility {
             LocalDateTime currentTime = null;
             for (Leg leg : origPath.getLegs()) {
                 // find delayed departure time due to primary delay.
-                int legDelay = primaryDelays.getOrDefault(leg.getIndex(), 0);
+                int legDelay = primaryDelays[leg.getIndex()];
                 LocalDateTime delayedDepTime = leg.getDepTime().plusMinutes(legDelay);
 
                 // find delayed departure time due to propagated delay
@@ -66,23 +66,6 @@ public class SolverUtility {
         }
 
         return initialPaths;
-    }
-
-    /**
-     * Return the total delay time in minutes of each leg for the second stage.
-     *
-     * @return map with leg indices as keys, total delay times as corresponding values.
-     */
-    static int[] getTotalDelays(HashMap<Integer, Integer> randomDelays, int numLegs) {
-        int[] delays = new int[numLegs];
-        for (int i = 0; i < numLegs; ++i) {
-            delays[i] = randomDelays.getOrDefault(i, 0);
-
-            // if (reschedules[i] > 0 && delays[i] < reschedules[i])
-            //    delays[i] = reschedules[i];
-        }
-
-        return delays;
     }
 
     static HashMap<Integer, ArrayList<Path>> getPathsForFullEnum(ArrayList<Path> paths, ArrayList<Tail> tails) {

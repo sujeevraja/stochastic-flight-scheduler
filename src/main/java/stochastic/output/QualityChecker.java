@@ -200,13 +200,12 @@ class QualityChecker {
         }
 
         // update primary delays using reschedules.
-        HashMap<Integer, Integer> adjustedDelays;
+        int[] adjustedDelays;
         if (reschedules != null) {
-            adjustedDelays = new HashMap<>();
-            HashMap<Integer, Integer> primaryDelays = scen.getPrimaryDelays();
-            for (Map.Entry<Integer, Integer> entry : primaryDelays.entrySet()) {
-                Integer adjustedDelay = Math.max(entry.getValue() - reschedules[entry.getKey()], 0);
-                adjustedDelays.put(entry.getKey(), adjustedDelay);
+            adjustedDelays = new int[dataRegistry.getLegs().size()];
+            int[] primaryDelays = scen.getPrimaryDelays();
+            for (int i = 0; i < primaryDelays.length; ++i) {
+                adjustedDelays[i] = Math.max(primaryDelays[i] - reschedules[i], 0);
             }
         } else {
             adjustedDelays = scen.getPrimaryDelays();

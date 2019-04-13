@@ -8,6 +8,7 @@ import stochastic.utility.Enums;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,12 +34,13 @@ public class NewDelayGenerator implements DelayGenerator {
         Scenario[] scenarios = new Scenario[numSamples];
 
         for (int i = 0; i < numSamples; ++i) {
-            HashMap<Integer, Integer> indexDelayMap = new HashMap<>();
+            int[] delays = new int[legs.size()];
+            Arrays.fill(delays, 0);
             for (Leg leg : selectedLegs) {
                 int delayTime = (int) Math.round(distribution.sample());
-                indexDelayMap.put(leg.getIndex(), delayTime);
+                delays[leg.getIndex()] = delayTime;
             }
-            scenarios[i] = new Scenario(probability, indexDelayMap);
+            scenarios[i] = new Scenario(probability, delays);
         }
 
         return scenarios;

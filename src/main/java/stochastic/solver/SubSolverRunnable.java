@@ -21,7 +21,7 @@ public class SubSolverRunnable implements Runnable {
     private int scenarioNum;
     private double probability;
     private int[] reschedules;
-    private HashMap<Integer, Integer> randomDelays;
+    private int[] randomDelays;
     private PathCache pathCache;
 
     private String filePrefix;
@@ -31,7 +31,7 @@ public class SubSolverRunnable implements Runnable {
     private DelaySolution delaySolution; // used only when checking Benders solution quality
 
     public SubSolverRunnable(DataRegistry dataRegistry, int iter, int scenarioNum, double probability,
-                             int[] reschedules, HashMap<Integer, Integer> randomDelays, PathCache pathCache) {
+                             int[] reschedules, int[] randomDelays, PathCache pathCache) {
         this.dataRegistry = dataRegistry;
         this.iter = iter;
         this.scenarioNum = scenarioNum;
@@ -80,10 +80,8 @@ public class SubSolverRunnable implements Runnable {
     private void solveWithFullEnumeration() throws IloException {
         try {
             // Enumerate all paths for each tail.
-            int[] delays = SolverUtility.getTotalDelays(randomDelays, dataRegistry.getLegs().size());
-
             ArrayList<Path> allPaths = dataRegistry.getNetwork().enumeratePathsForTails(
-                    dataRegistry.getTails(), delays);
+                    dataRegistry.getTails(), randomDelays);
 
             // Store paths for each tail separately. Also add empty paths for each tail.
             HashMap<Integer, ArrayList<Path>> tailPathsMap = SolverUtility.getPathsForFullEnum(allPaths,
@@ -123,7 +121,7 @@ public class SubSolverRunnable implements Runnable {
 
             if (solveForQuality) {
                 ss.collectSolution();
-                buildDelaySolution(ss, delays, tailPathsMap);
+                buildDelaySolution(ss, randomDelays, tailPathsMap);
             } else {
                 ss.collectDuals();
                 double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(),
@@ -147,7 +145,6 @@ public class SubSolverRunnable implements Runnable {
 
     private void solveWithLabeling() throws IloException, OptException {
         SubSolver ss = new SubSolver(scenarioNum, dataRegistry.getTails(), dataRegistry.getLegs(), reschedules);
-        int[] delays = SolverUtility.getTotalDelays(randomDelays, dataRegistry.getLegs().size());
 
         // Load on-plan paths with propagated delays.
         HashMap<Integer, ArrayList<Path>> pathsAll = pathCache.getCachedPaths();
@@ -195,7 +192,7 @@ public class SubSolverRunnable implements Runnable {
                 Tail tail = tails.get(i);
 
                 PricingProblemSolver lpg = new PricingProblemSolver(tail, legs, dataRegistry.getNetwork(),
-                        delays, tailDuals[i], ss.getDualsLeg(), ss.getDualsDelay());
+                        randomDelays, tailDuals[i], ss.getDualsLeg(), ss.getDualsDelay());
 
                 // Build sink labels for paths that have already been generated and add them to the labeling
                 // path generator.
@@ -251,7 +248,7 @@ public class SubSolverRunnable implements Runnable {
             }
 
             ss.collectSolution();
-            buildDelaySolution(ss, delays, pathsAll);
+            buildDelaySolution(ss, randomDelays, pathsAll);
             ss.end();
         } else {
             // Update master problem data

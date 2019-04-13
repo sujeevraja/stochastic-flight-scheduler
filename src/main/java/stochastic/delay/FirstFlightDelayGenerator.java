@@ -15,10 +15,12 @@ public class FirstFlightDelayGenerator implements DelayGenerator {
     /**
      * Class that adds the given delay value to the first flight of eath tail.
      */
+    private int numLegs;
     private ArrayList<Tail> tails;
     private LogNormalDistribution distribution;
 
-    public FirstFlightDelayGenerator(ArrayList<Tail> tails, LogNormalDistribution distribution) {
+    public FirstFlightDelayGenerator(int numLegs, ArrayList<Tail> tails, LogNormalDistribution distribution) {
+        this.numLegs = numLegs;
         this.tails = tails;
         this.distribution = distribution;
     }
@@ -63,25 +65,26 @@ public class FirstFlightDelayGenerator implements DelayGenerator {
         // generate scenarios with flight delay map.
         Scenario[] scenarios = new Scenario[delays.size()];
         for (int i = 0; i < delays.size(); ++i) {
-            HashMap<Integer, Integer> flightDelays = generateFlightDelays(delays.get(i));
+            int[] flightDelays = generateFlightDelays(delays.get(i));
             scenarios[i] = new Scenario(probabilities.get(i), flightDelays);
         }
 
         return scenarios;
     }
 
-    HashMap<Integer, Integer> generateFlightDelays(int delayTimeInMin) {
-        HashMap<Integer, Integer> delayMap = new HashMap<>();
+    int[] generateFlightDelays(int delayTimeInMin) {
+        int[] delays = new int[numLegs];
+        Arrays.fill(delays, 0);
 
         for(Tail tail : tails) {
             ArrayList<Leg> tailLegs = tail.getOrigSchedule();
             if(!tailLegs.isEmpty()) {
                 Leg leg = tailLegs.get(0);
-                delayMap.put(leg.getIndex(), delayTimeInMin);
+                delays[leg.getIndex()] = delayTimeInMin;
             }
         }
 
-        return delayMap;
+        return delays;
     }
 
     void logScenarioDelays(ArrayList<Integer> delays, ArrayList<Double> probabilities) {
