@@ -29,7 +29,21 @@ class Controller {
     private final static Logger logger = LogManager.getLogger(Controller.class);
     private DataRegistry dataRegistry;
     private OutputManager outputManager;
+
     private RescheduleSolution naiveModelSolution;
+    private double naiveModelSolutionTime;
+
+    private RescheduleSolution depSolution;
+    private double depObjective;
+    private double depSolutionTime;
+
+    private RescheduleSolution bendersSolution;
+    private double bendersSolutionTime;
+    private double bendersLowerBound;
+    private double bendersUpperBound;
+    private double bendersGap;
+    private int bendersNumIterations;
+    private int bendersNumCuts;
 
     Controller() {
         dataRegistry = new DataRegistry();
@@ -82,21 +96,14 @@ class Controller {
                 bendersSolver.solve(naiveModelSolution);
             else
                 bendersSolver.solve(null);
-            outputManager.addRescheduleSolution(bendersSolver.getFinalRescheduleSolution());
-            outputManager.addKpi("benders solution time (seconds)", bendersSolver.getSolutionTime());
-            outputManager.addKpi("benders iterations", bendersSolver.getIteration());
-            outputManager.addKpi("benders lower bound", bendersSolver.getLowerBound());
-            outputManager.addKpi("benders upper bound", bendersSolver.getUpperBound());
-            outputManager.addKpi("benders gap (%)", bendersSolver.getPercentGap());
-            outputManager.addKpi("benders cuts added", bendersSolver.getNumBendersCuts());
 
-            double[] thetas = bendersSolver.getFinalThetaValues();
-            if (Parameters.isBendersMultiCut()) {
-                for (int i = 0; i < dataRegistry.getDelayScenarios().length; ++i)
-                    outputManager.addKpi("benders theta (scenario " + i + ")", thetas[i]);
-            }
-            else
-                outputManager.addKpi("benders theta", thetas[0]);
+            bendersSolution = bendersSolver.getFinalRescheduleSolution();
+            bendersSolutionTime = bendersSolver.getSolutionTime();
+            bendersLowerBound = bendersSolver.getLowerBound();
+            bendersUpperBound = bendersSolver.getUpperBound();
+            bendersGap = bendersSolver.getPercentGap();
+            bendersNumIterations = bendersSolver.getIteration();
+            bendersNumCuts = bendersSolver.getNumBendersCuts();
         } catch (IloException ex) {
             logger.error(ex);
             throw new OptException("CPLEX error in Benders");
@@ -106,25 +113,68 @@ class Controller {
         }
     }
 
+    final double getBendersRescheduleCost() {
+        return bendersSolution.getRescheduleCost();
+    }
+
+    final double getBendersSolutionTime() {
+        return bendersSolutionTime;
+    }
+
+    final double getBendersLowerBound() {
+        return bendersLowerBound;
+    }
+
+    final double getBendersUpperBound() {
+        return bendersUpperBound;
+    }
+
+    final double getBendersGap() {
+        return bendersGap;
+    }
+
+    final int getBendersNumCuts() {
+        return bendersNumCuts;
+    }
+
+    final int getBendersNumIterations() {
+        return bendersNumIterations;
+    }
+
     final void solveWithNaiveApproach() throws OptException {
         try {
             NaiveSolver naiveSolver = new NaiveSolver(dataRegistry);
             naiveSolver.solve();
             naiveModelSolution = naiveSolver.getFinalRescheduleSolution();
-            outputManager.addRescheduleSolution(naiveModelSolution);
-            outputManager.addKpi("naive model solution time (seconds)", naiveSolver.getSolutionTime());
+            naiveModelSolutionTime = naiveSolver.getSolutionTime();
         } catch (IloException ex) {
             logger.error(ex);
             throw new OptException("exception solving naive model");
         }
     }
 
+    final double getNaiveModelRescheduleCost() {
+        return naiveModelSolution.getRescheduleCost();
+    }
+
+    final double getNaiveModelSolutionTime() {
+        return naiveModelSolutionTime;
+    }
+
     final void solveWithDEP() throws OptException {
         DepSolver depSolver = new DepSolver();
         depSolver.solve(dataRegistry);
-        outputManager.addRescheduleSolution(depSolver.getDepSolution());
-        outputManager.addKpi("dep solution time (seconds)", depSolver.getSolutionTimeInSeconds());
-        outputManager.addKpi("dep objective", depSolver.getObjValue());
+        depSolution = depSolver.getDepSolution();
+        depObjective = depSolver.getObjValue();
+        depSolutionTime = depSolver.getSolutionTimeInSeconds();
+    }
+
+    final double getDepRescheduleCost() {
+        return depSolution.getRescheduleCost();
+    }
+
+    final double getDepSolutionTime() {
+        return depSolutionTime;
     }
 
     /**
@@ -251,6 +301,18 @@ class Controller {
 
     void processSolution() throws OptException {
         try {
+            outputManager.addRescheduleSolution(naiveModelSolution);
+            outputManager.addKpi("naive model solution time (seconds)", naiveModelSolutionTime);
+            outputManager.addRescheduleSolution(depSolution);
+            outputManager.addKpi("dep solution time (seconds)", depSolutionTime);
+            outputManager.addKpi("dep objective", depObjective);
+            outputManager.addRescheduleSolution(bendersSolution);
+            outputManager.addKpi("benders solution time (seconds)", bendersSolutionTime);
+            outputManager.addKpi("benders iterations", bendersNumIterations);
+            outputManager.addKpi("benders lower bound", bendersLowerBound);
+            outputManager.addKpi("benders upper bound", bendersUpperBound);
+            outputManager.addKpi("benders gap (%)", bendersGap);
+            outputManager.addKpi("benders cuts added", bendersNumCuts);
             outputManager.writeOutput();
             if (Parameters.isCheckSolutionQuality())
                 outputManager.checkSolutionQuality();

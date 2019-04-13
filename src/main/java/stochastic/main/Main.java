@@ -14,22 +14,32 @@ public class Main {
 
     public static void main(String[] args) {
         try {
-            logger.info("Started optimization...");
-            setParameters();
-
-            Controller controller = new Controller();
-            controller.readData();
-            controller.buildScenarios();
-            controller.solveWithNaiveApproach();
-            if (Parameters.isSolveDEP())
-                controller.solveWithDEP();
-            controller.solveWithBenders();
-            controller.processSolution();
-
-            logger.info("completed optimization.");
+            batchRun();
+            // singleRun();
         } catch (OptException ex) {
             logger.error(ex);
         }
+    }
+
+    private static void batchRun() throws OptException {
+        BatchRunner batchRunner = new BatchRunner();
+        batchRunner.runQualitySet();
+    }
+
+    private static void singleRun() throws OptException {
+        logger.info("Started optimization...");
+        setParameters();
+
+        Controller controller = new Controller();
+        controller.readData();
+        controller.buildScenarios();
+        controller.solveWithNaiveApproach();
+        if (Parameters.isSolveDEP())
+            controller.solveWithDEP();
+        controller.solveWithBenders();
+        controller.processSolution();
+
+        logger.info("completed optimization.");
     }
 
     private static void setParameters() {
