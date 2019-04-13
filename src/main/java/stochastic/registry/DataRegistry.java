@@ -26,6 +26,7 @@ public class DataRegistry {
     private Integer[][] origSlacks;
 
     private Scenario[] delayScenarios;
+    private int rescheduleTimeBudget;
 
     public DataRegistry() {
         legs = new ArrayList<>();
@@ -111,6 +112,14 @@ public class DataRegistry {
 
     public Scenario[] getDelayScenarios() {
         return delayScenarios;
+    }
+
+    public void setRescheduleTimeBudget(int rescheduleTimeBudget) {
+        this.rescheduleTimeBudget = rescheduleTimeBudget;
+    }
+
+    public int getRescheduleTimeBudget() {
+        return rescheduleTimeBudget;
     }
 }
 

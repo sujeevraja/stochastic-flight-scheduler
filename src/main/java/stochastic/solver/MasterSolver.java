@@ -34,7 +34,7 @@ public class MasterSolver {
     private double rescheduleCost; // this is \sum_({p,f} c_f g_p x_{pf} and will be used for the Benders upper bound.
     private double[] thetaValues;
 
-    MasterSolver(ArrayList<Leg> legs, ArrayList<Tail> tails, int numScenarios) throws IloException {
+    MasterSolver(ArrayList<Leg> legs, ArrayList<Tail> tails, int budget, int numScenarios) throws IloException {
         this.legs = legs;
         this.numScenarios = numScenarios;
 
@@ -42,7 +42,7 @@ public class MasterSolver {
         if (!Parameters.isDebugVerbose())
             cplex.setOut(null);
 
-        masterModelBuilder = new MasterModelBuilder(legs, tails, cplex);
+        masterModelBuilder = new MasterModelBuilder(legs, tails, budget, cplex);
     }
 
     void constructFirstStage() throws IloException {

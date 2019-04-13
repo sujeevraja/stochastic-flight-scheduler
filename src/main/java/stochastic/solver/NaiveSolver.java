@@ -123,7 +123,7 @@ public class NaiveSolver {
         for (int j = 0; j < legs.size(); ++j)
             budgetExpr.addTerm(x[j], 1);
 
-        cplex.addLe(budgetExpr, (double) Parameters.getRescheduleTimeBudget(), "reschedule_time_budget");
+        cplex.addLe(budgetExpr, (double) dataRegistry.getRescheduleTimeBudget(), "reschedule_time_budget");
 
         if (Parameters.isDebugVerbose())
             cplex.exportModel("logs/naive_model.lp");

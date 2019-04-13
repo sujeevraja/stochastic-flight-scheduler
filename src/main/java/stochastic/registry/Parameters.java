@@ -4,7 +4,13 @@ import stochastic.utility.Enums;
 
 public class Parameters {
     private static String instancePath;
-    private static int rescheduleTimeBudget;
+
+    /**
+     * This fraction will be used to set the reschedule time budget, which will be calculated as:
+     * reschedule time budget = rescheduleBudgetFraction * (average total delay of all scenarios).
+     */
+    private static double rescheduleBudgetFraction;
+
     private static int flightRescheduleBound;
     private static int numScenariosToGenerate;
 
@@ -46,12 +52,12 @@ public class Parameters {
         return instancePath;
     }
 
-    public static void setRescheduleTimeBudget(int rescheduleTimeBudget) {
-        Parameters.rescheduleTimeBudget = rescheduleTimeBudget;
+    public static void setRescheduleBudgetFraction(double rescheduleBudgetFraction) {
+        Parameters.rescheduleBudgetFraction = rescheduleBudgetFraction;
     }
 
-    public static int getRescheduleTimeBudget() {
-        return rescheduleTimeBudget;
+    public static double getRescheduleBudgetFraction() {
+        return rescheduleBudgetFraction;
     }
 
     public static void setFlightRescheduleBound(int flightRescheduleBound) {

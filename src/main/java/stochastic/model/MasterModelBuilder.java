@@ -12,13 +12,15 @@ import java.util.ArrayList;
 public class MasterModelBuilder {
     private ArrayList<Leg> legs;
     private ArrayList<Tail> tails;
+    private int budget;
 
     private IloCplex cplex;
     private IloNumVar[] x; // x[i] = #minutes of reschedule of flight i.
 
-    public MasterModelBuilder(ArrayList<Leg> legs, ArrayList<Tail> tails, IloCplex cplex) {
+    public MasterModelBuilder(ArrayList<Leg> legs, ArrayList<Tail> tails, int budget, IloCplex cplex) {
         this.legs = legs;
         this.tails = tails;
+        this.budget = budget;
         this.cplex = cplex;
         x = new IloIntVar[legs.size()];
     }
@@ -78,7 +80,7 @@ public class MasterModelBuilder {
         for (int j = 0; j < legs.size(); ++j)
             budgetExpr.addTerm(x[j], 1);
 
-        IloRange budgetConstraint = cplex.addLe(budgetExpr, (double) Parameters.getRescheduleTimeBudget());
+        IloRange budgetConstraint = cplex.addLe(budgetExpr, budget);
         budgetConstraint.setName("reschedule_time_budget");
     }
 

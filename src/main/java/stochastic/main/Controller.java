@@ -70,6 +70,9 @@ class Controller {
         avgTotalPrimaryDelay /= scenarios.length;
 
         logger.info("average total primary delay (minutes): " + avgTotalPrimaryDelay);
+
+        final int budget = (int) Math.round(avgTotalPrimaryDelay * Parameters.getRescheduleBudgetFraction());
+        dataRegistry.setRescheduleTimeBudget(budget);
     }
 
     final void solveWithBenders() throws OptException {

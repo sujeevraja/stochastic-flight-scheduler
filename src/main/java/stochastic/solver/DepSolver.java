@@ -40,7 +40,8 @@ public class DepSolver {
             // master model
             ArrayList<Leg> legs = dataRegistry.getLegs();
             ArrayList<Tail> tails = dataRegistry.getTails();
-            MasterModelBuilder masterModelBuilder = new MasterModelBuilder(legs, tails, cplex);
+            MasterModelBuilder masterModelBuilder = new MasterModelBuilder(legs, tails,
+                    dataRegistry.getRescheduleTimeBudget(), cplex);
 
             masterModelBuilder.buildVariables();
 

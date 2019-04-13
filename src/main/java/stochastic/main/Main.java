@@ -37,7 +37,7 @@ public class Main {
         // String path = "data/instance1";
 
         Parameters.setInstancePath(path);
-        Parameters.setRescheduleTimeBudget(1500);
+        Parameters.setRescheduleBudgetFraction(0.5);
         Parameters.setFlightRescheduleBound(30);
         Parameters.setNumScenariosToGenerate(10);
 

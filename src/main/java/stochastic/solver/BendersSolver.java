@@ -88,7 +88,7 @@ public class BendersSolver {
         Instant start = Instant.now();
 
         masterSolver = new MasterSolver(dataRegistry.getLegs(), dataRegistry.getTails(),
-                dataRegistry.getDelayScenarios().length);
+                dataRegistry.getRescheduleTimeBudget(), dataRegistry.getDelayScenarios().length);
         masterSolver.constructFirstStage();
         masterSolver.addTheta();
         if (warmStartSolution != null)
