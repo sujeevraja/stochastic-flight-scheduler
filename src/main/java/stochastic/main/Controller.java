@@ -16,7 +16,6 @@ import stochastic.solver.NaiveSolver;
 import stochastic.solver.DepSolver;
 import stochastic.utility.OptException;
 import ilog.concert.IloException;
-import org.apache.commons.math3.distribution.LogNormalDistribution;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -65,19 +64,9 @@ class Controller {
 
         // DelayGenerator dgen = new TestDelayGenerator(dataRegistry.getTails());
 
-        // TODO correct distributions later.
-        RealDistribution distribution;
-        switch (Parameters.getDistributionType()) {
-            case EXPONENTIAL:
-                distribution = new ExponentialDistribution(Parameters.getDistributionMean());
-            case TRUNCATED_NORMAL:
-                distribution = new ExponentialDistribution(Parameters.getDistributionMean());
-            case LOGNORMAL:
-                distribution = new ExponentialDistribution(Parameters.getDistributionMean());
-            default:
-                distribution = new ExponentialDistribution(Parameters.getDistributionMean());
-        }
-        NewDelayGenerator dgen = new NewDelayGenerator(distribution, dataRegistry.getLegs());
+        StrategicDelayGenerator dgen = new StrategicDelayGenerator(dataRegistry.getLegs(),
+                Parameters.getFlightPickStrategy(), Parameters.getDistributionType(), Parameters.getDistributionMean(),
+                Parameters.getDistributionSd());
 
         Scenario[] scenarios = dgen.generateScenarios(Parameters.getNumScenariosToGenerate());
         dataRegistry.setDelayScenarios(scenarios);

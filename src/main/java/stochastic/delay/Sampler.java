@@ -6,7 +6,7 @@ import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import stochastic.utility.Enums;
 
-public class Sampler {
+class Sampler {
     /**
      * generates integer samples of delay based on specified distribution, mean and standard deviation.
      */
@@ -26,9 +26,9 @@ public class Sampler {
         }
     }
 
-    double sample() {
+    int sample() {
         while (true) {
-            final double realization = distribution.sample();
+            final int realization = (int) Math.round(distribution.sample());
             if (realization >= 0)
                 return realization;
         }

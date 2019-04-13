@@ -1,8 +1,6 @@
 package stochastic.delay;
 
-import org.apache.commons.math3.distribution.RealDistribution;
 import stochastic.domain.Leg;
-import stochastic.registry.Parameters;
 import stochastic.utility.Enums;
 
 import java.time.Duration;
@@ -12,19 +10,20 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-public class NewDelayGenerator implements DelayGenerator {
+public class StrategicDelayGenerator implements DelayGenerator {
     /**
-     * NewDelayGenerator can be used to generate random primary delays for flights based on a specified distribution
+     * StrategicDelayGenerator can be used to generate random primary delays for flights based on a specified distribution
      * and flight selection strategy.
      */
-    private RealDistribution distribution;
     private ArrayList<Leg> legs;
     private Enums.FlightPickStrategy flightPickStrategy;
+    private Sampler sampler;
 
-    public NewDelayGenerator(RealDistribution distribution, ArrayList<Leg> legs) {
-        this.distribution = distribution;
+    public StrategicDelayGenerator(ArrayList<Leg> legs, Enums.FlightPickStrategy flightPickStrategy,
+                                   Enums.DistributionType distributionType, double mean, double sd) {
         this.legs = legs;
-        flightPickStrategy = Parameters.getFlightPickStrategy();
+        this.flightPickStrategy = flightPickStrategy;
+        sampler = new Sampler(distributionType, mean, sd);
     }
 
     @Override
@@ -36,10 +35,8 @@ public class NewDelayGenerator implements DelayGenerator {
         for (int i = 0; i < numSamples; ++i) {
             int[] delays = new int[legs.size()];
             Arrays.fill(delays, 0);
-            for (Leg leg : selectedLegs) {
-                int delayTime = (int) Math.round(distribution.sample());
-                delays[leg.getIndex()] = delayTime;
-            }
+            for (Leg leg : selectedLegs)
+                delays[leg.getIndex()] = sampler.sample();
             scenarios[i] = new Scenario(probability, delays);
         }
 
