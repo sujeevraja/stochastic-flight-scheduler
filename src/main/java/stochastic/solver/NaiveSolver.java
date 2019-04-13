@@ -56,9 +56,10 @@ public class NaiveSolver {
     private void buildAveragePrimaryDelays() {
         Scenario[] scenarios = dataRegistry.getDelayScenarios();
         for(Scenario scenario : scenarios) {
-            HashMap<Integer, Integer> primaryDelays = scenario.getPrimaryDelays();
-            for (Map.Entry<Integer, Integer> entry : primaryDelays.entrySet())
-                expectedDelays[entry.getKey()] += scenario.getProbability() * entry.getValue();
+            int[] primaryDelays = scenario.getPrimaryDelays();
+            for (int i = 0; i < primaryDelays.length; ++i)
+                if (primaryDelays[i] > 0)
+                    expectedDelays[i] += scenario.getProbability() * primaryDelays[i];
         }
     }
 
@@ -122,7 +123,7 @@ public class NaiveSolver {
         for (int j = 0; j < legs.size(); ++j)
             budgetExpr.addTerm(x[j], 1);
 
-        cplex.addLe(budgetExpr, (double) Parameters.getRescheduleTimeBudget(), "reschedule_time_budget");
+        cplex.addLe(budgetExpr, (double) dataRegistry.getRescheduleTimeBudget(), "reschedule_time_budget");
 
         if (Parameters.isDebugVerbose())
             cplex.exportModel("logs/naive_model.lp");

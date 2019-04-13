@@ -5,7 +5,7 @@ import stochastic.utility.Constants;
 
 class Label implements Comparable<Label> {
     /**
-     * This class is used to track and prune partial paths in a label-setting algorithm.
+     * Used to used to track and prune partial paths in a label-setting algorithm.
      */
     private Leg leg;
     private int vertex;
@@ -13,7 +13,7 @@ class Label implements Comparable<Label> {
     private int totalDelay;
     private double reducedCost;
 
-    Label(Leg leg, Label predecessor, int totalDelay, double reducedCost, int numLegs) {
+    Label(Leg leg, Label predecessor, int totalDelay, double reducedCost) {
         this.leg = leg;
         this.vertex = leg.getIndex();
         this.predecessor = predecessor;

@@ -29,7 +29,7 @@ import java.util.List;
  * Converts list of String values into a line of a CSV file parseLine: read a
  * line from a LineNumberReader and return the list of Strings
  *
- * That should be all you need. Create or open the file & streams yourself from
+ * That should be all you need. Create or open the file and streams yourself from
  * whatever source you need to read from.. Everything in this class works on
  * characters, and not bytes.
  */
@@ -38,6 +38,10 @@ public class CSVHelper {
     /**
      * Just a convenience method that iterates the rows of a table and outputs
      * to a writer which is presumably a CSV file.
+     *
+     * @param w writer (usually a BufferedWriter object to write to a file).
+     * @param table rows to write as comma-separated values.
+     * @throws IOException if there is an issue writing to the csv file via the writer.
      */
     public static void writeTable(Writer w, List<List<String>> table) throws IOException {
         for (List<String> row : table)
@@ -45,7 +49,11 @@ public class CSVHelper {
     }
 
     /**
-     * Write a single row of a CSV table, all values are quoted
+     * Write a single row of a CSV table, all values are quoted.
+     *
+     * @param w writer (usually a BufferedWriter object to write to a file).
+     * @param values row to write to csv file.
+     * @throws IOException if there is an issue writing to the csv file via the writer.
      */
     public static void writeLine(Writer w, List<String> values) throws IOException {
         boolean firstVal = true;
@@ -67,11 +75,15 @@ public class CSVHelper {
         w.write("\n");
     }
 
-
     /**
-    * returns a row of values as a list
-    * returns null if you are past the end of the line
-    */
+     * returns a row of values as a list.
+     *
+     * returns null if you are past the end of the line.
+     *
+     * @param r handle that holds a csv file.
+     * @return list of strings read from 1 row of the csv file.
+     * @throws IOException if there is any issue reading from the file.
+     */
     public static List<String> parseLine(Reader r) throws IOException {
         int ch = r.read();
         while (ch == '\r') {

@@ -1,7 +1,5 @@
 package stochastic.main;
 
-import org.apache.commons.math3.distribution.ExponentialDistribution;
-import org.apache.commons.math3.distribution.RealDistribution;
 import stochastic.delay.*;
 import stochastic.domain.Leg;
 import stochastic.dao.ScheduleDAO;
@@ -16,7 +14,6 @@ import stochastic.solver.NaiveSolver;
 import stochastic.solver.DepSolver;
 import stochastic.utility.OptException;
 import ilog.concert.IloException;
-import org.apache.commons.math3.distribution.LogNormalDistribution;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -60,24 +57,9 @@ class Controller {
      * Generates delay realizations and probabilities for second stage scenarios.
      */
     final void buildScenarios() {
-        // LogNormalDistribution distribution = new LogNormalDistribution(Parameters.getScale(), Parameters.getShape());
-        // DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getTails(), distribution);
-
-        // DelayGenerator dgen = new TestDelayGenerator(dataRegistry.getTails());
-
-        // TODO correct distributions later.
-        RealDistribution distribution;
-        switch (Parameters.getDistributionType()) {
-            case EXPONENTIAL:
-                distribution = new ExponentialDistribution(Parameters.getDistributionMean());
-            case TRUNCATED_NORMAL:
-                distribution = new ExponentialDistribution(Parameters.getDistributionMean());
-            case LOGNORMAL:
-                distribution = new ExponentialDistribution(Parameters.getDistributionMean());
-            default:
-                distribution = new ExponentialDistribution(Parameters.getDistributionMean());
-        }
-        NewDelayGenerator dgen = new NewDelayGenerator(distribution, dataRegistry.getLegs());
+        // DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getLegs().size(), dataRegistry.getTails());
+        // DelayGenerator dgen = new TestDelayGenerator(dataRegistry.getLegs().size(), dataRegistry.getTails());
+        DelayGenerator dgen = new StrategicDelayGenerator(dataRegistry.getLegs());
 
         Scenario[] scenarios = dgen.generateScenarios(Parameters.getNumScenariosToGenerate());
         dataRegistry.setDelayScenarios(scenarios);
@@ -88,6 +70,9 @@ class Controller {
         avgTotalPrimaryDelay /= scenarios.length;
 
         logger.info("average total primary delay (minutes): " + avgTotalPrimaryDelay);
+
+        final int budget = (int) Math.round(avgTotalPrimaryDelay * Parameters.getRescheduleBudgetFraction());
+        dataRegistry.setRescheduleTimeBudget(budget);
     }
 
     final void solveWithBenders() throws OptException {

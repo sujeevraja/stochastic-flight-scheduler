@@ -6,8 +6,7 @@ import stochastic.network.Network;
 import stochastic.network.Path;
 import stochastic.registry.Parameters;
 import stochastic.utility.Constants;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import stochastic.utility.Enums;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -20,9 +19,7 @@ class PricingProblemSolver {
      * PricingProblemSolver uses label setting and partial path pruning to generate routes for the second-stage
      * model.
      */
-    private final static Logger logger = LogManager.getLogger(SubSolverWrapper.class);
-
-    private Parameters.ReducedCostStrategy reducedCostStrategy;
+    private Enums.ReducedCostStrategy reducedCostStrategy;
     private int numReducedCostPaths;
 
     private Tail tail;
@@ -78,7 +75,7 @@ class PricingProblemSolver {
 
         ArrayList<Path> paths = new ArrayList<>();
         int numPaths = sinkLabels.size();
-        if (reducedCostStrategy == Parameters.ReducedCostStrategy.BEST_PATHS) {
+        if (reducedCostStrategy == Enums.ReducedCostStrategy.BEST_PATHS) {
             sinkLabels.sort(Comparator.comparing(Label::getReducedCost));
             numPaths = Math.min(numPaths, numReducedCostPaths);
         }
@@ -150,7 +147,7 @@ class PricingProblemSolver {
             final int totalDelay = delays[i];
 
             double reducedCost = getReducedCostForLeg(i, totalDelay);
-            Label label = new Label(leg, null, totalDelay, reducedCost, legs.size());
+            Label label = new Label(leg, null, totalDelay, reducedCost);
 
             ArrayList<Label> legLabels = labels.get(i);
             if (!canAddTo(label, legLabels))
@@ -261,7 +258,7 @@ class PricingProblemSolver {
     }
 
     private boolean limitReached() {
-        return reducedCostStrategy == Parameters.ReducedCostStrategy.FIRST_PATHS &&
+        return reducedCostStrategy == Enums.ReducedCostStrategy.FIRST_PATHS &&
                 sinkLabels.size() > Parameters.getNumReducedCostPaths();
     }
 }

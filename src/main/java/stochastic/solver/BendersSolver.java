@@ -2,7 +2,6 @@ package stochastic.solver;
 
 import stochastic.delay.Scenario;
 import stochastic.domain.Leg;
-import stochastic.domain.Tail;
 import stochastic.network.Path;
 import stochastic.output.RescheduleSolution;
 import stochastic.registry.DataRegistry;
@@ -88,7 +87,7 @@ public class BendersSolver {
         Instant start = Instant.now();
 
         masterSolver = new MasterSolver(dataRegistry.getLegs(), dataRegistry.getTails(),
-                dataRegistry.getDelayScenarios().length);
+                dataRegistry.getRescheduleTimeBudget(), dataRegistry.getDelayScenarios().length);
         masterSolver.constructFirstStage();
         masterSolver.addTheta();
         if (warmStartSolution != null)

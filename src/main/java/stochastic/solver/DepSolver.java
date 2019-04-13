@@ -40,7 +40,8 @@ public class DepSolver {
             // master model
             ArrayList<Leg> legs = dataRegistry.getLegs();
             ArrayList<Tail> tails = dataRegistry.getTails();
-            MasterModelBuilder masterModelBuilder = new MasterModelBuilder(legs, tails, cplex);
+            MasterModelBuilder masterModelBuilder = new MasterModelBuilder(legs, tails,
+                    dataRegistry.getRescheduleTimeBudget(), cplex);
 
             masterModelBuilder.buildVariables();
 
@@ -52,8 +53,8 @@ public class DepSolver {
             Scenario[] scenarios = dataRegistry.getDelayScenarios();
             for (int i = 0; i < scenarios.length; ++i) {
                 Scenario s = scenarios[i];
-                int[] delays = SolverUtility.getTotalDelays(s.getPrimaryDelays(), legs.size());
-                ArrayList<Path> allPaths = dataRegistry.getNetwork().enumeratePathsForTails(tails, delays);
+                ArrayList<Path> allPaths = dataRegistry.getNetwork().enumeratePathsForTails(
+                        tails, s.getPrimaryDelays());
 
                 HashMap<Integer, ArrayList<Path>> tailPathsMap = SolverUtility.getPathsForFullEnum(allPaths, tails);
 

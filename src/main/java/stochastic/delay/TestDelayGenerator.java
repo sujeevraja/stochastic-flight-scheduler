@@ -10,9 +10,12 @@ import java.util.HashMap;
 public class TestDelayGenerator extends FirstFlightDelayGenerator {
     /**
      * Class that generates specified delays for the first flight of each tail.
+     *
+     * @param numLegs number of legs for FirstFlightDelayGenerator.
+     * @param tails tails for which the first flights on original routes will get random delays.
      */
-    public TestDelayGenerator(ArrayList<Tail> tails) {
-        super(tails, null);
+    public TestDelayGenerator(int numLegs, ArrayList<Tail> tails) {
+        super(numLegs, tails);
     }
 
     @Override
@@ -37,7 +40,7 @@ public class TestDelayGenerator extends FirstFlightDelayGenerator {
         // generate scenarios with flight delay map.
         Scenario[] scenarios = new Scenario[delays.size()];
         for (int i = 0; i < delays.size(); ++i) {
-            HashMap<Integer, Integer> flightDelays = generateFlightDelays(delays.get(i));
+            int[] flightDelays = generateFlightDelays(delays.get(i));
             scenarios[i] = new Scenario(probabilities.get(i), flightDelays);
         }
 

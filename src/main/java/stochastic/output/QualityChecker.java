@@ -1,10 +1,8 @@
 package stochastic.output;
 
-import org.apache.commons.math3.distribution.ExponentialDistribution;
-import org.apache.commons.math3.distribution.RealDistribution;
 import stochastic.delay.DelayGenerator;
 import stochastic.delay.FirstFlightDelayGenerator;
-import stochastic.delay.NewDelayGenerator;
+import stochastic.delay.StrategicDelayGenerator;
 import stochastic.delay.Scenario;
 import stochastic.domain.Leg;
 import stochastic.registry.DataRegistry;
@@ -13,7 +11,7 @@ import stochastic.solver.PathCache;
 import stochastic.solver.SolverUtility;
 import stochastic.solver.SubSolverRunnable;
 import stochastic.utility.CSVHelper;
-import org.apache.commons.math3.distribution.LogNormalDistribution;
+import stochastic.utility.Enums;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -39,22 +37,8 @@ class QualityChecker {
     }
 
     void generateTestDelays() {
-        // LogNormalDistribution distribution = new LogNormalDistribution(Parameters.getScale(), Parameters.getShape());
-        // DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getTails(), distribution);
-
-        // TODO correct distributions later.
-        RealDistribution distribution;
-        switch (Parameters.getDistributionType()) {
-            case EXPONENTIAL:
-                distribution = new ExponentialDistribution(Parameters.getDistributionMean());
-            case TRUNCATED_NORMAL:
-                distribution = new ExponentialDistribution(Parameters.getDistributionMean());
-            case LOGNORMAL:
-                distribution = new ExponentialDistribution(Parameters.getDistributionMean());
-            default:
-                distribution = new ExponentialDistribution(Parameters.getDistributionMean());
-        }
-        NewDelayGenerator dgen = new NewDelayGenerator(distribution, dataRegistry.getLegs());
+        // DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getLegs().size(), dataRegistry.getTails());
+        DelayGenerator dgen = new StrategicDelayGenerator(dataRegistry.getLegs());
         testScenarios = dgen.generateScenarios(Parameters.getNumTestScenarios());
     }
 
@@ -119,11 +103,11 @@ class QualityChecker {
                 row.add(Parameters.getDistributionType().toString());
                 row.add(Double.toString(Parameters.getDistributionMean()));
 
-                if (Parameters.getDistributionType() == Parameters.DistributionType.EXPONENTIAL) {
+                if (Parameters.getDistributionType() == Enums.DistributionType.EXPONENTIAL) {
                     double variance = Parameters.getDistributionMean() * Parameters.getDistributionMean();
                     row.add(Double.toString(variance));
                 } else {
-                    row.add(Double.toString(Parameters.getDistributionVariance()));
+                    row.add(Double.toString(Parameters.getDistributionSd()));
                 }
 
                 row.add(Parameters.getFlightPickStrategy().toString());
@@ -202,13 +186,12 @@ class QualityChecker {
         }
 
         // update primary delays using reschedules.
-        HashMap<Integer, Integer> adjustedDelays;
+        int[] adjustedDelays;
         if (reschedules != null) {
-            adjustedDelays = new HashMap<>();
-            HashMap<Integer, Integer> primaryDelays = scen.getPrimaryDelays();
-            for (Map.Entry<Integer, Integer> entry : primaryDelays.entrySet()) {
-                Integer adjustedDelay = Math.max(entry.getValue() - reschedules[entry.getKey()], 0);
-                adjustedDelays.put(entry.getKey(), adjustedDelay);
+            adjustedDelays = new int[dataRegistry.getLegs().size()];
+            int[] primaryDelays = scen.getPrimaryDelays();
+            for (int i = 0; i < primaryDelays.length; ++i) {
+                adjustedDelays[i] = Math.max(primaryDelays[i] - reschedules[i], 0);
             }
         } else {
             adjustedDelays = scen.getPrimaryDelays();

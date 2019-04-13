@@ -1,6 +1,7 @@
 package stochastic.main;
 
 import stochastic.registry.Parameters;
+import stochastic.utility.Enums;
 import stochastic.utility.OptException;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -36,16 +37,14 @@ public class Main {
         // String path = "data/instance1";
 
         Parameters.setInstancePath(path);
-        Parameters.setRescheduleTimeBudget(1500);
+        Parameters.setRescheduleBudgetFraction(0.5);
         Parameters.setFlightRescheduleBound(30);
-        Parameters.setNumScenariosToGenerate(10);
-        Parameters.setScale(3.5);
-        Parameters.setShape(0.25);
+        Parameters.setNumScenariosToGenerate(30);
 
-        Parameters.setDistributionType(Parameters.DistributionType.EXPONENTIAL);
+        Parameters.setDistributionType(Enums.DistributionType.LOGNORMAL);
         Parameters.setDistributionMean(15);
-        Parameters.setDistributionVariance(10); // ignored for exponentials.
-        Parameters.setFlightPickStrategy(Parameters.FlightPickStrategy.ALL);
+        Parameters.setDistributionSd(15); // ignored for exponentials.
+        Parameters.setFlightPickStrategy(Enums.FlightPickStrategy.HUB);
 
         Parameters.setSolveDEP(true);
 
@@ -56,7 +55,7 @@ public class Main {
 
         // Second-stage parameters
         Parameters.setFullEnumeration(false);
-        Parameters.setReducedCostStrategy(Parameters.ReducedCostStrategy.FIRST_PATHS);
+        Parameters.setReducedCostStrategy(Enums.ReducedCostStrategy.FIRST_PATHS);
         Parameters.setNumReducedCostPaths(10);
 
         // Debugging parameter
@@ -68,7 +67,7 @@ public class Main {
 
         // Solution quality parameters
         Parameters.setCheckSolutionQuality(true);
-        Parameters.setNumTestScenarios(10);
+        Parameters.setNumTestScenarios(50);
 
         // Expected excess parameters
         Parameters.setExpectedExcess(false);

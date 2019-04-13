@@ -1,28 +1,29 @@
 package stochastic.delay;
 
-import org.apache.commons.math3.distribution.RealDistribution;
 import stochastic.domain.Leg;
 import stochastic.registry.Parameters;
+import stochastic.utility.Enums;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-public class NewDelayGenerator implements DelayGenerator {
+public class StrategicDelayGenerator implements DelayGenerator {
     /**
-     * NewDelayGenerator can be used to generate random primary delays for flights based on a specified distribution
-     * and flight selection strategy.
+     * StrategicDelayGenerator can be used to generate random primary delays for flights based on a flight strategy
+     * and distribution details specified in Parameters.
      */
-    private RealDistribution distribution;
     private ArrayList<Leg> legs;
-    private Parameters.FlightPickStrategy flightPickStrategy;
+    private Enums.FlightPickStrategy flightPickStrategy;
+    private Sampler sampler;
 
-    public NewDelayGenerator(RealDistribution distribution, ArrayList<Leg> legs) {
-        this.distribution = distribution;
+    public StrategicDelayGenerator(ArrayList<Leg> legs) {
         this.legs = legs;
-        flightPickStrategy = Parameters.getFlightPickStrategy();
+        this.flightPickStrategy = Parameters.getFlightPickStrategy();
+        sampler = new Sampler();
     }
 
     @Override
@@ -32,12 +33,11 @@ public class NewDelayGenerator implements DelayGenerator {
         Scenario[] scenarios = new Scenario[numSamples];
 
         for (int i = 0; i < numSamples; ++i) {
-            HashMap<Integer, Integer> indexDelayMap = new HashMap<>();
-            for (Leg leg : selectedLegs) {
-                int delayTime = (int) Math.round(distribution.sample());
-                indexDelayMap.put(leg.getIndex(), delayTime);
-            }
-            scenarios[i] = new Scenario(probability, indexDelayMap);
+            int[] delays = new int[legs.size()];
+            Arrays.fill(delays, 0);
+            for (Leg leg : selectedLegs)
+                delays[leg.getIndex()] = sampler.sample();
+            scenarios[i] = new Scenario(probability, delays);
         }
 
         return scenarios;

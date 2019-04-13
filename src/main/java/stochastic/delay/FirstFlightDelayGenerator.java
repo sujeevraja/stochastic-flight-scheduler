@@ -2,25 +2,24 @@ package stochastic.delay;
 
 import stochastic.domain.Leg;
 import stochastic.domain.Tail;
-import org.apache.commons.math3.distribution.AbstractRealDistribution;
-import org.apache.commons.math3.distribution.LogNormalDistribution;
 
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 
 public class FirstFlightDelayGenerator implements DelayGenerator {
     /**
      * Class that adds the given delay value to the first flight of eath tail.
      */
+    private int numLegs;
     private ArrayList<Tail> tails;
-    private LogNormalDistribution distribution;
+    private Sampler sampler;
 
-    public FirstFlightDelayGenerator(ArrayList<Tail> tails, LogNormalDistribution distribution) {
+    public FirstFlightDelayGenerator(int numLegs, ArrayList<Tail> tails) {
+        this.numLegs = numLegs;
         this.tails = tails;
-        this.distribution = distribution;
+        this.sampler = new Sampler();
     }
 
     @Override
@@ -28,7 +27,7 @@ public class FirstFlightDelayGenerator implements DelayGenerator {
         // generate sample delays.
         int[] delayTimes = new int[numSamples];
         for (int i = 0; i < numSamples; ++i)
-            delayTimes[i] = (int) Math.round(distribution.sample());
+            delayTimes[i] = sampler.sample();
 
         // round delays, aggregate them and corresponding probabilities.
         Arrays.sort(delayTimes);
@@ -63,25 +62,26 @@ public class FirstFlightDelayGenerator implements DelayGenerator {
         // generate scenarios with flight delay map.
         Scenario[] scenarios = new Scenario[delays.size()];
         for (int i = 0; i < delays.size(); ++i) {
-            HashMap<Integer, Integer> flightDelays = generateFlightDelays(delays.get(i));
+            int[] flightDelays = generateFlightDelays(delays.get(i));
             scenarios[i] = new Scenario(probabilities.get(i), flightDelays);
         }
 
         return scenarios;
     }
 
-    HashMap<Integer, Integer> generateFlightDelays(int delayTimeInMin) {
-        HashMap<Integer, Integer> delayMap = new HashMap<>();
+    int[] generateFlightDelays(int delayTimeInMin) {
+        int[] delays = new int[numLegs];
+        Arrays.fill(delays, 0);
 
         for(Tail tail : tails) {
             ArrayList<Leg> tailLegs = tail.getOrigSchedule();
             if(!tailLegs.isEmpty()) {
                 Leg leg = tailLegs.get(0);
-                delayMap.put(leg.getIndex(), delayTimeInMin);
+                delays[leg.getIndex()] = delayTimeInMin;
             }
         }
 
-        return delayMap;
+        return delays;
     }
 
     void logScenarioDelays(ArrayList<Integer> delays, ArrayList<Double> probabilities) {
