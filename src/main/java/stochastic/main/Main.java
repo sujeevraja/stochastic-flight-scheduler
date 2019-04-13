@@ -1,6 +1,7 @@
 package stochastic.main;
 
 import stochastic.registry.Parameters;
+import stochastic.utility.Enums;
 import stochastic.utility.OptException;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -42,10 +43,10 @@ public class Main {
         Parameters.setScale(3.5);
         Parameters.setShape(0.25);
 
-        Parameters.setDistributionType(Parameters.DistributionType.EXPONENTIAL);
+        Parameters.setDistributionType(Enums.DistributionType.EXPONENTIAL);
         Parameters.setDistributionMean(15);
-        Parameters.setDistributionVariance(10); // ignored for exponentials.
-        Parameters.setFlightPickStrategy(Parameters.FlightPickStrategy.ALL);
+        Parameters.setDistributionSd(10); // ignored for exponentials.
+        Parameters.setFlightPickStrategy(Enums.FlightPickStrategy.ALL);
 
         Parameters.setSolveDEP(true);
 
@@ -56,7 +57,7 @@ public class Main {
 
         // Second-stage parameters
         Parameters.setFullEnumeration(false);
-        Parameters.setReducedCostStrategy(Parameters.ReducedCostStrategy.FIRST_PATHS);
+        Parameters.setReducedCostStrategy(Enums.ReducedCostStrategy.FIRST_PATHS);
         Parameters.setNumReducedCostPaths(10);
 
         // Debugging parameter

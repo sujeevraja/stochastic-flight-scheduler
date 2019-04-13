@@ -3,6 +3,7 @@ package stochastic.delay;
 import org.apache.commons.math3.distribution.RealDistribution;
 import stochastic.domain.Leg;
 import stochastic.registry.Parameters;
+import stochastic.utility.Enums;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -17,7 +18,7 @@ public class NewDelayGenerator implements DelayGenerator {
      */
     private RealDistribution distribution;
     private ArrayList<Leg> legs;
-    private Parameters.FlightPickStrategy flightPickStrategy;
+    private Enums.FlightPickStrategy flightPickStrategy;
 
     public NewDelayGenerator(RealDistribution distribution, ArrayList<Leg> legs) {
         this.distribution = distribution;

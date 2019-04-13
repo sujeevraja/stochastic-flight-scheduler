@@ -2,8 +2,6 @@ package stochastic.output;
 
 import org.apache.commons.math3.distribution.ExponentialDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
-import stochastic.delay.DelayGenerator;
-import stochastic.delay.FirstFlightDelayGenerator;
 import stochastic.delay.NewDelayGenerator;
 import stochastic.delay.Scenario;
 import stochastic.domain.Leg;
@@ -13,7 +11,7 @@ import stochastic.solver.PathCache;
 import stochastic.solver.SolverUtility;
 import stochastic.solver.SubSolverRunnable;
 import stochastic.utility.CSVHelper;
-import org.apache.commons.math3.distribution.LogNormalDistribution;
+import stochastic.utility.Enums;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -119,11 +117,11 @@ class QualityChecker {
                 row.add(Parameters.getDistributionType().toString());
                 row.add(Double.toString(Parameters.getDistributionMean()));
 
-                if (Parameters.getDistributionType() == Parameters.DistributionType.EXPONENTIAL) {
+                if (Parameters.getDistributionType() == Enums.DistributionType.EXPONENTIAL) {
                     double variance = Parameters.getDistributionMean() * Parameters.getDistributionMean();
                     row.add(Double.toString(variance));
                 } else {
-                    row.add(Double.toString(Parameters.getDistributionVariance()));
+                    row.add(Double.toString(Parameters.getDistributionSd()));
                 }
 
                 row.add(Parameters.getFlightPickStrategy().toString());
