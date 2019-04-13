@@ -39,7 +39,7 @@ public class Leg {
         // this.delayCostPerMin = 500 - (0.1 * blockTimeInMin);
 
         this.rescheduleCostPerMin = 1;
-        this.delayCostPerMin = 5;
+        this.delayCostPerMin = 10;
 
         // this.rescheduleCostPerMin = 100 - (0.1 * blockTimeInMin);
         // this.delayCostPerMin = rescheduleCostPerMin * 10;

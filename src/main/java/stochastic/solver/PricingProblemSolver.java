@@ -6,8 +6,6 @@ import stochastic.network.Network;
 import stochastic.network.Path;
 import stochastic.registry.Parameters;
 import stochastic.utility.Constants;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import stochastic.utility.Enums;
 
 import java.time.Duration;
@@ -21,8 +19,6 @@ class PricingProblemSolver {
      * PricingProblemSolver uses label setting and partial path pruning to generate routes for the second-stage
      * model.
      */
-    private final static Logger logger = LogManager.getLogger(SubSolverWrapper.class);
-
     private Enums.ReducedCostStrategy reducedCostStrategy;
     private int numReducedCostPaths;
 
@@ -151,7 +147,7 @@ class PricingProblemSolver {
             final int totalDelay = delays[i];
 
             double reducedCost = getReducedCostForLeg(i, totalDelay);
-            Label label = new Label(leg, null, totalDelay, reducedCost, legs.size());
+            Label label = new Label(leg, null, totalDelay, reducedCost);
 
             ArrayList<Label> legLabels = labels.get(i);
             if (!canAddTo(label, legLabels))

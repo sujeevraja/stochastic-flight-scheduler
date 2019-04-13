@@ -2,7 +2,6 @@ package stochastic.solver;
 
 import stochastic.delay.Scenario;
 import stochastic.domain.Leg;
-import stochastic.domain.Tail;
 import stochastic.network.Path;
 import stochastic.output.RescheduleSolution;
 import stochastic.registry.DataRegistry;

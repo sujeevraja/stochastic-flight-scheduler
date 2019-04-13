@@ -39,12 +39,12 @@ public class Main {
         Parameters.setInstancePath(path);
         Parameters.setRescheduleBudgetFraction(0.5);
         Parameters.setFlightRescheduleBound(30);
-        Parameters.setNumScenariosToGenerate(10);
+        Parameters.setNumScenariosToGenerate(30);
 
-        Parameters.setDistributionType(Enums.DistributionType.EXPONENTIAL);
+        Parameters.setDistributionType(Enums.DistributionType.LOGNORMAL);
         Parameters.setDistributionMean(15);
-        Parameters.setDistributionSd(10); // ignored for exponentials.
-        Parameters.setFlightPickStrategy(Enums.FlightPickStrategy.ALL);
+        Parameters.setDistributionSd(15); // ignored for exponentials.
+        Parameters.setFlightPickStrategy(Enums.FlightPickStrategy.HUB);
 
         Parameters.setSolveDEP(true);
 
@@ -67,7 +67,7 @@ public class Main {
 
         // Solution quality parameters
         Parameters.setCheckSolutionQuality(true);
-        Parameters.setNumTestScenarios(10);
+        Parameters.setNumTestScenarios(50);
 
         // Expected excess parameters
         Parameters.setExpectedExcess(false);
