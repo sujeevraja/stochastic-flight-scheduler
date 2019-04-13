@@ -1,6 +1,7 @@
 package stochastic.delay;
 
 import stochastic.domain.Leg;
+import stochastic.registry.Parameters;
 import stochastic.utility.Enums;
 
 import java.time.Duration;
@@ -12,18 +13,17 @@ import java.util.Map;
 
 public class StrategicDelayGenerator implements DelayGenerator {
     /**
-     * StrategicDelayGenerator can be used to generate random primary delays for flights based on a specified distribution
-     * and flight selection strategy.
+     * StrategicDelayGenerator can be used to generate random primary delays for flights based on a specified
+     * distribution and flight selection strategy.
      */
     private ArrayList<Leg> legs;
     private Enums.FlightPickStrategy flightPickStrategy;
     private Sampler sampler;
 
-    public StrategicDelayGenerator(ArrayList<Leg> legs, Enums.FlightPickStrategy flightPickStrategy,
-                                   Enums.DistributionType distributionType, double mean, double sd) {
+    public StrategicDelayGenerator(ArrayList<Leg> legs) {
         this.legs = legs;
-        this.flightPickStrategy = flightPickStrategy;
-        sampler = new Sampler(distributionType, mean, sd);
+        this.flightPickStrategy = Parameters.getFlightPickStrategy();
+        sampler = new Sampler();
     }
 
     @Override

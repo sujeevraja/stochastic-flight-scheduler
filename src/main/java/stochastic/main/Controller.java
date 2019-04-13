@@ -64,9 +64,7 @@ class Controller {
 
         // DelayGenerator dgen = new TestDelayGenerator(dataRegistry.getTails());
 
-        StrategicDelayGenerator dgen = new StrategicDelayGenerator(dataRegistry.getLegs(),
-                Parameters.getFlightPickStrategy(), Parameters.getDistributionType(), Parameters.getDistributionMean(),
-                Parameters.getDistributionSd());
+        StrategicDelayGenerator dgen = new StrategicDelayGenerator(dataRegistry.getLegs());
 
         Scenario[] scenarios = dgen.generateScenarios(Parameters.getNumScenariosToGenerate());
         dataRegistry.setDelayScenarios(scenarios);

@@ -4,6 +4,7 @@ import org.apache.commons.math3.distribution.ExponentialDistribution;
 import org.apache.commons.math3.distribution.LogNormalDistribution;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
+import stochastic.registry.Parameters;
 import stochastic.utility.Enums;
 
 class Sampler {
@@ -12,7 +13,11 @@ class Sampler {
      */
     private RealDistribution distribution;
 
-    Sampler(Enums.DistributionType distributionType, double mean, double sd) {
+    Sampler() {
+        final Enums.DistributionType distributionType = Parameters.getDistributionType();
+        final double mean = Parameters.getDistributionMean();
+        final double sd = Parameters.getDistributionSd();
+
         if (distributionType == Enums.DistributionType.TRUNCATED_NORMAL) {
             distribution = new NormalDistribution(mean, sd);
         } else if (distributionType == Enums.DistributionType.LOGNORMAL) {

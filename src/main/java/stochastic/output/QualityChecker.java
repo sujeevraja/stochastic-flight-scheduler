@@ -40,10 +40,7 @@ class QualityChecker {
         // LogNormalDistribution distribution = new LogNormalDistribution(Parameters.getScale(), Parameters.getShape());
         // DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getTails(), distribution);
 
-        StrategicDelayGenerator dgen = new StrategicDelayGenerator(dataRegistry.getLegs(),
-                Parameters.getFlightPickStrategy(), Parameters.getDistributionType(), Parameters.getDistributionMean(),
-                Parameters.getDistributionSd());
-
+        StrategicDelayGenerator dgen = new StrategicDelayGenerator(dataRegistry.getLegs());
         testScenarios = dgen.generateScenarios(Parameters.getNumTestScenarios());
     }
 
