@@ -38,9 +38,15 @@ public class Path {
         }
         else {
 	        pathStr.append(legs.get(0).getId());
+            pathStr.append("(");
+	        pathStr.append(delayTimesInMin.get(0));
+            pathStr.append(")");
 	        for(int i = 1; i < legs.size(); ++i) {
 	            pathStr.append(" -> ");
 	            pathStr.append(legs.get(i).getId());
+                pathStr.append("(");
+                pathStr.append(delayTimesInMin.get(i));
+                pathStr.append(")");
             }
         }
         return pathStr.toString();

@@ -50,4 +50,9 @@ class BendersCut {
         logger.debug("lhs: " + lhs + " rhs: " + alpha + " violation: " + (lhs - alpha));
         return lhs <= alpha - Constants.MINIMUM_CUT_VIOLATION;
    }
+
+   void reset() {
+        alpha = 0.0;
+        Arrays.fill(beta, 0.0);
+   }
 }

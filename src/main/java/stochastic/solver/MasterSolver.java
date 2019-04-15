@@ -80,7 +80,8 @@ public class MasterSolver {
     }
 
     public void solve() throws IloException {
-        cplex.setParam(IloCplex.Param.MIP.Tolerances.MIPGap, 0.001);
+        // cplex.setParam(IloCplex.Param.MIP.Tolerances.MIPGap, 0.001);
+        cplex.setParam(IloCplex.Param.MIP.Tolerances.MIPGap, 0.05);
         cplex.solve();
         objValue = cplex.getObjValue();
         logger.info("master objective: " + objValue);

@@ -21,6 +21,7 @@ public class SubSolverRunnable implements Runnable {
     private int scenarioNum;
     private double probability;
     private int[] reschedules;
+    private double thetaValue;
     private int[] randomDelays;
     private PathCache pathCache;
 
@@ -31,12 +32,13 @@ public class SubSolverRunnable implements Runnable {
     private DelaySolution delaySolution; // used only when checking Benders solution quality
 
     public SubSolverRunnable(DataRegistry dataRegistry, int iter, int scenarioNum, double probability,
-                             int[] reschedules, int[] randomDelays, PathCache pathCache) {
+                             int[] reschedules, double thetaValue, int[] randomDelays, PathCache pathCache) {
         this.dataRegistry = dataRegistry;
         this.iter = iter;
         this.scenarioNum = scenarioNum;
         this.probability = probability;
         this.reschedules = reschedules;
+        this.thetaValue = thetaValue;
         this.randomDelays = randomDelays;
         this.pathCache = pathCache;
         this.filePrefix = null;
@@ -158,6 +160,12 @@ public class SubSolverRunnable implements Runnable {
             // Solve second-stage RMP (Restricted Master Problem)
             ss.constructSecondStage(pathsAll);
 
+            for (Map.Entry<Integer, ArrayList<Path>> entry : pathsAll.entrySet()) {
+                logger.debug("paths for tail " + entry.getKey());
+                for (Path path : entry.getValue())
+                    logger.debug(path);
+            }
+
             String name = "dummy";
             if (Parameters.isDebugVerbose()) {
                 StringBuilder nameBuilder = new StringBuilder();
@@ -178,6 +186,28 @@ public class SubSolverRunnable implements Runnable {
 
             ss.solve();
             ss.collectDuals();
+
+            // Update master problem data
+            double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(),
+                    ss.getDualsBound(), ss.getDualRisk());
+
+             if (!solveForQuality) {
+            // if (false) {
+                updateAlpha(scenarioNum, scenAlpha);
+                updateBeta(scenarioNum, ss.getDualsDelay(), ss.getDualRisk());
+                if (cutSeparates()) {
+                    logger.info("Iter " + iter + ": scenario " + scenarioNum + " separating cut found, stopping labeling");
+                    bendersData.getCut(scenarioNum).reset();
+                    break;
+                }
+
+                bendersData.getCut(scenarioNum).reset();
+            }
+            logger.info("Iter " + iter + ": subproblem objective value: " + ss.getObjValue());
+
+            // cache best paths for each tail
+            ss.collectSolution();
+            pathCache.addPaths(getBestPaths(ss.getyValues(), pathsAll));
 
             if (Parameters.isDebugVerbose())
                 ss.writeCplexSolution(name + ".xml");
@@ -368,8 +398,12 @@ public class SubSolverRunnable implements Runnable {
     }
 
     private synchronized void updateAlpha(int cutNum, double scenAlpha) {
-        BendersCut aggregatedCut = bendersData.getCut(cutNum);
-        aggregatedCut.setAlpha(aggregatedCut.getAlpha() + (scenAlpha * probability));
+        try {
+            BendersCut aggregatedCut = bendersData.getCut(cutNum);
+            aggregatedCut.setAlpha(aggregatedCut.getAlpha() + (scenAlpha * probability));
+        } catch (NullPointerException ex) {
+            boolean problem = true;
+        }
     }
 
     private synchronized void updateBeta(int cutNum, double[] dualsDelay, double dualRisk) {
@@ -387,6 +421,14 @@ public class SubSolverRunnable implements Runnable {
 
     private synchronized void updateUpperBound(double objValue) {
         bendersData.setUpperBound(bendersData.getUpperBound() + (objValue * probability));
+    }
+
+    private boolean cutSeparates() {
+        double[] x = new double[reschedules.length];
+        for (int i = 0; i < reschedules.length; ++i)
+            x[i] = reschedules[i];
+
+        return bendersData.getCut(scenarioNum).separates(x, thetaValue);
     }
 }
 

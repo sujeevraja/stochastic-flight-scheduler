@@ -138,8 +138,15 @@ public class BendersSolver {
 
     private void runBendersIteration() throws IloException, IOException, OptException {
         ++iteration;
+
+        double[] thetaValues = masterSolver.getThetaValues();
+        if (thetaValues == null) {
+            thetaValues = new double[dataRegistry.getDelayScenarios().length];
+            for(int i = 0; i < thetaValues.length; ++i)
+                thetaValues[i] = Double.NEGATIVE_INFINITY;
+        }
         SubSolverWrapper ssWrapper = new SubSolverWrapper(dataRegistry, masterSolver.getReschedules(), iteration,
-                masterSolver.getRescheduleCost(), secondStageCaches);
+                masterSolver.getRescheduleCost(), secondStageCaches, thetaValues);
 
         if (Parameters.isRunSecondStageInParallel())
             ssWrapper.solveParallel();
@@ -147,7 +154,6 @@ public class BendersSolver {
             ssWrapper.solveSequential();
 
         BendersData bendersData = ssWrapper.getBendersData();
-        double[] thetaValues = masterSolver.getThetaValues();
         double[] xValues = masterSolver.getxValues();
 
         if (Parameters.isBendersMultiCut()) {
@@ -181,7 +187,9 @@ public class BendersSolver {
             masterSolver.writeLPFile("logs/master_" + iteration + ".lp");
         }
 
+        logger.info("starting to solve master problem...");
         masterSolver.solve();
+        logger.info("completed solving master problem");
 
         if (Parameters.isDebugVerbose()) {
             masterSolver.writeCPLEXSolution("logs/master_" + iteration + ".xml");

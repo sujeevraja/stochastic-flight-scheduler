@@ -73,6 +73,7 @@ public class DepSolver {
                 cplex.exportModel("logs/dep.lp");
 
             Instant start = Instant.now();
+            // cplex.setParam(IloCplex.Param.MIP.Tolerances.MIPGap, 0.001);
             cplex.solve();
             solutionTimeInSeconds = Duration.between(start, Instant.now()).toMillis() / 1000.0;
             logger.info("DEP solution time (seconds): " + solutionTimeInSeconds);

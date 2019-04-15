@@ -58,8 +58,8 @@ class Controller {
      */
     final void buildScenarios() {
         // DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getLegs().size(), dataRegistry.getTails());
-        // DelayGenerator dgen = new TestDelayGenerator(dataRegistry.getLegs().size(), dataRegistry.getTails());
-        DelayGenerator dgen = new StrategicDelayGenerator(dataRegistry.getLegs());
+        DelayGenerator dgen = new TestDelayGenerator(dataRegistry.getLegs().size(), dataRegistry.getTails());
+        // DelayGenerator dgen = new StrategicDelayGenerator(dataRegistry.getLegs());
 
         Scenario[] scenarios = dgen.generateScenarios(Parameters.getNumScenariosToGenerate());
         dataRegistry.setDelayScenarios(scenarios);

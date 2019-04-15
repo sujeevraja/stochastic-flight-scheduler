@@ -21,9 +21,10 @@ public class Main {
             controller.readData();
             controller.buildScenarios();
             controller.solveWithNaiveApproach();
+            controller.solveWithBenders();
             if (Parameters.isSolveDEP())
                 controller.solveWithDEP();
-            controller.solveWithBenders();
+            Parameters.setFullEnumeration(true);
             controller.processSolution();
 
             logger.info("completed optimization.");
@@ -33,13 +34,14 @@ public class Main {
     }
 
     private static void setParameters() {
-        String path = "data/20171115022840-v2";
-        // String path = "data/instance1";
+        // String path = "data/20171115022840-v2";
+        String path = "data/instance1";
+        // String path = "data/131171_320_32A";
 
         Parameters.setInstancePath(path);
         Parameters.setRescheduleBudgetFraction(0.5);
         Parameters.setFlightRescheduleBound(30);
-        Parameters.setNumScenariosToGenerate(30);
+        Parameters.setNumScenariosToGenerate(1);
 
         Parameters.setDistributionType(Enums.DistributionType.LOGNORMAL);
         Parameters.setDistributionMean(15);
@@ -50,7 +52,7 @@ public class Main {
 
         Parameters.setBendersMultiCut(true);
         Parameters.setBendersTolerance(1e-3);
-        Parameters.setNumBendersIterations(30);
+        Parameters.setNumBendersIterations(100);
         Parameters.setWarmStartBenders(false);
 
         // Second-stage parameters
@@ -59,15 +61,15 @@ public class Main {
         Parameters.setNumReducedCostPaths(10);
 
         // Debugging parameter
-        Parameters.setDebugVerbose(false); // Set to true to see CPLEX logs, lp files and solution xml files.
+        Parameters.setDebugVerbose(true); // Set to true to see CPLEX logs, lp files and solution xml files.
 
         // Multi-threading parameters
         Parameters.setRunSecondStageInParallel(false);
         Parameters.setNumThreadsForSecondStage(2);
 
         // Solution quality parameters
-        Parameters.setCheckSolutionQuality(true);
-        Parameters.setNumTestScenarios(50);
+        Parameters.setCheckSolutionQuality(false);
+        Parameters.setNumTestScenarios(10);
 
         // Expected excess parameters
         Parameters.setExpectedExcess(false);
