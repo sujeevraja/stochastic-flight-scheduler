@@ -18,13 +18,16 @@ class SubSolverWrapper {
     private final static Logger logger = LogManager.getLogger(SubSolverWrapper.class);
     private DataRegistry dataRegistry;
     private int[] reschedules; // planned delays from first stage solution.
+    private double[] thetaValues;
     private int iter;
     private PathCache[] pathCaches;
     private BendersData bendersData; // this object will be shared across threads by SubSolverRunnable.
 
-    SubSolverWrapper(DataRegistry dataRegistry, int[] reschedules, int iter, double uBound, PathCache[] pathCaches) {
+    SubSolverWrapper(DataRegistry dataRegistry, int[] reschedules, double[] thetaValues, int iter, double uBound,
+                     PathCache[] pathCaches) {
         this.dataRegistry = dataRegistry;
         this.reschedules = reschedules;
+        this.thetaValues = thetaValues;
         this.iter = iter;
         this.pathCaches = pathCaches;
         this.bendersData = new BendersData(uBound);
@@ -40,7 +43,7 @@ class SubSolverWrapper {
         for (int i = 0; i < scenarios.length; i++) {
             Scenario scenario = scenarios[i];
             SubSolverRunnable subSolverRunnable = new SubSolverRunnable(dataRegistry, iter, i,
-                    scenario.getProbability(), reschedules, scenario.getPrimaryDelays(), pathCaches[i]);
+                    scenario.getProbability(), reschedules, thetaValues[i], scenario.getPrimaryDelays(), pathCaches[i]);
             subSolverRunnable.setBendersData(bendersData);
             subSolverRunnable.run();
         }
@@ -53,7 +56,7 @@ class SubSolverWrapper {
             for (int i = 0; i < scenarios.length; i++) {
                 Scenario scenario = scenarios[i];
                 SubSolverRunnable subSolverRunnable = new SubSolverRunnable(dataRegistry, iter, i,
-                        scenario.getProbability(), reschedules, scenario.getPrimaryDelays(), pathCaches[i]);
+                        scenario.getProbability(), reschedules, thetaValues[i], scenario.getPrimaryDelays(), pathCaches[i]);
                 subSolverRunnable.setBendersData(bendersData);
                 exSrv.execute(subSolverRunnable); // this calls SubSolverRunnable.run()
             }

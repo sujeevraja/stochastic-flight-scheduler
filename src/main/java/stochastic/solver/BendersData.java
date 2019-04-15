@@ -29,4 +29,8 @@ class BendersData {
     BendersCut getCut(int cutIndex) {
         return cuts.get(cutIndex);
     }
+
+    void setCut(int cutIndex, BendersCut cut) {
+        cuts.set(cutIndex, cut);
+    }
 }

@@ -2,7 +2,9 @@ package stochastic.solver;
 
 import stochastic.domain.Leg;
 import stochastic.network.Path;
+import stochastic.utility.Constants;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -16,7 +18,7 @@ class Dual {
     private double[] dualsTail;
     private double[] dualsDelay;
 
-    Dual() {
+    private Dual() {
         dualsLeg = null;
         dualsTail = null;
         dualsDelay = null;
@@ -29,6 +31,12 @@ class Dual {
         Arrays.fill(dualsLeg, 0);
         Arrays.fill(dualsTail, 0);
         Arrays.fill(dualsDelay, 0);
+    }
+
+    Dual(double[] dualsLeg, double[] dualsTail, double[] dualsDelay) {
+        this.dualsLeg = dualsLeg;
+        this.dualsTail = dualsTail;
+        this.dualsDelay = dualsDelay;
     }
 
     Dual getFeasibleDual(Dual infeasibleDual, HashMap<Integer, ArrayList<Path>> tailPathsMap, ArrayList<Leg> legs) {
@@ -63,8 +71,42 @@ class Dual {
         return feasibleDual;
     }
 
+    BendersCut getBendersCut(double[][] dualsBound, double probability) {
+        double scenAlpha = 0;
+
+        for (int j = 0; j < dualsLeg.length; j++)
+            if (Math.abs(dualsLeg[j]) >= Constants.EPS)
+                scenAlpha += dualsLeg[j];
+
+        for (int j = 0; j < dualsTail.length; j++)
+            if (Math.abs(dualsTail[j]) >= Constants.EPS)
+                scenAlpha += dualsTail[j];
+
+        for (int j = 0; j < dualsDelay.length; j++)
+            if (Math.abs(dualsDelay[j]) >= Constants.EPS)
+                scenAlpha += (dualsDelay[j] * Constants.OTP_TIME_LIMIT_IN_MINUTES);
+
+        for (double[] dualBnd : dualsBound) {
+            if (dualBnd != null)
+                for (double j : dualBnd)
+                    if (Math.abs(j) >= Constants.EPS)
+                        scenAlpha += j;
+        }
+
+        BendersCut cut = new BendersCut(scenAlpha * probability, dualsLeg.length);
+
+
+        double[] beta = cut.getBeta();
+        for (int j = 0; j < dualsDelay.length; j++) {
+            if (Math.abs(dualsDelay[j]) >= Constants.EPS)
+                beta[j] -= (dualsDelay[j] * probability);
+        }
+
+        return cut;
+    }
+
     private double getPathSlack(Path path) {
-        double slack = -dualsTail[path.getTail().getId()];
+        double slack = -dualsTail[path.getTail().getIndex()];
         ArrayList<Leg> legs = path.getLegs();
         ArrayList<Integer> delays = path.getDelayTimesInMin();
         for (int i = 0; i < legs.size(); ++i) {

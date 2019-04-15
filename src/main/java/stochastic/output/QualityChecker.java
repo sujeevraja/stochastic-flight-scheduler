@@ -203,7 +203,7 @@ class QualityChecker {
                 dataRegistry.getTailOrigPathMap(), adjustedDelays));
 
         SubSolverRunnable ssr = new SubSolverRunnable(dataRegistry, 0, scenarioNum, scen.getProbability(),
-                zeroReschedules, adjustedDelays, pathCache);
+                zeroReschedules, 0.0, adjustedDelays, pathCache);
         ssr.setFilePrefix(slnName);
         ssr.setSolveForQuality(true);
 

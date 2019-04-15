@@ -21,6 +21,7 @@ public class SubSolverRunnable implements Runnable {
     private int scenarioNum;
     private double probability;
     private int[] reschedules;
+    private double thetaValue;
     private int[] randomDelays;
     private PathCache pathCache;
 
@@ -31,12 +32,13 @@ public class SubSolverRunnable implements Runnable {
     private DelaySolution delaySolution; // used only when checking Benders solution quality
 
     public SubSolverRunnable(DataRegistry dataRegistry, int iter, int scenarioNum, double probability,
-                             int[] reschedules, int[] randomDelays, PathCache pathCache) {
+                             int[] reschedules, double thetaValue, int[] randomDelays, PathCache pathCache) {
         this.dataRegistry = dataRegistry;
         this.iter = iter;
         this.scenarioNum = scenarioNum;
         this.probability = probability;
         this.reschedules = reschedules;
+        this.thetaValue = thetaValue;
         this.randomDelays = randomDelays;
         this.pathCache = pathCache;
         this.filePrefix = null;
@@ -154,6 +156,14 @@ public class SubSolverRunnable implements Runnable {
 
         boolean optimal = false;
         int columnGenIter = 0;
+
+        Dual updatedDual = new Dual(dataRegistry.getLegs().size(), dataRegistry.getTails().size());
+        boolean cutUpdated = false;
+
+        double[] xValues = new double[reschedules.length];
+        for (int i = 0; i < reschedules.length; ++i)
+            xValues[i] = reschedules[i];
+
         while (!optimal) {
             // Solve second-stage RMP (Restricted Master Problem)
             ss.constructSecondStage(pathsAll);
@@ -181,6 +191,18 @@ public class SubSolverRunnable implements Runnable {
 
             if (Parameters.isDebugVerbose())
                 ss.writeCplexSolution(name + ".xml");
+
+            if (!solveForQuality) {
+                Dual infeasibleDual = new Dual(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay());
+                updatedDual = updatedDual.getFeasibleDual(infeasibleDual, pathsAll, dataRegistry.getLegs());
+                BendersCut cutFromDual = updatedDual.getBendersCut(ss.getDualsBound(), probability);
+                if (cutFromDual.separates(xValues, thetaValue)) {
+                    logger.debug("Iter " + iter + ": separating cut found, stopping column gen");
+                    bendersData.setCut(scenarioNum, cutFromDual);
+                    cutUpdated = true;
+                    break;
+                }
+            }
 
             // Collect paths with negative reduced cost from the labeling algorithm. Optimality is reached when
             // there are no new negative reduced cost paths available for any tail.
@@ -251,13 +273,16 @@ public class SubSolverRunnable implements Runnable {
             buildDelaySolution(ss, randomDelays, pathsAll);
             ss.end();
         } else {
-            // Update master problem data
-            double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(),
-                    ss.getDualsBound(), ss.getDualRisk());
+            if (!cutUpdated) {
+                // Update master problem data
+                double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(),
+                        ss.getDualsBound(), ss.getDualRisk());
 
-            final int cutNum = Parameters.isBendersMultiCut() ? scenarioNum : 0;
-            updateAlpha(cutNum, scenAlpha);
-            updateBeta(cutNum, ss.getDualsDelay(), ss.getDualRisk());
+                final int cutNum = Parameters.isBendersMultiCut() ? scenarioNum : 0;
+                updateAlpha(cutNum, scenAlpha);
+                updateBeta(cutNum, ss.getDualsDelay(), ss.getDualRisk());
+            }
+
             updateUpperBound(ss.getObjValue());
 
             // cache best paths for each tail
