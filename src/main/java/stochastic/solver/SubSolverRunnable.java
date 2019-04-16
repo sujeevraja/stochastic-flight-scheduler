@@ -188,27 +188,17 @@ public class SubSolverRunnable implements Runnable {
 
             ss.solve();
             ss.collectDuals();
+            Dual infeasibleDual = new Dual(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay());
 
             if (Parameters.isDebugVerbose())
                 ss.writeCplexSolution(name + ".xml");
-
-            if (!solveForQuality) {
-                Dual infeasibleDual = new Dual(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay());
-                updatedDual = updatedDual.getFeasibleDual(infeasibleDual, pathsAll, dataRegistry.getLegs());
-                BendersCut cutFromDual = updatedDual.getBendersCut(ss.getDualsBound(), probability);
-                if (cutFromDual.separates(xValues, thetaValue)) {
-                    logger.debug("Iter " + iter + ": separating cut found, stopping column gen");
-                    bendersData.setCut(scenarioNum, cutFromDual);
-                    cutUpdated = true;
-                    break;
-                }
-            }
 
             // Collect paths with negative reduced cost from the labeling algorithm. Optimality is reached when
             // there are no new negative reduced cost paths available for any tail.
             ArrayList<Tail> tails = dataRegistry.getTails();
             double[] tailDuals = ss.getDualsTail();
             optimal = true;
+            double lambda = 0.0;
 
             for (int i = 0; i < tails.size(); ++i) {
                 Tail tail = tails.get(i);
@@ -229,6 +219,14 @@ public class SubSolverRunnable implements Runnable {
                         optimal = false;
 
                     existingPaths.addAll(tailPaths);
+                    if (lambda <= 1.0 - Constants.EPS) {
+                        for (Path tailPath : tailPaths) {
+                            final double infeasDualPathSlack = infeasibleDual.getPathSlack(tailPath);
+                            final double feasibleDualPathSlack = updatedDual.getPathSlack(tailPath);
+                            double lambdaPath = (-infeasDualPathSlack / (feasibleDualPathSlack - infeasDualPathSlack));
+                            lambda = Math.max(lambda, lambdaPath);
+                        }
+                    }
                 }
             }
 
@@ -238,6 +236,19 @@ public class SubSolverRunnable implements Runnable {
                 if (delayDuals[i] + legs.get(i).getDelayCostPerMin() <= -Constants.EPS) {
                     logger.error("no new paths, but solution not dual feasible");
                     throw new OptException("invalid optimality in second stage branch and price");
+                }
+            }
+
+            if (!solveForQuality) {
+                // updatedDual = updatedDual.getFeasibleDual(infeasibleDual, pathsAll, dataRegistry.getLegs());
+                updatedDual = updatedDual.getFeasibleDual(infeasibleDual, lambda);
+                BendersCut cutFromDual = updatedDual.getBendersCut(ss.getDualsBound(), probability);
+                if (cutFromDual.separates(xValues, thetaValue)) {
+                    // logger.debug("Iter " + iter + ": separating cut found");
+                    logger.debug("Iter " + iter + ": separating cut found, stopping column gen");
+                    bendersData.setCut(scenarioNum, cutFromDual);
+                    cutUpdated = true;
+                    break;
                 }
             }
 

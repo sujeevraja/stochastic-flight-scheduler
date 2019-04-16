@@ -59,14 +59,14 @@ public class Main {
         Parameters.setNumReducedCostPaths(10);
 
         // Debugging parameter
-        Parameters.setDebugVerbose(false); // Set to true to see CPLEX logs, lp files and solution xml files.
+        Parameters.setDebugVerbose(true); // Set to true to see CPLEX logs, lp files and solution xml files.
 
         // Multi-threading parameters
         Parameters.setRunSecondStageInParallel(false);
         Parameters.setNumThreadsForSecondStage(2);
 
         // Solution quality parameters
-        Parameters.setCheckSolutionQuality(true);
+        Parameters.setCheckSolutionQuality(false);
         Parameters.setNumTestScenarios(50);
 
         // Expected excess parameters

@@ -39,9 +39,15 @@ class Dual {
         this.dualsDelay = dualsDelay;
     }
 
-    Dual getFeasibleDual(Dual infeasibleDual, HashMap<Integer, ArrayList<Path>> tailPathsMap, ArrayList<Leg> legs) {
+    Dual getFeasibleDual(Dual infeasibleDual, double lambda) {
         Dual feasibleDual = new Dual();
+        feasibleDual.dualsLeg = getConvexCombination(dualsLeg ,infeasibleDual.dualsLeg, lambda);
+        feasibleDual.dualsTail = getConvexCombination(dualsTail, infeasibleDual.dualsTail, lambda);
+        feasibleDual.dualsDelay = getConvexCombination(dualsDelay, infeasibleDual.dualsDelay, lambda);
+        return feasibleDual;
+    }
 
+    Dual getFeasibleDual(Dual infeasibleDual, HashMap<Integer, ArrayList<Path>> tailPathsMap, ArrayList<Leg> legs) {
         double lambda = 0.0;
 
         for (Leg leg : legs) {
@@ -49,22 +55,23 @@ class Dual {
             if (infeasibleDualLegSlack >= 0.0)
                 continue;
 
-            double lambdaLeg = (-infeasibleDualLegSlack / (feasibleDual.getLegSlack(leg) - infeasibleDualLegSlack));
+            double lambdaLeg = (-infeasibleDualLegSlack / (getLegSlack(leg) - infeasibleDualLegSlack));
             lambda = Math.max(lambda, lambdaLeg);
         }
 
         for (Map.Entry<Integer, ArrayList<Path>> entry : tailPathsMap.entrySet()) {
             ArrayList<Path> paths = entry.getValue();
             for (Path path : paths) {
-                double infeasibleDualLegSlack = infeasibleDual.getPathSlack(path);
-                if (infeasibleDualLegSlack >= 0.0)
+                double infeasDualPathSlack = infeasibleDual.getPathSlack(path);
+                if (infeasDualPathSlack >= 0.0)
                     continue;
 
-                double lambdaLeg = (-infeasibleDualLegSlack / (feasibleDual.getPathSlack(path) - infeasibleDualLegSlack));
-                lambda = Math.max(lambda, lambdaLeg);
+                double lambdaPath = (-infeasDualPathSlack / (getPathSlack(path) - infeasDualPathSlack));
+                lambda = Math.max(lambda, lambdaPath);
             }
         }
 
+        Dual feasibleDual = new Dual();
         feasibleDual.dualsLeg = getConvexCombination(dualsLeg ,infeasibleDual.dualsLeg, lambda);
         feasibleDual.dualsTail = getConvexCombination(dualsTail, infeasibleDual.dualsTail, lambda);
         feasibleDual.dualsDelay = getConvexCombination(dualsDelay, infeasibleDual.dualsDelay, lambda);
@@ -105,7 +112,7 @@ class Dual {
         return cut;
     }
 
-    private double getPathSlack(Path path) {
+    double getPathSlack(Path path) {
         double slack = -dualsTail[path.getTail().getIndex()];
         ArrayList<Leg> legs = path.getLegs();
         ArrayList<Integer> delays = path.getDelayTimesInMin();
