@@ -157,7 +157,7 @@ public class SubSolverRunnable implements Runnable {
         boolean optimal = false;
         int columnGenIter = 0;
 
-        Dual updatedDual = new Dual(dataRegistry.getLegs().size(), dataRegistry.getTails().size());
+        Dual updatedDual = getInitialDual();
         boolean cutUpdated = false;
 
         double[] xValues = new double[reschedules.length];
@@ -188,7 +188,7 @@ public class SubSolverRunnable implements Runnable {
 
             ss.solve();
             ss.collectDuals();
-            Dual infeasibleDual = new Dual(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay());
+            Dual infeasibleDual = new Dual(ss.getDualsLeg().clone(), ss.getDualsTail().clone(), ss.getDualsDelay().clone());
 
             if (Parameters.isDebugVerbose())
                 ss.writeCplexSolution(name + ".xml");
@@ -230,6 +230,20 @@ public class SubSolverRunnable implements Runnable {
                 }
             }
 
+            if (!solveForQuality) {
+                // update lambda using reduced costs of d_f variables.
+                for (Leg leg : dataRegistry.getLegs()) {
+                    final double infeasibleDualLegSlack = infeasibleDual.getLegSlack(leg);
+                    if (infeasibleDualLegSlack <= -Constants.EPS) {
+                        final double feasibleDualLegSlack = updatedDual.getLegSlack(leg);
+                        double lambdaLeg = (-infeasibleDualLegSlack / (feasibleDualLegSlack - infeasibleDualLegSlack));
+                        lambda = Math.max(lambda, lambdaLeg);
+                    }
+                }
+            }
+
+            logger.debug("Iter " + iter + ": scenario " + scenarioNum + ": lambda: " + lambda);
+
             // Verify optimality using the feasibility of \pi_f + b_f >= 0 for all flights.
             double[] delayDuals = ss.getDualsDelay();
             for (int i = 0; i < legs.size(); ++i) {
@@ -244,8 +258,7 @@ public class SubSolverRunnable implements Runnable {
                 updatedDual = updatedDual.getFeasibleDual(infeasibleDual, lambda);
                 BendersCut cutFromDual = updatedDual.getBendersCut(ss.getDualsBound(), probability);
                 if (cutFromDual.separates(xValues, thetaValue)) {
-                    // logger.debug("Iter " + iter + ": separating cut found");
-                    logger.debug("Iter " + iter + ": separating cut found, stopping column gen");
+                    logger.debug("Iter " + iter + ": scenario " + scenarioNum + ": separating cut found, stopping column gen");
                     bendersData.setCut(scenarioNum, cutFromDual);
                     cutUpdated = true;
                     break;
@@ -300,6 +313,22 @@ public class SubSolverRunnable implements Runnable {
             ss.collectSolution();
             pathCache.addPaths(getBestPaths(ss.getyValues(), pathsAll));
         }
+    }
+
+    private Dual getInitialDual() {
+        double[] dualsTail = new double[dataRegistry.getTails().size()];
+        Arrays.fill(dualsTail, 0);
+
+        ArrayList<Leg> legs = dataRegistry.getLegs();
+        double[] dualsLeg = new double[legs.size()];
+        double[] dualsDelay = new double[legs.size()];
+
+        Arrays.fill(dualsLeg, 0.0);
+        for (int i = 0; i < legs.size(); ++i)
+            dualsDelay[i] = -legs.get(i).getDelayCostPerMin();
+
+        Dual dual = new Dual(dualsLeg, dualsTail, dualsDelay);
+        return dual;
     }
 
     private void buildDelaySolution(SubSolver ss, int[] primaryDelays, HashMap<Integer, ArrayList<Path>> tailPaths) {

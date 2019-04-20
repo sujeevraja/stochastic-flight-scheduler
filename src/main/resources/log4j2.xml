@@ -7,13 +7,13 @@
 -->
             <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} | %msg%n"/>
         </Console>
-        <File name="Log" fileName="logs/console.log" immediateFlush="false" append="false">
+        <File name="Log" fileName="logs/console.log" immediateFlush="true" append="false">
 <!--
             <PatternLayout pattern="%d{yyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
 -->
             <PatternLayout pattern="[%t] %-5level %logger{36} | %msg%n"/>
         </File>
-        <File name="TimedLog" fileName="logs/console_timed.log" immediateFlush="false" append="false">
+        <File name="TimedLog" fileName="logs/console_timed.log" immediateFlush="true" append="false">
             <PatternLayout pattern="%d{yyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} | %msg%n"/>
         </File>
     </Appenders>

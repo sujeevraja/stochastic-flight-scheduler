@@ -47,7 +47,7 @@ class BendersCut {
             lhs += beta[i] * x[i];
         }
 
-        logger.debug("lhs: " + lhs + " rhs: " + alpha + " violation: " + (lhs - alpha));
+        // logger.debug("lhs: " + lhs + " rhs: " + alpha + " violation: " + (lhs - alpha));
         return lhs <= alpha - Constants.MINIMUM_CUT_VIOLATION;
    }
 }

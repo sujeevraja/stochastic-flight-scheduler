@@ -21,8 +21,8 @@ public class Main {
             controller.readData();
             controller.buildScenarios();
             controller.solveWithNaiveApproach();
-            if (Parameters.isSolveDEP())
-                controller.solveWithDEP();
+            // if (Parameters.isSolveDEP())
+            //    controller.solveWithDEP();
             controller.solveWithBenders();
             controller.processSolution();
 
@@ -33,13 +33,14 @@ public class Main {
     }
 
     private static void setParameters() {
-        String path = "data/20171115022840-v2";
+        // String path = "data/20171115022840-v2";
         // String path = "data/instance1";
+        String path = "data/big2";
 
         Parameters.setInstancePath(path);
         Parameters.setRescheduleBudgetFraction(0.5);
         Parameters.setFlightRescheduleBound(30);
-        Parameters.setNumScenariosToGenerate(30);
+        Parameters.setNumScenariosToGenerate(10);
 
         Parameters.setDistributionType(Enums.DistributionType.LOGNORMAL);
         Parameters.setDistributionMean(15);
@@ -55,11 +56,11 @@ public class Main {
 
         // Second-stage parameters
         Parameters.setFullEnumeration(false);
-        Parameters.setReducedCostStrategy(Enums.ReducedCostStrategy.FIRST_PATHS);
+        Parameters.setReducedCostStrategy(Enums.ReducedCostStrategy.ALL_PATHS);
         Parameters.setNumReducedCostPaths(10);
 
         // Debugging parameter
-        Parameters.setDebugVerbose(true); // Set to true to see CPLEX logs, lp files and solution xml files.
+        Parameters.setDebugVerbose(false); // Set to true to see CPLEX logs, lp files and solution xml files.
 
         // Multi-threading parameters
         Parameters.setRunSecondStageInParallel(false);
