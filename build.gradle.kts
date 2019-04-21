@@ -56,6 +56,10 @@ tasks {
             include("*.yaml", "*.csv")
         })
     }
+
+    compileJava {
+        options.compilerArgs.add("-Xlint:deprecation")
+    }
 }
 
 application {
