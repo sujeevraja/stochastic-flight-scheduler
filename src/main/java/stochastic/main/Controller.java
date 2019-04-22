@@ -6,7 +6,9 @@ import stochastic.dao.ScheduleDAO;
 import stochastic.domain.Tail;
 import stochastic.network.Path;
 import stochastic.output.OutputManager;
+import stochastic.output.QualityChecker;
 import stochastic.output.RescheduleSolution;
+import stochastic.output.TestKPISet;
 import stochastic.registry.DataRegistry;
 import stochastic.registry.Parameters;
 import stochastic.solver.BendersSolver;
@@ -16,6 +18,7 @@ import stochastic.utility.OptException;
 import ilog.concert.IloException;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.*;
 
@@ -47,7 +50,12 @@ class Controller {
 
     Controller() {
         dataRegistry = new DataRegistry();
-        outputManager = new OutputManager(dataRegistry);
+        String timeStamp = new SimpleDateFormat("yyyy_MM_dd'T'HH_mm_ss").format(new Date());
+        outputManager = new OutputManager(dataRegistry, timeStamp);
+    }
+
+    DataRegistry getDataRegistry() {
+        return dataRegistry;
     }
 
     final void readData() throws OptException {
@@ -237,7 +245,7 @@ class Controller {
                 if (turnTime < leg.getTurnTimeInMin()) {
                     logger.warn("turn after leg " + leg.getId() + " is shorter than its turn time "
                             + leg.getTurnTimeInMin() + ".");
-                    logger.warn("shorterning it to " + turnTime);
+                    logger.warn("shortening it to " + turnTime);
                     leg.setTurnTimeInMin(turnTime);
                 }
             }
@@ -302,12 +310,18 @@ class Controller {
 
     void processSolution() throws OptException {
         try {
-            outputManager.addRescheduleSolution(naiveModelSolution);
+            ArrayList<RescheduleSolution> rescheduleSolutions = getAllRescheduleSolutions();
+            for (RescheduleSolution sln : rescheduleSolutions) {
+                if (!sln.isOriginalSchedule()) {
+                    sln.writeCSV(outputManager.getTimeStamp(), dataRegistry.getLegs());
+                    logger.info("wrote " + sln.getName() + " reschedule solution");
+                    outputManager.addKpi(sln.getName() + " reschedule cost", sln.getRescheduleCost());
+                }
+            }
+
             outputManager.addKpi("naive model solution time (seconds)", naiveModelSolutionTime);
-            outputManager.addRescheduleSolution(depSolution);
             outputManager.addKpi("dep solution time (seconds)", depSolutionTime);
             outputManager.addKpi("dep objective", depObjective);
-            outputManager.addRescheduleSolution(bendersSolution);
             outputManager.addKpi("benders solution time (seconds)", bendersSolutionTime);
             outputManager.addKpi("benders iterations", bendersNumIterations);
             outputManager.addKpi("benders lower bound", bendersLowerBound);
@@ -315,11 +329,33 @@ class Controller {
             outputManager.addKpi("benders gap (%)", bendersGap);
             outputManager.addKpi("benders cuts added", bendersNumCuts);
             outputManager.writeOutput();
-            if (Parameters.isCheckSolutionQuality())
-                outputManager.checkSolutionQuality();
+
+            if (Parameters.isCheckSolutionQuality()) {
+                QualityChecker qc = new QualityChecker(dataRegistry);
+                qc.setTimeStamp(outputManager.getTimeStamp());
+                qc.generateTestDelays();
+                qc.compareSolutions(rescheduleSolutions);
+            }
         } catch (IOException ex) {
             logger.error(ex);
             throw new OptException("error writing solution");
         }
+    }
+
+    TestKPISet[] getAverageTestStats() {
+        QualityChecker qc = new QualityChecker(dataRegistry);
+        ArrayList<RescheduleSolution> rescheduleSolutions = getAllRescheduleSolutions();
+        return qc.collectAverageTestStatsForBatchRun(rescheduleSolutions);
+    }
+
+    ArrayList<RescheduleSolution> getAllRescheduleSolutions() {
+        ArrayList<RescheduleSolution> rescheduleSolutions = new ArrayList<>();
+        RescheduleSolution original = new RescheduleSolution("original", 0, null);
+        original.setOriginalSchedule(true);
+        rescheduleSolutions.add(original);
+        rescheduleSolutions.add(naiveModelSolution);
+        rescheduleSolutions.add(depSolution);
+        rescheduleSolutions.add(bendersSolution);
+        return rescheduleSolutions;
     }
 }

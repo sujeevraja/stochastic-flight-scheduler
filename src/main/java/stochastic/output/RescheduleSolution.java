@@ -17,14 +17,16 @@ public class RescheduleSolution {
     private String name;
     private double rescheduleCost;
     private int[] reschedules;
+    private boolean isOriginalSchedule;
 
     public RescheduleSolution(String name, double rescheduleCost, int[] reschedules) {
         this.name = name;
         this.rescheduleCost = rescheduleCost;
         this.reschedules = reschedules;
+        isOriginalSchedule = false;
     }
 
-    String getName() {
+    public String getName() {
         return name;
     }
 
@@ -36,10 +38,18 @@ public class RescheduleSolution {
         return reschedules;
     }
 
+    public void setOriginalSchedule(boolean originalSchedule) {
+        isOriginalSchedule = originalSchedule;
+    }
+
+    public boolean isOriginalSchedule() {
+        return isOriginalSchedule;
+    }
+
     /**
      * Writes stored solution to a file with the given path.
      */
-    void writeCSV(String timeStamp, ArrayList<Leg> legs) throws IOException {
+    public void writeCSV(String timeStamp, ArrayList<Leg> legs) throws IOException {
         String path = "solution/" + timeStamp + "__reschedule_solution_" + name + ".csv";
         BufferedWriter writer = new BufferedWriter(new FileWriter(path));
         ArrayList<String> headers = new ArrayList<>(Arrays.asList("leg_id", "flt_num", "reschedule"));

@@ -4,6 +4,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
+import stochastic.output.QualityChecker;
+import stochastic.output.RescheduleSolution;
+import stochastic.output.TestKPISet;
 import stochastic.registry.Parameters;
 import stochastic.utility.CSVHelper;
 import stochastic.utility.Enums;
@@ -21,15 +24,26 @@ import java.util.TreeMap;
  */
 class BatchRunner {
     private final static Logger logger = LogManager.getLogger(BatchRunner.class);
-    private ArrayList<String> instances;
+    private ArrayList<String> instanceNames;
+    private ArrayList<String> instancePaths;
 
     BatchRunner() {
-        instances = new ArrayList<>();
+        instanceNames = new ArrayList<>();
+        instancePaths = new ArrayList<>();
+
         /*
-        for (int i = 1; i <= 5; ++i)
-            instances.add("data/paper/s" + i);
+        for (int i = 1; i <= 5; ++i) {
+            String name = "s" + i;
+            instanceNames.add(name);
+            instancePaths.add("data/paper/" + name);
+        }
          */
-        instances.addAll(Arrays.asList("data/instance1", "data/instance2"));
+
+        for (int i = 1; i <= 2; ++i) {
+            String name = "instance" + i;
+            instanceNames.add(name);
+            instancePaths.add("data/" + name);
+        }
     }
 
     void runQualitySet() throws OptException {
@@ -54,12 +68,27 @@ class BatchRunner {
                     "Benders number of iterations"));
 
             BufferedWriter trainingWriter = new BufferedWriter(
-                    new FileWriter("solution/quality_results.csv"));
+                    new FileWriter("solution/results_training.csv"));
 
             CSVHelper.writeLine(trainingWriter, trainingHeaders);
 
-            for (String instance : instances) {
-                Parameters.setInstancePath(instance);
+            BufferedWriter testWriter = new BufferedWriter(
+                    new FileWriter("solution/results_test.csv"));
+
+            ArrayList<String> testHeaders = new ArrayList<>(Arrays.asList(
+                    "distribution",
+                    "strategy",
+                    "approach"));
+
+            for (Enums.TestKPI kpi : Enums.TestKPI.values()) {
+                testHeaders.add(kpi.name());
+                testHeaders.add("decrease (%)");
+            }
+
+            CSVHelper.writeLine(testWriter, testHeaders);
+
+            for (int i = 0; i < instancePaths.size(); ++i) {
+                Parameters.setInstancePath(instancePaths.get(i));
 
                 for (Enums.DistributionType distributionType :
                         Enums.DistributionType.values()) {
@@ -70,10 +99,11 @@ class BatchRunner {
                         Parameters.setFlightPickStrategy(flightPickStrategy);
 
                         ArrayList<String> row = new ArrayList<>();
-                        row.add(instance);
+                        row.add(instanceNames.get(i));
                         row.add(distributionType.name());
                         row.add(flightPickStrategy.name());
 
+                        // solve models
                         Controller controller = new Controller();
                         controller.readData();
                         controller.buildScenarios();
@@ -87,6 +117,8 @@ class BatchRunner {
                         row.add(Double.toString(controller.getDepSolutionTime()));
 
                         controller.solveWithBenders();
+
+                        // write training results
                         row.add(Double.toString(controller.getBendersRescheduleCost()));
                         row.add(Double.toString(controller.getBendersSolutionTime()));
                         row.add(Double.toString(controller.getBendersLowerBound()));
@@ -96,11 +128,41 @@ class BatchRunner {
                         row.add(Integer.toString(controller.getBendersNumIterations()));
 
                         CSVHelper.writeLine(trainingWriter, row);
+
+                        // collect test solutions
+                        QualityChecker qc = new QualityChecker(controller.getDataRegistry());
+                        qc.generateTestDelays();
+                        ArrayList<RescheduleSolution> rescheduleSolutions = controller.getAllRescheduleSolutions();
+                        TestKPISet[] testKPISets = qc.collectAverageTestStatsForBatchRun(rescheduleSolutions);
+                        TestKPISet baseKPISet = testKPISets[0];
+
+                        // write test results
+                        for (int j = 0; j < testKPISets.length; ++j) {
+                            row = new ArrayList<>();
+                            row.add(distributionType.name());
+                            row.add(flightPickStrategy.name());
+                            row.add(rescheduleSolutions.get(j).getName());
+
+                            TestKPISet testKPISet = testKPISets[j];
+                            TestKPISet percentDecreaseSet = j > 0
+                                    ? TestKPISet.getPercentageDecrease(baseKPISet, testKPISet)
+                                    : null;
+
+                            for (Enums.TestKPI kpi : Enums.TestKPI.values()) {
+                                row.add(testKPISet.getKpi(kpi).toString());
+                                double decrease = percentDecreaseSet != null
+                                        ? percentDecreaseSet.getKpi(kpi)
+                                        : 0;
+                                row.add(Double.toString(decrease));
+                            }
+                            CSVHelper.writeLine(testWriter, row);
+                        }
                     }
                 }
             }
 
             trainingWriter.close();
+            testWriter.close();
         } catch (IOException ex) {
             logger.error(ex);
             throw new OptException("error writing to csv during quality run");
@@ -135,7 +197,7 @@ class BatchRunner {
 
         Parameters.setBendersMultiCut(true);
         Parameters.setBendersTolerance(1e-3);
-        Parameters.setNumBendersIterations(30);
+        Parameters.setNumBendersIterations(5);
         Parameters.setWarmStartBenders(false);
 
         // Second-stage parameters
@@ -152,7 +214,7 @@ class BatchRunner {
 
         // Solution quality parameters
         Parameters.setCheckSolutionQuality(true);
-        Parameters.setNumTestScenarios(100);
+        Parameters.setNumTestScenarios(10);
 
         // Expected excess parameters
         Parameters.setExpectedExcess(false);

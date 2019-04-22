@@ -1,8 +1,5 @@
 package stochastic.output;
 
-import stochastic.delay.DelayGenerator;
-import stochastic.delay.FirstFlightDelayGenerator;
-import stochastic.delay.StrategicDelayGenerator;
 import stochastic.delay.Scenario;
 import stochastic.domain.Leg;
 import stochastic.registry.DataRegistry;
@@ -21,7 +18,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
-class QualityChecker {
+public class QualityChecker {
     /**
      * QualityChecker generates random delays to compare different reschedule solutions including the original
      * schedule (i.e no reschedule). This is done by running the second-stage model as a MIP.
@@ -29,21 +26,64 @@ class QualityChecker {
     private DataRegistry dataRegistry;
     private int[] zeroReschedules;
     private Scenario[] testScenarios;
+    private String timeStamp;
 
-    QualityChecker(DataRegistry dataRegistry) {
+    public QualityChecker(DataRegistry dataRegistry) {
         this.dataRegistry = dataRegistry;
         zeroReschedules = new int[dataRegistry.getLegs().size()];
         Arrays.fill(zeroReschedules, 0);
+        timeStamp = null;
     }
 
-    void generateTestDelays() {
+    public void setTimeStamp(String timeStamp) {
+        this.timeStamp = timeStamp;
+    }
+
+    public void generateTestDelays() {
         testScenarios = dataRegistry.getDelayGenerator().generateScenarios(Parameters.getNumTestScenarios());
     }
 
-    void compareSolutions(ArrayList<RescheduleSolution> rescheduleSolutions, String timeStamp) throws IOException {
-        DelaySolution[][] delaySolutions = collectAllDelaySolutions(rescheduleSolutions, timeStamp);
+    public TestKPISet[] collectAverageTestStatsForBatchRun(ArrayList<RescheduleSolution> rescheduleSolutions) {
+        // delaySolutionKpis[i] contains average delay KPIs of all test scenarios generated with rescheduleSolutions[i]
+        // applied to the base schedule.
+        TestKPISet[] delaySolutionKPIs = new TestKPISet[rescheduleSolutions.size()];
 
-        String compareFileName = "solution/" + timeStamp + "__comparison.csv";
+        for (int i = 0; i < rescheduleSolutions.size(); ++i) {
+            RescheduleSolution rescheduleSolution = rescheduleSolutions.get(i);
+            TestKPISet[] kpis = new TestKPISet[testScenarios.length];
+            for (int j = 0; j < testScenarios.length; ++j) {
+                DelaySolution delaySolution = getDelaySolution(testScenarios[j], j, rescheduleSolution.getName(),
+                        rescheduleSolution.getReschedules());
+
+                TestKPISet testKPISet = new TestKPISet();
+                testKPISet.setKpi(Enums.TestKPI.delayCost, delaySolution.getDelayCost());
+                testKPISet.setKpi(Enums.TestKPI.totalFlightDelay, (double) delaySolution.getSumTotalDelay());
+                testKPISet.setKpi(Enums.TestKPI.maximumFlightDelay, (double) delaySolution.getMaxTotalDelay());
+                testKPISet.setKpi(Enums.TestKPI.averageFlightDelay, delaySolution.getAvgTotalDelay());
+                testKPISet.setKpi(Enums.TestKPI.totalPropagatedDelay, (double) delaySolution.getSumPropagatedDelay());
+                testKPISet.setKpi(Enums.TestKPI.maximumPropagatedDelay, (double) delaySolution.getMaxPropagatedDelay());
+                testKPISet.setKpi(Enums.TestKPI.averagePropagatedDelay, delaySolution.getAvgPropagatedDelay());
+                testKPISet.setKpi(Enums.TestKPI.totalExcessDelay, (double) delaySolution.getSumExcessDelay());
+                testKPISet.setKpi(Enums.TestKPI.maximumExcessDelay, (double) delaySolution.getMaxExcessDelay());
+                testKPISet.setKpi(Enums.TestKPI.averageExcessDelay, delaySolution.getAvgExcessDelay());
+                testKPISet.setKpi(Enums.TestKPI.delaySolutionTimeInSec, delaySolution.getSolutionTimeInSeconds());
+                kpis[j] = testKPISet;
+            }
+
+            TestKPISet averageKPIs = new TestKPISet();
+            averageKPIs.storeAverageKPIs(kpis);
+            delaySolutionKPIs[i] = averageKPIs;
+        }
+
+        return delaySolutionKPIs;
+    }
+
+    public void compareSolutions(ArrayList<RescheduleSolution> rescheduleSolutions) throws IOException {
+        DelaySolution[][] delaySolutions = collectAllDelaySolutions(rescheduleSolutions);
+
+        String compareFileName = timeStamp != null ?
+                "solution/" + timeStamp + "__comparison.csv"
+                : "solution/comparison.csv";
         BufferedWriter csvWriter = new BufferedWriter(new FileWriter(compareFileName));
 
         ArrayList<String> comparableStatNames = new ArrayList<>(Arrays.asList(
@@ -156,8 +196,8 @@ class QualityChecker {
         csvWriter.close();
     }
 
-    private DelaySolution[][] collectAllDelaySolutions(ArrayList<RescheduleSolution> rescheduleSolutions,
-                                          String timeStamp) throws IOException {
+    private DelaySolution[][] collectAllDelaySolutions(ArrayList<RescheduleSolution> rescheduleSolutions)
+            throws IOException {
         DelaySolution[][] delaySolutions = new DelaySolution[testScenarios.length][rescheduleSolutions.size()];
         for (int i = 0; i < testScenarios.length; ++i) {
             for (int j = 0; j < rescheduleSolutions.size(); ++j) {
@@ -167,9 +207,16 @@ class QualityChecker {
                 delaySolutions[i][j] = delaySolution;
 
                 if (Parameters.isDebugVerbose()) {
-                    String name = ("solution/" + timeStamp + "__delay_solution_scenario_" + i + "_"
-                            + rescheduleSolution.getName() + ".csv");
-                    delaySolution.writeCSV(name, dataRegistry.getLegs());
+                    if (timeStamp != null) {
+                        String name = ("solution/" + timeStamp + "__delay_solution_scenario_" + i + "_"
+                                + rescheduleSolution.getName() + ".csv");
+                        delaySolution.writeCSV(name, dataRegistry.getLegs());
+                    } else {
+                        String name = ("solution/delay_solution_scenario_" + i + "_"
+                                + rescheduleSolution.getName() + ".csv");
+                        delaySolution.writeCSV(name, dataRegistry.getLegs());
+
+                    }
                 }
             }
         }

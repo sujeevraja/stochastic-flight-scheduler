@@ -26,4 +26,22 @@ public class Enums {
      * The number of paths for the BEST_PATHS and FIRST_PATHS strategy is specified using "numReducedCostPaths."
      */
     public enum ReducedCostStrategy { ALL_PATHS, BEST_PATHS, FIRST_PATHS, }
+
+    /**
+     * Specifies KPIs that can be collected by running second-stage scenarios with an adjusted initial schedule.
+     * The adjustment can be nothing (for original schedule), or based on naive/DEP/Benders reschedule solution.
+     */
+    public enum TestKPI {
+        delayCost,
+        totalFlightDelay,
+        maximumFlightDelay,
+        averageFlightDelay,
+        totalPropagatedDelay,
+        maximumPropagatedDelay,
+        averagePropagatedDelay,
+        totalExcessDelay,
+        maximumExcessDelay,
+        averageExcessDelay,
+        delaySolutionTimeInSec
+    }
 }

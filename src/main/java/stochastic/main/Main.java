@@ -43,8 +43,8 @@ public class Main {
     }
 
     private static void setParameters() {
-        String path = "data/20171115022840-v2";
-        // String path = "data/instance1";
+        // String path = "data/20171115022840-v2";
+        String path = "data/instance1";
 
         Parameters.setInstancePath(path);
         Parameters.setRescheduleBudgetFraction(0.5);
@@ -53,7 +53,7 @@ public class Main {
 
         Parameters.setDistributionType(Enums.DistributionType.LOGNORMAL);
         Parameters.setDistributionMean(15);
-        Parameters.setDistributionSd(15); // ignored for exponentials.
+        Parameters.setDistributionSd(15); // ignored for exponential distribution.
         Parameters.setFlightPickStrategy(Enums.FlightPickStrategy.HUB);
 
         Parameters.setSolveDEP(true);
