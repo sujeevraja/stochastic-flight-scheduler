@@ -75,6 +75,7 @@ class Controller {
         // DelayGenerator dgen = new TestDelayGenerator(dataRegistry.getLegs().size(), dataRegistry.getTails());
         DelayGenerator dgen = new StrategicDelayGenerator(dataRegistry.getLegs());
 
+        dataRegistry.setDelayGenerator(dgen);
         Scenario[] scenarios = dgen.generateScenarios(Parameters.getNumScenariosToGenerate());
         dataRegistry.setDelayScenarios(scenarios);
 

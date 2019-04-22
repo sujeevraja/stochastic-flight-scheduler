@@ -37,9 +37,7 @@ class QualityChecker {
     }
 
     void generateTestDelays() {
-        // DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getLegs().size(), dataRegistry.getTails());
-        DelayGenerator dgen = new StrategicDelayGenerator(dataRegistry.getLegs());
-        testScenarios = dgen.generateScenarios(Parameters.getNumTestScenarios());
+        testScenarios = dataRegistry.getDelayGenerator().generateScenarios(Parameters.getNumTestScenarios());
     }
 
     void compareSolutions(ArrayList<RescheduleSolution> rescheduleSolutions, String timeStamp) throws IOException {
