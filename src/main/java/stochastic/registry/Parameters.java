@@ -12,7 +12,7 @@ public class Parameters {
     private static double rescheduleBudgetFraction;
 
     private static int flightRescheduleBound;
-    private static int numScenariosToGenerate;
+    private static int numSecondStageScenarios;
 
     private static Enums.DistributionType distributionType;
     private static double distributionMean;
@@ -20,16 +20,14 @@ public class Parameters {
 
     private static Enums.FlightPickStrategy flightPickStrategy;
 
-    private static boolean solveDEP;
     private static boolean bendersMultiCut;
     private static double bendersTolerance;
     private static int numBendersIterations;
     private static boolean warmStartBenders;
 
-    private static Enums.ReducedCostStrategy reducedCostStrategy;
+    private static Enums.ColumnGenStrategy columnGenStrategy;
     private static int numReducedCostPaths; // number of reduced cost paths to collect in second stage.
 
-    private static boolean fullEnumeration; // set to false to use labeling procedure
     private static boolean debugVerbose; // generates additional logging, writes lP files and solutions.
 
     private static boolean runSecondStageInParallel = false;
@@ -68,12 +66,12 @@ public class Parameters {
         return flightRescheduleBound;
     }
 
-    public static void setNumScenariosToGenerate(int numScenariosToGenerate) {
-        Parameters.numScenariosToGenerate = numScenariosToGenerate;
+    public static void setNumSecondStageScenarios(int numSecondStageScenarios) {
+        Parameters.numSecondStageScenarios = numSecondStageScenarios;
     }
 
-    public static int getNumScenariosToGenerate() {
-        return numScenariosToGenerate;
+    public static int getNumSecondStageScenarios() {
+        return numSecondStageScenarios;
     }
 
     public static void setDistributionType(Enums.DistributionType distributionType) {
@@ -108,14 +106,6 @@ public class Parameters {
         return flightPickStrategy;
     }
 
-    public static void setSolveDEP(boolean solveDEP) {
-        Parameters.solveDEP = solveDEP;
-    }
-
-    public static boolean isSolveDEP() {
-        return solveDEP;
-    }
-
     public static void setBendersMultiCut(boolean bendersMultiCut) {
         Parameters.bendersMultiCut = bendersMultiCut;
     }
@@ -148,12 +138,12 @@ public class Parameters {
         return warmStartBenders;
     }
 
-    public static void setReducedCostStrategy(Enums.ReducedCostStrategy reducedCostStrategy) {
-        Parameters.reducedCostStrategy = reducedCostStrategy;
+    public static void setColumnGenStrategy(Enums.ColumnGenStrategy columnGenStrategy) {
+        Parameters.columnGenStrategy = columnGenStrategy;
     }
 
-    public static Enums.ReducedCostStrategy getReducedCostStrategy() {
-        return reducedCostStrategy;
+    public static Enums.ColumnGenStrategy getColumnGenStrategy() {
+        return columnGenStrategy;
     }
 
     public static void setNumReducedCostPaths(int numReducedCostPaths) {
@@ -162,14 +152,6 @@ public class Parameters {
 
     public static int getNumReducedCostPaths() {
         return numReducedCostPaths;
-    }
-
-    public static void setFullEnumeration(boolean fullEnumeration) {
-        Parameters.fullEnumeration = fullEnumeration;
-    }
-
-    public static boolean isFullEnumeration() {
-        return fullEnumeration;
     }
 
     public static void setDebugVerbose(boolean debugVerbose) {

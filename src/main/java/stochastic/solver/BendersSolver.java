@@ -7,6 +7,7 @@ import stochastic.output.RescheduleSolution;
 import stochastic.registry.DataRegistry;
 import stochastic.registry.Parameters;
 import stochastic.utility.CSVHelper;
+import stochastic.utility.Enums;
 import stochastic.utility.OptException;
 import ilog.concert.IloException;
 import org.apache.logging.log4j.LogManager;
@@ -96,10 +97,7 @@ public class BendersSolver {
             masterSolver.initInitialSolution();
 
         logger.info("algorithm starts.");
-        if (Parameters.isFullEnumeration())
-            logger.info("pricing problem strategy: full enumeration");
-        else
-            logger.info("pricing problem strategy: labeling, " + Parameters.getReducedCostStrategy());
+        logger.info("column generation strategy: " + Parameters.getColumnGenStrategy().name());
 
         cacheOnPlanPathsForSecondStage();
 

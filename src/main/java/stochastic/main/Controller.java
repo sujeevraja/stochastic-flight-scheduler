@@ -5,8 +5,10 @@ import stochastic.domain.Leg;
 import stochastic.dao.ScheduleDAO;
 import stochastic.domain.Tail;
 import stochastic.network.Path;
-import stochastic.output.OutputManager;
+import stochastic.output.KpiManager;
+import stochastic.output.QualityChecker;
 import stochastic.output.RescheduleSolution;
+import stochastic.output.TestKPISet;
 import stochastic.registry.DataRegistry;
 import stochastic.registry.Parameters;
 import stochastic.solver.BendersSolver;
@@ -28,12 +30,31 @@ class Controller {
      */
     private final static Logger logger = LogManager.getLogger(Controller.class);
     private DataRegistry dataRegistry;
-    private OutputManager outputManager;
+    private KpiManager kpiManager;
+
     private RescheduleSolution naiveModelSolution;
+    private double naiveModelSolutionTime;
+
+    private RescheduleSolution depSolution;
+    private double depObjective;
+    private double depSolutionTime;
+
+    private RescheduleSolution bendersSolution;
+    private double bendersSolutionTime;
+    private double bendersLowerBound;
+    private double bendersUpperBound;
+    private double bendersGap;
+    private int bendersNumIterations;
+    private int bendersNumCuts;
 
     Controller() {
         dataRegistry = new DataRegistry();
-        outputManager = new OutputManager(dataRegistry);
+        // String timeStamp = new SimpleDateFormat("yyyy_MM_dd'T'HH_mm_ss").format(new Date());
+        kpiManager = new KpiManager(dataRegistry);
+    }
+
+    DataRegistry getDataRegistry() {
+        return dataRegistry;
     }
 
     final void readData() throws OptException {
@@ -61,7 +82,8 @@ class Controller {
         // DelayGenerator dgen = new TestDelayGenerator(dataRegistry.getLegs().size(), dataRegistry.getTails());
         DelayGenerator dgen = new StrategicDelayGenerator(dataRegistry.getLegs());
 
-        Scenario[] scenarios = dgen.generateScenarios(Parameters.getNumScenariosToGenerate());
+        dataRegistry.setDelayGenerator(dgen);
+        Scenario[] scenarios = dgen.generateScenarios(Parameters.getNumSecondStageScenarios());
         dataRegistry.setDelayScenarios(scenarios);
 
         double avgTotalPrimaryDelay = 0.0;
@@ -82,21 +104,14 @@ class Controller {
                 bendersSolver.solve(naiveModelSolution);
             else
                 bendersSolver.solve(null);
-            outputManager.addRescheduleSolution(bendersSolver.getFinalRescheduleSolution());
-            outputManager.addKpi("benders solution time (seconds)", bendersSolver.getSolutionTime());
-            outputManager.addKpi("benders iterations", bendersSolver.getIteration());
-            outputManager.addKpi("benders lower bound", bendersSolver.getLowerBound());
-            outputManager.addKpi("benders upper bound", bendersSolver.getUpperBound());
-            outputManager.addKpi("benders gap (%)", bendersSolver.getPercentGap());
-            outputManager.addKpi("benders cuts added", bendersSolver.getNumBendersCuts());
 
-            double[] thetas = bendersSolver.getFinalThetaValues();
-            if (Parameters.isBendersMultiCut()) {
-                for (int i = 0; i < dataRegistry.getDelayScenarios().length; ++i)
-                    outputManager.addKpi("benders theta (scenario " + i + ")", thetas[i]);
-            }
-            else
-                outputManager.addKpi("benders theta", thetas[0]);
+            bendersSolution = bendersSolver.getFinalRescheduleSolution();
+            bendersSolutionTime = bendersSolver.getSolutionTime();
+            bendersLowerBound = bendersSolver.getLowerBound();
+            bendersUpperBound = bendersSolver.getUpperBound();
+            bendersGap = bendersSolver.getPercentGap();
+            bendersNumIterations = bendersSolver.getIteration();
+            bendersNumCuts = bendersSolver.getNumBendersCuts();
         } catch (IloException ex) {
             logger.error(ex);
             throw new OptException("CPLEX error in Benders");
@@ -106,25 +121,68 @@ class Controller {
         }
     }
 
+    final double getBendersRescheduleCost() {
+        return bendersSolution.getRescheduleCost();
+    }
+
+    final double getBendersSolutionTime() {
+        return bendersSolutionTime;
+    }
+
+    final double getBendersLowerBound() {
+        return bendersLowerBound;
+    }
+
+    final double getBendersUpperBound() {
+        return bendersUpperBound;
+    }
+
+    final double getBendersGap() {
+        return bendersGap;
+    }
+
+    final int getBendersNumCuts() {
+        return bendersNumCuts;
+    }
+
+    final int getBendersNumIterations() {
+        return bendersNumIterations;
+    }
+
     final void solveWithNaiveApproach() throws OptException {
         try {
             NaiveSolver naiveSolver = new NaiveSolver(dataRegistry);
             naiveSolver.solve();
             naiveModelSolution = naiveSolver.getFinalRescheduleSolution();
-            outputManager.addRescheduleSolution(naiveModelSolution);
-            outputManager.addKpi("naive model solution time (seconds)", naiveSolver.getSolutionTime());
+            naiveModelSolutionTime = naiveSolver.getSolutionTime();
         } catch (IloException ex) {
             logger.error(ex);
             throw new OptException("exception solving naive model");
         }
     }
 
+    final double getNaiveModelRescheduleCost() {
+        return naiveModelSolution.getRescheduleCost();
+    }
+
+    final double getNaiveModelSolutionTime() {
+        return naiveModelSolutionTime;
+    }
+
     final void solveWithDEP() throws OptException {
         DepSolver depSolver = new DepSolver();
         depSolver.solve(dataRegistry);
-        outputManager.addRescheduleSolution(depSolver.getDepSolution());
-        outputManager.addKpi("dep solution time (seconds)", depSolver.getSolutionTimeInSeconds());
-        outputManager.addKpi("dep objective", depSolver.getObjValue());
+        depSolution = depSolver.getDepSolution();
+        depObjective = depSolver.getObjValue();
+        depSolutionTime = depSolver.getSolutionTimeInSeconds();
+    }
+
+    final double getDepRescheduleCost() {
+        return depSolution.getRescheduleCost();
+    }
+
+    final double getDepSolutionTime() {
+        return depSolutionTime;
     }
 
     /**
@@ -186,7 +244,7 @@ class Controller {
                 if (turnTime < leg.getTurnTimeInMin()) {
                     logger.warn("turn after leg " + leg.getId() + " is shorter than its turn time "
                             + leg.getTurnTimeInMin() + ".");
-                    logger.warn("shorterning it to " + turnTime);
+                    logger.warn("shortening it to " + turnTime);
                     leg.setTurnTimeInMin(turnTime);
                 }
             }
@@ -251,12 +309,57 @@ class Controller {
 
     void processSolution() throws OptException {
         try {
-            outputManager.writeOutput();
-            if (Parameters.isCheckSolutionQuality())
-                outputManager.checkSolutionQuality();
+            ArrayList<RescheduleSolution> rescheduleSolutions = getAllRescheduleSolutions();
+            for (RescheduleSolution sln : rescheduleSolutions) {
+                if (!sln.isOriginalSchedule()) {
+                    sln.writeCSV(dataRegistry.getLegs());
+                    logger.info("wrote " + sln.getName() + " reschedule solution");
+                    kpiManager.addKpi(sln.getName() + " reschedule cost", sln.getRescheduleCost());
+                }
+            }
+
+            kpiManager.addKpi("naive model solution time (seconds)", naiveModelSolutionTime);
+            kpiManager.addKpi("dep solution time (seconds)", depSolutionTime);
+            kpiManager.addKpi("dep objective", depObjective);
+            kpiManager.addKpi("benders solution time (seconds)", bendersSolutionTime);
+            kpiManager.addKpi("benders iterations", bendersNumIterations);
+            kpiManager.addKpi("benders lower bound", bendersLowerBound);
+            kpiManager.addKpi("benders upper bound", bendersUpperBound);
+            kpiManager.addKpi("benders gap (%)", bendersGap);
+            kpiManager.addKpi("benders cuts added", bendersNumCuts);
+            kpiManager.writeOutput();
+
+            if (Parameters.isCheckSolutionQuality()) {
+                QualityChecker qc = new QualityChecker(dataRegistry);
+                qc.generateTestDelays();
+                qc.compareSolutions(rescheduleSolutions);
+            }
         } catch (IOException ex) {
             logger.error(ex);
             throw new OptException("error writing solution");
         }
+    }
+
+    TestKPISet[] getAverageTestStats() {
+        QualityChecker qc = new QualityChecker(dataRegistry);
+        ArrayList<RescheduleSolution> rescheduleSolutions = getAllRescheduleSolutions();
+        return qc.collectAverageTestStatsForBatchRun(rescheduleSolutions);
+    }
+
+    ArrayList<RescheduleSolution> getAllRescheduleSolutions() {
+        ArrayList<RescheduleSolution> rescheduleSolutions = new ArrayList<>();
+        RescheduleSolution original = new RescheduleSolution("original", 0, null);
+        original.setOriginalSchedule(true);
+        rescheduleSolutions.add(original);
+        if (naiveModelSolution != null)
+            rescheduleSolutions.add(naiveModelSolution);
+
+        if (depSolution != null)
+            rescheduleSolutions.add(depSolution);
+
+        if (bendersSolution != null)
+            rescheduleSolutions.add(bendersSolution);
+
+        return rescheduleSolutions;
     }
 }

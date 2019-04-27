@@ -10,52 +10,26 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.TreeMap;
 
-public class OutputManager {
-    /**
-     * OutputManager objects can be used to process/compare/write final solutions.
-     */
-    private final static Logger logger = LogManager.getLogger(OutputManager.class);
-    private String timeStamp;
+/**
+ * Used to write input and output KPIs of a single run with multiple models.
+ */
+public class KpiManager {
+    private final static Logger logger = LogManager.getLogger(KpiManager.class);
     private DataRegistry dataRegistry;
-    private ArrayList<RescheduleSolution> rescheduleSolutions;
     private TreeMap<String, Object> kpis;
 
-    public OutputManager(DataRegistry dataRegistry) {
-        timeStamp = new SimpleDateFormat("yyyy_MM_dd'T'HH_mm_ss").format(new Date());
+    public KpiManager(DataRegistry dataRegistry) {
         this.dataRegistry = dataRegistry;
-        rescheduleSolutions = new ArrayList<>();
         kpis = new TreeMap<>();
-    }
-
-    public void addRescheduleSolution(RescheduleSolution sln) {
-        rescheduleSolutions.add(sln);
-        addKpi(sln.getName() + " reschedule cost", sln.getRescheduleCost());
     }
 
     public void addKpi(String key, Object value) {
         kpis.put(key, value);
     }
 
-    public void checkSolutionQuality() throws IOException {
-        QualityChecker qc = new QualityChecker(dataRegistry);
-        qc.generateTestDelays();
-
-        ArrayList<RescheduleSolution> allRescheduleSolutions = new ArrayList<>();
-        allRescheduleSolutions.add(new RescheduleSolution("original", 0, null));
-        allRescheduleSolutions.addAll(rescheduleSolutions);
-        qc.compareSolutions(allRescheduleSolutions, timeStamp);
-    }
-
     public void writeOutput() throws IOException {
-        for (RescheduleSolution sln : rescheduleSolutions) {
-            sln.writeCSV(timeStamp, dataRegistry.getLegs());
-            logger.info("wrote " + sln.getName() + " reschedule solution");
-        }
         writeKpis();
         logger.info("solution processing completed.");
     }
@@ -65,7 +39,7 @@ public class OutputManager {
         allKpis.put("input", getInputKpis());
         allKpis.put("output", kpis);
 
-        String kpiFileName = "solution/" + timeStamp + "__kpis.yaml";
+        String kpiFileName = "solution/kpis.yaml";
         BufferedWriter kpiWriter = new BufferedWriter(new FileWriter(kpiFileName));
         DumperOptions options = new DumperOptions();
         options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);

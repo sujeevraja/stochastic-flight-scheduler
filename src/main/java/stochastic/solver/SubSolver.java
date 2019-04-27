@@ -77,8 +77,8 @@ public class SubSolver {
 
     public void solve() throws OptException {
         try {
-            cplex.setParam(IloCplex.IntParam.RootAlg, IloCplex.Algorithm.Dual);
-            cplex.setParam(IloCplex.BooleanParam.PreInd, false);
+            cplex.setParam(IloCplex.Param.RootAlgorithm, IloCplex.Algorithm.Dual);
+            cplex.setParam(IloCplex.Param.Preprocessing.Presolve, false);
 
             if (solveAsMIP)
                 subModelBuilder.changePathVarsToInts();

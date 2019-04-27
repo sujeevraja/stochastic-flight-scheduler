@@ -1,5 +1,6 @@
 package stochastic.registry;
 
+import stochastic.delay.DelayGenerator;
 import stochastic.delay.Scenario;
 import stochastic.domain.Leg;
 import stochastic.domain.Tail;
@@ -19,6 +20,7 @@ public class DataRegistry {
     private HashMap<Integer, Path> tailOrigPathMap;
     private Network network;
 
+    private DelayGenerator delayGenerator;
     private Scenario[] delayScenarios;
     private int rescheduleTimeBudget;
 
@@ -71,6 +73,14 @@ public class DataRegistry {
 
     public Network getNetwork() {
         return network;
+    }
+
+    public void setDelayGenerator(DelayGenerator delayGenerator) {
+        this.delayGenerator = delayGenerator;
+    }
+
+    public DelayGenerator getDelayGenerator() {
+        return delayGenerator;
     }
 
     public void setDelayScenarios(Scenario[] delayScenarios) {
