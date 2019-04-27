@@ -34,21 +34,25 @@ dependencies {
 }
 
 tasks {
-    register("fatjar", Jar::class.java) {
-        archiveAppendix.set("fat")
+    register<Jar>("uberJar") {
+        archiveClassifier.set("uber")
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
         manifest {
             attributes("Main-Class" to "stochastic.main.Main")
         }
+
+        val sourcesMain = sourceSets.main.get()
+        sourcesMain.allSource.forEach { println("add from sources: ${it.name}") }
+        from(sourceSets.main.get().output)
+
+        dependsOn(configurations.runtimeClasspath)
         from(configurations.runtimeClasspath.get()
                 .onEach { println("add from dependencies: ${it.name}") }
                 .map { if (it.isDirectory) it else zipTree(it) })
-        val sourcesMain = sourceSets.main.get()
-        sourcesMain.allSource.forEach { println("add from sources: ${it.name}") }
-        from(sourcesMain.output)
     }
 
-    register("cleanfiles", Delete::class.java) {
+    register("cleanFiles", Delete::class.java) {
         delete(fileTree("logs") {
            include("*.csv", "*.lp", "*.log", "*.xml")
         })
