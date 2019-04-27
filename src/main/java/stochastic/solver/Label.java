@@ -86,7 +86,6 @@ class Label implements Comparable<Label> {
         if (vertex != other.vertex)
             return false;
 
-        // TODO check if the inequalities should be the other way around.
         if (reducedCost > other.reducedCost - Constants.EPS)
             return false;
 

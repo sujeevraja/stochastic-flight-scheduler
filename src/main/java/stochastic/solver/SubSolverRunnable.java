@@ -7,6 +7,7 @@ import stochastic.output.DelaySolution;
 import stochastic.registry.DataRegistry;
 import stochastic.registry.Parameters;
 import stochastic.utility.Constants;
+import stochastic.utility.Enums;
 import stochastic.utility.OptException;
 import ilog.concert.IloException;
 import org.apache.logging.log4j.LogManager;
@@ -61,7 +62,7 @@ public class SubSolverRunnable implements Runnable {
     //exSrv.execute(buildSDThrObj) calls brings you here
     public void run() {
         try {
-            if (Parameters.isFullEnumeration())
+            if (Parameters.getColumnGenStrategy() == Enums.ColumnGenStrategy.FULL_ENUMERATION)
                 solveWithFullEnumeration();
             else
                 solveWithLabeling();

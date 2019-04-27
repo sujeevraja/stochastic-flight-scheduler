@@ -174,6 +174,20 @@ class BatchRunner {
      */
     void runTimeComparisonSet() {
         // TODO yet to implement
+        ArrayList<String> headers = new ArrayList<>(Arrays.asList(
+        ));
+
+        ArrayList<String> trainingHeaders = new ArrayList<>(Arrays.asList(
+                "instance",
+                "distribution",
+                "strategy",
+                "Benders reschedule cost",
+                "Benders solution time (seconds)",
+                "Benders lower bound",
+                "Benders upper bound",
+                "Benders gap",
+                "Benders number of cuts",
+                "Benders number of iterations"));
     }
 
     /**
@@ -201,8 +215,7 @@ class BatchRunner {
         Parameters.setWarmStartBenders(false);
 
         // Second-stage parameters
-        Parameters.setFullEnumeration(false);
-        Parameters.setReducedCostStrategy(Enums.ReducedCostStrategy.FIRST_PATHS);
+        Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.FIRST_PATHS);
         Parameters.setNumReducedCostPaths(10);
 
         // Debugging parameter
@@ -233,9 +246,8 @@ class BatchRunner {
             parameters.put("benders tolerance", Parameters.getBendersTolerance());
             parameters.put("benders iterations", Parameters.getNumBendersIterations());
             parameters.put("benders warm start", Parameters.isWarmStartBenders());
-            parameters.put("full enumeration", Parameters.isFullEnumeration());
-            parameters.put("reduced cost strategy", Parameters.getReducedCostStrategy().name());
-            parameters.put("reduced cost paths", Parameters.getNumReducedCostPaths());
+            parameters.put("column generation strategy", Parameters.getColumnGenStrategy().name());
+            parameters.put("number of reduced cost paths", Parameters.getNumReducedCostPaths());
             parameters.put("second stage number of scenarios", Parameters.getNumScenariosToGenerate());
             parameters.put("second stage in parallel", Parameters.isRunSecondStageInParallel());
             parameters.put("second stage number of threads", Parameters.getNumThreadsForSecondStage());

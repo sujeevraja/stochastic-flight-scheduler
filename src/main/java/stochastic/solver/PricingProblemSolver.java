@@ -19,7 +19,7 @@ class PricingProblemSolver {
      * PricingProblemSolver uses label setting and partial path pruning to generate routes for the second-stage
      * model.
      */
-    private Enums.ReducedCostStrategy reducedCostStrategy;
+    private Enums.ColumnGenStrategy columnGenStrategy;
     private int numReducedCostPaths;
 
     private Tail tail;
@@ -40,7 +40,7 @@ class PricingProblemSolver {
 
     PricingProblemSolver(Tail tail, ArrayList<Leg> legs, Network network, int[] delays,
                          double tailDual, double[] legCoverDuals, double[] delayLinkDuals) {
-        this.reducedCostStrategy = Parameters.getReducedCostStrategy();
+        this.columnGenStrategy = Parameters.getColumnGenStrategy();
         this.numReducedCostPaths = Parameters.getNumReducedCostPaths();
 
         this.tail = tail;
@@ -75,7 +75,7 @@ class PricingProblemSolver {
 
         ArrayList<Path> paths = new ArrayList<>();
         int numPaths = sinkLabels.size();
-        if (reducedCostStrategy == Enums.ReducedCostStrategy.BEST_PATHS) {
+        if (columnGenStrategy == Enums.ColumnGenStrategy.BEST_PATHS) {
             sinkLabels.sort(Comparator.comparing(Label::getReducedCost));
             numPaths = Math.min(numPaths, numReducedCostPaths);
         }
@@ -258,7 +258,7 @@ class PricingProblemSolver {
     }
 
     private boolean limitReached() {
-        return reducedCostStrategy == Enums.ReducedCostStrategy.FIRST_PATHS &&
+        return columnGenStrategy == Enums.ColumnGenStrategy.FIRST_PATHS &&
                 sinkLabels.size() > Parameters.getNumReducedCostPaths();
     }
 }

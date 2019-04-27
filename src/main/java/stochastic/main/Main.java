@@ -24,6 +24,7 @@ public class Main {
     private static void batchRun() throws OptException {
         BatchRunner batchRunner = new BatchRunner();
         batchRunner.runQualitySet();
+        batchRunner.runTimeComparisonSet();
     }
 
     private static void singleRun() throws OptException {
@@ -64,9 +65,8 @@ public class Main {
         Parameters.setWarmStartBenders(false);
 
         // Second-stage parameters
-        Parameters.setFullEnumeration(false);
-        Parameters.setReducedCostStrategy(Enums.ReducedCostStrategy.FIRST_PATHS);
-        Parameters.setNumReducedCostPaths(10);
+        Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.FIRST_PATHS);
+        Parameters.setNumReducedCostPaths(10); // ignored for full enumeration
 
         // Debugging parameter
         Parameters.setDebugVerbose(false); // Set to true to see CPLEX logs, lp files and solution xml files.
