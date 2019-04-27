@@ -351,9 +351,15 @@ class Controller {
         RescheduleSolution original = new RescheduleSolution("original", 0, null);
         original.setOriginalSchedule(true);
         rescheduleSolutions.add(original);
-        rescheduleSolutions.add(naiveModelSolution);
-        rescheduleSolutions.add(depSolution);
-        rescheduleSolutions.add(bendersSolution);
+        if (naiveModelSolution != null)
+            rescheduleSolutions.add(naiveModelSolution);
+
+        if (depSolution != null)
+            rescheduleSolutions.add(depSolution);
+
+        if (bendersSolution != null)
+            rescheduleSolutions.add(bendersSolution);
+
         return rescheduleSolutions;
     }
 }

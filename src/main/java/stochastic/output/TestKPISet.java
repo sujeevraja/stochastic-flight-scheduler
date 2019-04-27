@@ -6,7 +6,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Holds KPIs generated for a delay solution.
+ * Holds KPIs generated for a delay solution obtained by running a randomly generated delay scenario with the second
+ * stage model as a MIP.
  */
 public class TestKPISet {
     private Map<Enums.TestKPI, Double> kpis;

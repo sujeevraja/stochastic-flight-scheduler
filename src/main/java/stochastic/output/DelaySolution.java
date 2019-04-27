@@ -2,6 +2,7 @@ package stochastic.output;
 
 import stochastic.domain.Leg;
 import stochastic.utility.CSVHelper;
+import stochastic.utility.Enums;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -14,108 +15,62 @@ public class DelaySolution {
      * DelaySolution objects store solutions to second-stage problems solved as MIPs. These objects capture quantities
      * like total delay and total propagated delay.
      */
-    private double delayCost;
+    private TestKPISet testKPISet;
     private int[] primaryDelays;
     private int[] totalDelays;
     private int[] propagatedDelays;
     private int[] excessDelays;
 
-    private int sumTotalDelay;
-    private int maxTotalDelay;
-    private double avgTotalDelay;
-
-    private int sumPropagatedDelay;
-    private int maxPropagatedDelay;
-    private double avgPropagatedDelay;
-
-    private int sumExcessDelay;
-    private int maxExcessDelay;
-    private double avgExcessDelay;
-
-    private double solutionTimeInSeconds;
-
     public DelaySolution(double delayCost, int[] primaryDelays, int[] totalDelays, int[] propagatedDelays,
                          double[] recourseDelays) {
-        this.delayCost = delayCost;
+        testKPISet = new TestKPISet();
+        testKPISet.setKpi(Enums.TestKPI.delayCost, delayCost);
         this.primaryDelays = primaryDelays;
 
         this.totalDelays = totalDelays;
-        sumTotalDelay = 0;
-        maxTotalDelay = 0;
+        double sumTotalDelay = 0;
+        double maxTotalDelay = 0;
         for(int delay : totalDelays) {
             sumTotalDelay += delay;
             if (maxTotalDelay < delay)
                 maxTotalDelay = delay;
         }
-        avgTotalDelay = ((double) sumTotalDelay) / totalDelays.length;
-
+        testKPISet.setKpi(Enums.TestKPI.totalFlightDelay, sumTotalDelay);
+        testKPISet.setKpi(Enums.TestKPI.maximumFlightDelay, maxTotalDelay);
+        testKPISet.setKpi(Enums.TestKPI.averageFlightDelay, sumTotalDelay / totalDelays.length);
 
         this.propagatedDelays = propagatedDelays;
+        double sumPropagatedDelay = 0;
+        double maxPropagatedDelay = 0;
         for(int delay : propagatedDelays) {
             sumPropagatedDelay += delay;
             if (maxPropagatedDelay < delay)
                 maxPropagatedDelay = delay;
         }
-        avgPropagatedDelay = ((double) sumPropagatedDelay) / propagatedDelays.length;
+        testKPISet.setKpi(Enums.TestKPI.totalPropagatedDelay, sumPropagatedDelay);
+        testKPISet.setKpi(Enums.TestKPI.maximumExcessDelay,  maxPropagatedDelay);
+        testKPISet.setKpi(Enums.TestKPI.averagePropagatedDelay, sumPropagatedDelay / propagatedDelays.length);
 
         excessDelays = new int[recourseDelays.length];
-        sumExcessDelay = 0;
-        maxExcessDelay = 0;
+        double sumExcessDelay = 0;
+        double maxExcessDelay = 0;
         for (int i = 0; i < excessDelays.length; ++i) {
             excessDelays[i] = (int) Math.round(recourseDelays[i]);
             sumExcessDelay += excessDelays[i];
             if (maxExcessDelay < excessDelays[i])
                 maxExcessDelay = excessDelays[i];
         }
-        avgExcessDelay = ((double) sumExcessDelay) / excessDelays.length;
-    }
-
-    double getDelayCost() {
-        return delayCost;
-    }
-
-    int getSumTotalDelay() {
-        return sumTotalDelay;
-    }
-
-    int getMaxTotalDelay() {
-        return maxTotalDelay;
-    }
-
-    double getAvgTotalDelay() {
-        return avgTotalDelay;
-    }
-
-    int getSumPropagatedDelay() {
-        return sumPropagatedDelay;
-    }
-
-    int getMaxPropagatedDelay() {
-        return maxPropagatedDelay;
-    }
-
-    double getAvgPropagatedDelay() {
-        return avgPropagatedDelay;
-    }
-
-    int getSumExcessDelay() {
-        return sumExcessDelay;
-    }
-
-    int getMaxExcessDelay() {
-        return maxExcessDelay;
-    }
-
-    double getAvgExcessDelay() {
-        return avgExcessDelay;
+        testKPISet.setKpi(Enums.TestKPI.totalExcessDelay, sumExcessDelay);
+        testKPISet.setKpi(Enums.TestKPI.maximumExcessDelay, maxExcessDelay);
+        testKPISet.setKpi(Enums.TestKPI.averageExcessDelay, sumExcessDelay / excessDelays.length);
     }
 
     void setSolutionTimeInSeconds(double solutionTimeInSeconds) {
-        this.solutionTimeInSeconds = solutionTimeInSeconds;
+        testKPISet.setKpi(Enums.TestKPI.delaySolutionTimeInSec, solutionTimeInSeconds);
     }
 
-    double getSolutionTimeInSeconds() {
-        return solutionTimeInSeconds;
+    public TestKPISet getTestKPISet() {
+        return testKPISet;
     }
 
     /**
