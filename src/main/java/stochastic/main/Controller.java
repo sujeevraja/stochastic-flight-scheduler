@@ -83,7 +83,7 @@ class Controller {
         DelayGenerator dgen = new StrategicDelayGenerator(dataRegistry.getLegs());
 
         dataRegistry.setDelayGenerator(dgen);
-        Scenario[] scenarios = dgen.generateScenarios(Parameters.getNumScenariosToGenerate());
+        Scenario[] scenarios = dgen.generateScenarios(Parameters.getNumSecondStageScenarios());
         dataRegistry.setDelayScenarios(scenarios);
 
         double avgTotalPrimaryDelay = 0.0;

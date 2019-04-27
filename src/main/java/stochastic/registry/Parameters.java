@@ -12,7 +12,7 @@ public class Parameters {
     private static double rescheduleBudgetFraction;
 
     private static int flightRescheduleBound;
-    private static int numScenariosToGenerate;
+    private static int numSecondStageScenarios;
 
     private static Enums.DistributionType distributionType;
     private static double distributionMean;
@@ -66,12 +66,12 @@ public class Parameters {
         return flightRescheduleBound;
     }
 
-    public static void setNumScenariosToGenerate(int numScenariosToGenerate) {
-        Parameters.numScenariosToGenerate = numScenariosToGenerate;
+    public static void setNumSecondStageScenarios(int numSecondStageScenarios) {
+        Parameters.numSecondStageScenarios = numSecondStageScenarios;
     }
 
-    public static int getNumScenariosToGenerate() {
-        return numScenariosToGenerate;
+    public static int getNumSecondStageScenarios() {
+        return numSecondStageScenarios;
     }
 
     public static void setDistributionType(Enums.DistributionType distributionType) {
