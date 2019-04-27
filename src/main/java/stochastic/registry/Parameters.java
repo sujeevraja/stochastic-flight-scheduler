@@ -20,7 +20,6 @@ public class Parameters {
 
     private static Enums.FlightPickStrategy flightPickStrategy;
 
-    private static boolean solveDEP;
     private static boolean bendersMultiCut;
     private static double bendersTolerance;
     private static int numBendersIterations;
@@ -105,14 +104,6 @@ public class Parameters {
 
     public static Enums.FlightPickStrategy getFlightPickStrategy() {
         return flightPickStrategy;
-    }
-
-    public static void setSolveDEP(boolean solveDEP) {
-        Parameters.solveDEP = solveDEP;
-    }
-
-    public static boolean isSolveDEP() {
-        return solveDEP;
     }
 
     public static void setBendersMultiCut(boolean bendersMultiCut) {

@@ -35,8 +35,7 @@ public class Main {
         controller.readData();
         controller.buildScenarios();
         controller.solveWithNaiveApproach();
-        if (Parameters.isSolveDEP())
-            controller.solveWithDEP();
+        controller.solveWithDEP();
         controller.solveWithBenders();
         controller.processSolution();
 
@@ -56,8 +55,6 @@ public class Main {
         Parameters.setDistributionMean(15);
         Parameters.setDistributionSd(15); // ignored for exponential distribution.
         Parameters.setFlightPickStrategy(Enums.FlightPickStrategy.HUB);
-
-        Parameters.setSolveDEP(true);
 
         Parameters.setBendersMultiCut(true);
         Parameters.setBendersTolerance(1e-3);
