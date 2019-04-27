@@ -36,11 +36,14 @@ public class Main {
 
         batchRunner.runQualitySet();
 
-        // setDefaultParameters();
-        // batchRunner.runTimeComparisonSet();
+        setDefaultParameters();
+        batchRunner.runTimeComparisonSet();
 
         setDefaultParameters();
         batchRunner.runBudgetComparisonSet();
+
+        setDefaultParameters();
+        batchRunner.runMeanComparisonSet();
     }
 
     private static void singleRun() throws OptException {
