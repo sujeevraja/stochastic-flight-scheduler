@@ -18,12 +18,14 @@ repositories {
     // Use jcenter for resolving your dependencies.
     // You can declare any Maven/Ivy/file repository here.
     jcenter()
+    mavenCentral()
 }
 
 dependencies {
     implementation("org.apache.logging.log4j:log4j-api:2.11.2")
     implementation("org.apache.logging.log4j:log4j-core:2.11.2")
     implementation("org.apache.commons:commons-math3:3.0")
+    implementation("commons-cli:commons-cli:1.4")
     implementation("org.yaml:snakeyaml:1.8")
 
     val cplexJarPath: String by project
