@@ -12,15 +12,15 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.TreeMap;
 
-public class OutputManager {
+public class KpiManager {
     /**
-     * OutputManager objects can be used to process/compare/write final solutions.
+     * KpiManager objects can be used to process/compare/write final solutions.
      */
-    private final static Logger logger = LogManager.getLogger(OutputManager.class);
+    private final static Logger logger = LogManager.getLogger(KpiManager.class);
     private DataRegistry dataRegistry;
     private TreeMap<String, Object> kpis;
 
-    public OutputManager(DataRegistry dataRegistry) {
+    public KpiManager(DataRegistry dataRegistry) {
         this.dataRegistry = dataRegistry;
         kpis = new TreeMap<>();
     }

@@ -5,7 +5,7 @@ import stochastic.domain.Leg;
 import stochastic.dao.ScheduleDAO;
 import stochastic.domain.Tail;
 import stochastic.network.Path;
-import stochastic.output.OutputManager;
+import stochastic.output.KpiManager;
 import stochastic.output.QualityChecker;
 import stochastic.output.RescheduleSolution;
 import stochastic.output.TestKPISet;
@@ -30,7 +30,7 @@ class Controller {
      */
     private final static Logger logger = LogManager.getLogger(Controller.class);
     private DataRegistry dataRegistry;
-    private OutputManager outputManager;
+    private KpiManager kpiManager;
 
     private RescheduleSolution naiveModelSolution;
     private double naiveModelSolutionTime;
@@ -50,7 +50,7 @@ class Controller {
     Controller() {
         dataRegistry = new DataRegistry();
         // String timeStamp = new SimpleDateFormat("yyyy_MM_dd'T'HH_mm_ss").format(new Date());
-        outputManager = new OutputManager(dataRegistry);
+        kpiManager = new KpiManager(dataRegistry);
     }
 
     DataRegistry getDataRegistry() {
@@ -314,20 +314,20 @@ class Controller {
                 if (!sln.isOriginalSchedule()) {
                     sln.writeCSV(dataRegistry.getLegs());
                     logger.info("wrote " + sln.getName() + " reschedule solution");
-                    outputManager.addKpi(sln.getName() + " reschedule cost", sln.getRescheduleCost());
+                    kpiManager.addKpi(sln.getName() + " reschedule cost", sln.getRescheduleCost());
                 }
             }
 
-            outputManager.addKpi("naive model solution time (seconds)", naiveModelSolutionTime);
-            outputManager.addKpi("dep solution time (seconds)", depSolutionTime);
-            outputManager.addKpi("dep objective", depObjective);
-            outputManager.addKpi("benders solution time (seconds)", bendersSolutionTime);
-            outputManager.addKpi("benders iterations", bendersNumIterations);
-            outputManager.addKpi("benders lower bound", bendersLowerBound);
-            outputManager.addKpi("benders upper bound", bendersUpperBound);
-            outputManager.addKpi("benders gap (%)", bendersGap);
-            outputManager.addKpi("benders cuts added", bendersNumCuts);
-            outputManager.writeOutput();
+            kpiManager.addKpi("naive model solution time (seconds)", naiveModelSolutionTime);
+            kpiManager.addKpi("dep solution time (seconds)", depSolutionTime);
+            kpiManager.addKpi("dep objective", depObjective);
+            kpiManager.addKpi("benders solution time (seconds)", bendersSolutionTime);
+            kpiManager.addKpi("benders iterations", bendersNumIterations);
+            kpiManager.addKpi("benders lower bound", bendersLowerBound);
+            kpiManager.addKpi("benders upper bound", bendersUpperBound);
+            kpiManager.addKpi("benders gap (%)", bendersGap);
+            kpiManager.addKpi("benders cuts added", bendersNumCuts);
+            kpiManager.writeOutput();
 
             if (Parameters.isCheckSolutionQuality()) {
                 QualityChecker qc = new QualityChecker(dataRegistry);
