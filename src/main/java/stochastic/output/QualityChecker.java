@@ -26,17 +26,11 @@ public class QualityChecker {
     private DataRegistry dataRegistry;
     private int[] zeroReschedules;
     private Scenario[] testScenarios;
-    private String timeStamp;
 
     public QualityChecker(DataRegistry dataRegistry) {
         this.dataRegistry = dataRegistry;
         zeroReschedules = new int[dataRegistry.getLegs().size()];
         Arrays.fill(zeroReschedules, 0);
-        timeStamp = null;
-    }
-
-    public void setTimeStamp(String timeStamp) {
-        this.timeStamp = timeStamp;
     }
 
     public void generateTestDelays() {
@@ -81,9 +75,7 @@ public class QualityChecker {
     public void compareSolutions(ArrayList<RescheduleSolution> rescheduleSolutions) throws IOException {
         DelaySolution[][] delaySolutions = collectAllDelaySolutions(rescheduleSolutions);
 
-        String compareFileName = timeStamp != null ?
-                "solution/" + timeStamp + "__comparison.csv"
-                : "solution/comparison.csv";
+        String compareFileName = "solution/comparison.csv";
         BufferedWriter csvWriter = new BufferedWriter(new FileWriter(compareFileName));
 
         ArrayList<String> comparableStatNames = new ArrayList<>(Arrays.asList(
@@ -207,16 +199,9 @@ public class QualityChecker {
                 delaySolutions[i][j] = delaySolution;
 
                 if (Parameters.isDebugVerbose()) {
-                    if (timeStamp != null) {
-                        String name = ("solution/" + timeStamp + "__delay_solution_scenario_" + i + "_"
-                                + rescheduleSolution.getName() + ".csv");
-                        delaySolution.writeCSV(name, dataRegistry.getLegs());
-                    } else {
-                        String name = ("solution/delay_solution_scenario_" + i + "_"
-                                + rescheduleSolution.getName() + ".csv");
-                        delaySolution.writeCSV(name, dataRegistry.getLegs());
-
-                    }
+                    String name = ("solution/delay_solution_scenario_" + i + "_"
+                            + rescheduleSolution.getName() + ".csv");
+                    delaySolution.writeCSV(name, dataRegistry.getLegs());
                 }
             }
         }

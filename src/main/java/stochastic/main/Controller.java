@@ -18,7 +18,6 @@ import stochastic.utility.OptException;
 import ilog.concert.IloException;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.*;
 
@@ -50,8 +49,8 @@ class Controller {
 
     Controller() {
         dataRegistry = new DataRegistry();
-        String timeStamp = new SimpleDateFormat("yyyy_MM_dd'T'HH_mm_ss").format(new Date());
-        outputManager = new OutputManager(dataRegistry, timeStamp);
+        // String timeStamp = new SimpleDateFormat("yyyy_MM_dd'T'HH_mm_ss").format(new Date());
+        outputManager = new OutputManager(dataRegistry);
     }
 
     DataRegistry getDataRegistry() {
@@ -313,7 +312,7 @@ class Controller {
             ArrayList<RescheduleSolution> rescheduleSolutions = getAllRescheduleSolutions();
             for (RescheduleSolution sln : rescheduleSolutions) {
                 if (!sln.isOriginalSchedule()) {
-                    sln.writeCSV(outputManager.getTimeStamp(), dataRegistry.getLegs());
+                    sln.writeCSV(dataRegistry.getLegs());
                     logger.info("wrote " + sln.getName() + " reschedule solution");
                     outputManager.addKpi(sln.getName() + " reschedule cost", sln.getRescheduleCost());
                 }
@@ -332,7 +331,6 @@ class Controller {
 
             if (Parameters.isCheckSolutionQuality()) {
                 QualityChecker qc = new QualityChecker(dataRegistry);
-                qc.setTimeStamp(outputManager.getTimeStamp());
                 qc.generateTestDelays();
                 qc.compareSolutions(rescheduleSolutions);
             }

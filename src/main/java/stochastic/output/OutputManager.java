@@ -17,18 +17,12 @@ public class OutputManager {
      * OutputManager objects can be used to process/compare/write final solutions.
      */
     private final static Logger logger = LogManager.getLogger(OutputManager.class);
-    private String timeStamp;
     private DataRegistry dataRegistry;
     private TreeMap<String, Object> kpis;
 
-    public OutputManager(DataRegistry dataRegistry, String timeStamp) {
+    public OutputManager(DataRegistry dataRegistry) {
         this.dataRegistry = dataRegistry;
-        this.timeStamp = timeStamp;
         kpis = new TreeMap<>();
-    }
-
-    public String getTimeStamp() {
-        return timeStamp;
     }
 
     public void addKpi(String key, Object value) {
@@ -45,7 +39,7 @@ public class OutputManager {
         allKpis.put("input", getInputKpis());
         allKpis.put("output", kpis);
 
-        String kpiFileName = "solution/" + timeStamp + "__kpis.yaml";
+        String kpiFileName = "solution/kpis.yaml";
         BufferedWriter kpiWriter = new BufferedWriter(new FileWriter(kpiFileName));
         DumperOptions options = new DumperOptions();
         options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
