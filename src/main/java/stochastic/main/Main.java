@@ -1,5 +1,6 @@
 package stochastic.main;
 
+import org.apache.commons.cli.*;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 import stochastic.registry.Parameters;
@@ -21,29 +22,37 @@ public class Main {
 
     public static void main(String[] args) {
         try {
-            batchRun();
-            // singleRun();
-        } catch (OptException ex) {
+            Options options = new Options();
+            options.addOption("b", false, "batch run (single run otherwise)");
+            options.addOption("d", true, "distribution (exp/tnorm/lnorm");
+            options.addOption("f", true, "flight pick (all/hub/rush)");
+            options.addOption("n", true, "instance name");
+            options.addOption("p", true, "instance path");
+            options.addOption("t", true, "type (quality/time/budget/mean/excess)");
+
+            CommandLineParser parser = new DefaultParser();
+            CommandLine cmd = parser.parse(options, args);
+
+            String name = cmd.hasOption('n') ? cmd.getOptionValue('n') :"instance1";
+            String instancePath = cmd.hasOption('p') ? cmd.getOptionValue("p") : ("data/" + name);
+            Parameters.setInstancePath(instancePath);
+
+            setDefaultParameters();
+            writeDefaultParameters();
+            updateParameters(cmd);
+            System.out.println("finished updating parameters");
+
+            if (cmd.hasOption('b')) {
+                BatchRunner batchRunner = new BatchRunner(name);
+                String runType = cmd.getOptionValue('t');
+                if (runType.equals("quality")) batchRunner.runForQuality();
+                else logger.error("unknown run type: " + runType);
+            }
+            else
+                singleRun();
+        } catch (ParseException|OptException ex) {
             logger.error(ex);
         }
-    }
-
-    private static void batchRun() throws OptException {
-        BatchRunner batchRunner = new BatchRunner();
-
-        setDefaultParameters();
-        writeDefaultParameters();
-
-        batchRunner.runQualitySet();
-
-        setDefaultParameters();
-        batchRunner.runTimeComparisonSet();
-
-        setDefaultParameters();
-        batchRunner.runBudgetComparisonSet();
-
-        setDefaultParameters();
-        batchRunner.runMeanComparisonSet();
     }
 
     private static void singleRun() throws OptException {
@@ -106,6 +115,9 @@ public class Main {
     private static void writeDefaultParameters() throws OptException {
         try {
             String kpiFileName = "solution/parameters.yaml";
+            if (BatchRunner.fileExists(kpiFileName))
+                return;
+
             TreeMap<String, Object> parameters = new TreeMap<>();
 
             parameters.put("column gen strategy", Parameters.getColumnGenStrategy().name());
@@ -140,6 +152,45 @@ public class Main {
             logger.error(ex);
             throw new OptException("error writing default parameters");
         }
+    }
+
+    private static void updateParameters(CommandLine cmd) {
+        if (cmd.hasOption('d')) {
+            final String distribution = cmd.getOptionValue('d');
+            switch (distribution) {
+                case "exp":
+                    Parameters.setDistributionType(Enums.DistributionType.EXPONENTIAL);
+                    break;
+                case "tnorm":
+                    Parameters.setDistributionType(Enums.DistributionType.TRUNCATED_NORMAL);
+                    break;
+                case "lnorm":
+                    Parameters.setDistributionType(Enums.DistributionType.LOGNORMAL);
+                    break;
+                default:
+                    logger.error("unknown distribution: " + distribution);
+                    break;
+            }
+        }
+
+        if (cmd.hasOption('f')) {
+            final String distribution = cmd.getOptionValue('f');
+            switch (distribution) {
+                case "all":
+                    Parameters.setFlightPickStrategy(Enums.FlightPickStrategy.ALL);
+                    break;
+                case "hub":
+                    Parameters.setFlightPickStrategy(Enums.FlightPickStrategy.HUB);
+                    break;
+                case "rush":
+                    Parameters.setFlightPickStrategy(Enums.FlightPickStrategy.RUSH_TIME);
+                    break;
+                default:
+                    logger.error("unknown flight pick strategy: " + distribution);
+                    break;
+            }
+        }
+        logger.error("updated parameters");
     }
 }
 
