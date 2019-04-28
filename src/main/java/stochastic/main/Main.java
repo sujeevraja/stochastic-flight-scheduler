@@ -23,12 +23,19 @@ public class Main {
     public static void main(String[] args) {
         try {
             Options options = new Options();
-            options.addOption("b", false, "batch run (single run otherwise)");
-            options.addOption("d", true, "distribution (exp/tnorm/lnorm");
-            options.addOption("f", true, "flight pick (all/hub/rush)");
-            options.addOption("n", true, "instance name");
+            options.addOption("b", false,
+                    "batch run (single run otherwise)");
+            options.addOption("c", true,
+                    "column gen strategy (enum/all/best/first)");
+            options.addOption("d", true,
+                    "distribution (exp/tnorm/lnorm");
+            options.addOption("f", true,
+                    "flight pick (all/hub/rush)");
+            options.addOption("n", true,
+                    "instance name");
             options.addOption("p", true, "instance path");
-            options.addOption("t", true, "type (quality/time/budget/mean/excess)");
+            options.addOption("t", true,
+                    "type (quality/time/budget/mean/excess)");
 
             CommandLineParser parser = new DefaultParser();
             CommandLine cmd = parser.parse(options, args);
@@ -46,6 +53,7 @@ public class Main {
                 BatchRunner batchRunner = new BatchRunner(name);
                 String runType = cmd.getOptionValue('t');
                 if (runType.equals("quality")) batchRunner.runForQuality();
+                else if (runType.equals("time")) batchRunner.runForTimeComparison();
                 else logger.error("unknown run type: " + runType);
             }
             else
@@ -155,6 +163,26 @@ public class Main {
     }
 
     private static void updateParameters(CommandLine cmd) {
+        if (cmd.hasOption('c')) {
+            final String columnGen = cmd.getOptionValue('c');
+            switch (columnGen) {
+                case "enum":
+                    Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.FULL_ENUMERATION);
+                    break;
+                case "all":
+                    Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.ALL_PATHS);
+                    break;
+                case "best":
+                    Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.BEST_PATHS);
+                    break;
+                case "first":
+                    Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.FIRST_PATHS);
+                    break;
+                default:
+                    logger.error("unknown column generation strattegy: " + columnGen);
+                    break;
+            }
+        }
         if (cmd.hasOption('d')) {
             final String distribution = cmd.getOptionValue('d');
             switch (distribution) {
@@ -172,7 +200,6 @@ public class Main {
                     break;
             }
         }
-
         if (cmd.hasOption('f')) {
             final String distribution = cmd.getOptionValue('f');
             switch (distribution) {
@@ -190,7 +217,6 @@ public class Main {
                     break;
             }
         }
-        logger.error("updated parameters");
     }
 }
 

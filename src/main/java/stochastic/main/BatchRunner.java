@@ -47,14 +47,15 @@ class BatchRunner {
      * schedule with 100 randomly generated delay scenarios. Reschedule and test KPIs are written
      * to separate csv files.
      *
-     * @throws OptException
+     * @throws OptException when there is any issue with solving/writing.
      */
     void runForQuality() throws OptException {
         try {
-            String trainingPath = "solution/results_quality_training.csv";
+            final String trainingPath = "solution/results_quality_training.csv";
+            final boolean addTrainingHeaders = !fileExists(trainingPath);
             BufferedWriter trainingWriter = new BufferedWriter(
                     new FileWriter(trainingPath, true));
-            if (!fileExists(trainingPath)) {
+            if (addTrainingHeaders) {
                 ArrayList<String> trainingHeaders = new ArrayList<>(Arrays.asList(
                         "instance",
                         "distribution",
@@ -73,9 +74,10 @@ class BatchRunner {
                 CSVHelper.writeLine(trainingWriter, trainingHeaders);
             }
 
-            String testPath = "solution/results_quality_test.csv";
+            final String testPath = "solution/results_quality_test.csv";
+            final boolean addTestHeaders = !fileExists(testPath);
             BufferedWriter testWriter = new BufferedWriter(new FileWriter(testPath, true));
-            if (!fileExists(testPath)) {
+            if (addTestHeaders) {
                 ArrayList<String> testHeaders = new ArrayList<>(Arrays.asList(
                         "instance",
                         "distribution",
@@ -91,9 +93,6 @@ class BatchRunner {
                 CSVHelper.writeLine(testWriter, testHeaders);
             }
 
-            // Parameters.setInstancePath(instancePaths.get(i));
-            // Parameters.setDistributionType(distributionType);
-            // Parameters.setFlightPickStrategy(flightPickStrategy);
             ArrayList<String> row = new ArrayList<>();
             row.add(instanceName);
             row.add(Parameters.getDistributionType().name());
@@ -167,66 +166,55 @@ class BatchRunner {
     }
 
     /**
-     * Performs runs to compare solution times of labeling with full enumeration.
+     * Generates reschedule KPIs for Benders with full enumeration and 3 column gen strategies.
+     *
+     * @throws OptException when there is any issue with solving/writing.
      */
-    void runTimeComparisonSet() throws OptException {
+    void runForTimeComparison() throws OptException {
         try {
-            ArrayList<String> headers = new ArrayList<>(Arrays.asList(
-                    "instance",
-                    "distribution",
-                    "strategy",
-                    "column gen",
-                    "Benders reschedule cost",
-                    "Benders solution time (seconds)",
-                    "Benders lower bound",
-                    "Benders upper bound",
-                    "Benders gap",
-                    "Benders number of cuts",
-                    "Benders number of iterations"));
-
+            final String resultsPath = "solution/results_time_comparison.csv";
+            final boolean addHeaders = !fileExists(resultsPath);
             BufferedWriter writer = new BufferedWriter(
-                    new FileWriter("solution/results_time_comparison.csv"));
+                    new FileWriter("solution/results_time_comparison.csv", true));
 
-            CSVHelper.writeLine(writer, headers);
-
-            for (int i = 0; i < instancePaths.size(); ++i) {
-                Parameters.setInstancePath(instancePaths.get(i));
-
-                for (Enums.DistributionType distributionType :
-                        Enums.DistributionType.values()) {
-                    Parameters.setDistributionType(distributionType);
-
-                    for (Enums.FlightPickStrategy flightPickStrategy : Enums.FlightPickStrategy.values()) {
-                        Parameters.setFlightPickStrategy(flightPickStrategy);
-
-                        for (Enums.ColumnGenStrategy columnGenStrategy : Enums.ColumnGenStrategy.values()) {
-                            ArrayList<String> row = new ArrayList<>(Arrays.asList(
-                                    instanceNames.get(i),
-                                    distributionType.name(),
-                                    flightPickStrategy.name(),
-                                    columnGenStrategy.name()));
-
-                            // solve models
-                            Controller controller = new Controller();
-                            controller.readData();
-                            controller.buildScenarios();
-                            controller.solveWithBenders();
-
-                            // write results
-                            row.add(Double.toString(controller.getBendersRescheduleCost()));
-                            row.add(Double.toString(controller.getBendersSolutionTime()));
-                            row.add(Double.toString(controller.getBendersLowerBound()));
-                            row.add(Double.toString(controller.getBendersUpperBound()));
-                            row.add(Double.toString(controller.getBendersGap()));
-                            row.add(Integer.toString(controller.getBendersNumCuts()));
-                            row.add(Integer.toString(controller.getBendersNumIterations()));
-
-                            CSVHelper.writeLine(writer, row);
-                        }
-                    }
-                }
+            if (addHeaders) {
+                ArrayList<String> headers = new ArrayList<>(Arrays.asList(
+                        "instance",
+                        "distribution",
+                        "strategy",
+                        "column gen",
+                        "Benders reschedule cost",
+                        "Benders solution time (seconds)",
+                        "Benders lower bound",
+                        "Benders upper bound",
+                        "Benders gap",
+                        "Benders number of cuts",
+                        "Benders number of iterations"));
+                CSVHelper.writeLine(writer, headers);
             }
 
+            ArrayList<String> row = new ArrayList<>(Arrays.asList(
+                    instanceName,
+                    Parameters.getDistributionType().name(),
+                    Parameters.getFlightPickStrategy().name(),
+                    Parameters.getColumnGenStrategy().name()));
+
+            // solve models
+            Controller controller = new Controller();
+            controller.readData();
+            controller.buildScenarios();
+            controller.solveWithBenders();
+
+            // write results
+            row.add(Double.toString(controller.getBendersRescheduleCost()));
+            row.add(Double.toString(controller.getBendersSolutionTime()));
+            row.add(Double.toString(controller.getBendersLowerBound()));
+            row.add(Double.toString(controller.getBendersUpperBound()));
+            row.add(Double.toString(controller.getBendersGap()));
+            row.add(Integer.toString(controller.getBendersNumCuts()));
+            row.add(Integer.toString(controller.getBendersNumIterations()));
+
+            CSVHelper.writeLine(writer, row);
             writer.close();
         } catch (IOException ex) {
             logger.error(ex);

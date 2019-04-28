@@ -14,12 +14,14 @@ class Config(object):
 
     def __init__(self):
         self.run_quality_set = False
+        self.run_time_comparison_set = False
         self.jar_path = "build/libs/stochastic_uber.jar"
         self.cplex_lib_path = None
 
         # self.names = ["s{}".format(i) for i in range(1, 6)]
         # self.paths = ["data/paper/{}".format(n) for n in self.names]
-        self.names = ["instance1", "instance2"]
+        # self.names = ["instance1", "instance2"]
+        self.names = ["instance1"]
         self.paths = ["data/{}".format(n) for n in self.names]
 
 
@@ -38,43 +40,70 @@ class Controller(object):
 
     def __init__(self, config):
         self.config = config
+        self._base_cmd = None
 
     def run(self):
         self._validate_setup()
         self._validate_cplex_library_path()
+        self._base_cmd = [
+            "java",
+            "-Xms32m",
+            "-Xmx4g",
+            "-Djava.library.path={}".format(
+                self.config.cplex_lib_path),
+            "-jar",
+            self.config.jar_path, ]
 
-        if not (self.config.run_quality_set):
+        if not (self.config.run_quality_set or
+                self.config.run_time_comparison_set):
             raise ScriptException("no batch run chosen, nothing to do.")
 
         if self.config.run_quality_set:
             self._run_quality_set()
+        if self.config.run_time_comparison_set:
+            self._run_time_comparison_set()
 
         log.info("completed all batch runs")
 
     def _run_quality_set(self):
+        log.info("starting quality runs...")
         for name, path in zip(self.config.names, self.config.paths):
             for distribution in ['exp', 'tnorm', 'lnorm']:
                 for flight_pick in ['all', 'hub', 'rush']:
-                    cmd = [
-                        "java",
-                        "-Xms32m",
-                        "-Xmx4g",
-                        "-Djava.library.path={}".format(
-                            self.config.cplex_lib_path),
-                        "-jar",
-                        self.config.jar_path,
+                    cmd = [c for c in self._base_cmd]
+                    cmd.extend([
                         "-b",
                         "-t",
                         "quality",
                         "-p", path,
                         "-n", name,
                         "-d", distribution,
-                        "-f", flight_pick,
-                    ]
+                        "-f", flight_pick, ])
                     subprocess.check_output(cmd)
                     log.info('finished quality run for {}, {}, {}'.format(
                         name, distribution, flight_pick))
-        log.info("completed quality runs")
+        log.info("completed quality runs.")
+
+    def _run_time_comparison_set(self):
+        log.info("starting time comparison runs...")
+        for name, path in zip(self.config.names, self.config.paths):
+            for distribution in ['exp', 'tnorm', 'lnorm']:
+                for flight_pick in ['all', 'hub', 'rush']:
+                    for cgen in ['enum', 'all', 'best', 'first']:
+                        cmd = [c for c in self._base_cmd]
+                        cmd.extend([
+                            "-b",
+                            "-t",
+                            "time",
+                            "-p", path,
+                            "-n", name,
+                            "-c", cgen,
+                            "-d", distribution,
+                            "-f", flight_pick, ])
+                        subprocess.check_output(cmd)
+                        log.info('finished time run for {}, {}, {}, {}'.format(
+                            name, distribution, flight_pick, cgen))
+        log.info("completed time comparison runs.")
 
     def _validate_setup(self):
         if not os.path.isfile(self.config.jar_path):
@@ -124,17 +153,25 @@ class Controller(object):
 def handle_command_line():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-q", "--quality", help="run quality set",
-                        action="store_true")
     parser.add_argument("-j", "--jarpath", type=str,
                         help="path to stochastic solver jar")
+    parser.add_argument("-q", "--quality", help="run quality set",
+                        action="store_true")
+    parser.add_argument("-t", "--time", help="run time comparison set",
+                        action="store_true")
 
     args = parser.parse_args()
     config = Config()
 
     config.run_quality_set = args.quality
+    config.run_time_comparison_set = args.time
+
     if args.jarpath:
         config.jar_path = args.jarpath
+
+    log.info("do quality runs: {}".format(config.run_quality_set))
+    log.info("do time comparison runs: {}".format(
+        config.run_time_comparison_set))
 
     return config
 
