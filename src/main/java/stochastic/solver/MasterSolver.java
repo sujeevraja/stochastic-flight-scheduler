@@ -1,18 +1,17 @@
 package stochastic.solver;
 
+import ilog.concert.*;
+import ilog.cplex.IloCplex;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import stochastic.domain.Leg;
 import stochastic.domain.Tail;
 import stochastic.model.MasterModelBuilder;
 import stochastic.registry.Parameters;
 import stochastic.utility.Constants;
-import ilog.concert.*;
-import ilog.cplex.IloCplex;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
 
 public class MasterSolver {
     /**
@@ -96,7 +95,7 @@ public class MasterSolver {
 
         thetaValues = cplex.getValues(thetas);
     }
-    
+
     double getRescheduleCost() {
         return rescheduleCost;
     }

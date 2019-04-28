@@ -41,7 +41,7 @@ public class Network {
 
     public ArrayList<Path> enumeratePathsForTails(ArrayList<Tail> tails, int[] delays) {
         ArrayList<Path> paths = new ArrayList<>();
-        for(Tail tail : tails) {
+        for (Tail tail : tails) {
             PathEnumerator pe = new PathEnumerator(tail, legs, delays, adjacencyList);
             ArrayList<Path> tailPaths = pe.generatePaths();
             paths.addAll(tailPaths);
@@ -55,13 +55,13 @@ public class Network {
         logger.info("started building adjacency list...");
         adjacencyList = new HashMap<>();
         final int numLegs = legs.size();
-        for(int i = 0; i < numLegs - 1; ++i) {
+        for (int i = 0; i < numLegs - 1; ++i) {
             Leg currLeg = legs.get(i);
 
             for (int j = i + 1; j < numLegs; ++j) {
                 Leg nextLeg = legs.get(j);
 
-                if(canConnect(currLeg, nextLeg))
+                if (canConnect(currLeg, nextLeg))
                     addNeighbor(i, j);
                 if (canConnect(nextLeg, currLeg))
                     addNeighbor(j, i);
@@ -79,7 +79,7 @@ public class Network {
     }
 
     private boolean canConnect(Leg currLeg, Leg nextLeg) {
-        if(!currLeg.getArrPort().equals(nextLeg.getDepPort()))
+        if (!currLeg.getArrPort().equals(nextLeg.getDepPort()))
             return false;
 
         LocalDateTime arrPlusTurnTime = currLeg.getArrTime().plusMinutes(currLeg.getTurnTimeInMin());
@@ -87,7 +87,7 @@ public class Network {
     }
 
     private void addNeighbor(Integer legIndex, Integer neighborIndex) {
-        if(adjacencyList.containsKey(legIndex))
+        if (adjacencyList.containsKey(legIndex))
             adjacencyList.get(legIndex).add(neighborIndex);
         else {
             ArrayList<Integer> neighbors = new ArrayList<>();

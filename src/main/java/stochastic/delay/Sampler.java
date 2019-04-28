@@ -32,7 +32,7 @@ class Sampler {
 
     /**
      * Generates non-negative integer samples by rounding realizations of the distribution set up in the constructor.
-     *
+     * <p>
      * The values of lognormal and exponential will always be non-negative. However, the negativity check is needed
      * for the normal distribution right-truncated at 0.
      *
@@ -48,18 +48,18 @@ class Sampler {
 
     /**
      * returns a lognormal distribution with the given mean and standard deviation.
-     *
+     * <p>
      * If our lognormal random variable is X, the given mean and sd are that of X. They will be used to calculate the
      * mean and standard deviation of the normal distribution Y = ln(X). This is necessary as the normal mean (scale)
      * and normal sd (shape) are the parameters required by the apache LogNormalDistribution class. The calculation
      * formulae were obtained from the Wikipedia page for LogNormal distribution.
      *
      * @param mean lognormal mean.
-     * @param sd lognormal standard deviation.
+     * @param sd   lognormal standard deviation.
      * @return LogNormalDistribution object with given mean and sd.
      */
     private LogNormalDistribution getLogNormal(double mean, double sd) {
-        final double c = 1 + ((sd*sd) / (mean*mean));
+        final double c = 1 + ((sd * sd) / (mean * mean));
         final double normalMean = Math.log(mean / Math.sqrt(c)); // scale of lognormal
         final double normalSd = Math.sqrt(Math.log(c)); // shape of lognormal
         return new LogNormalDistribution(normalMean, normalSd);

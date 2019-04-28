@@ -1,28 +1,31 @@
 package stochastic.main;
 
-import stochastic.delay.*;
-import stochastic.domain.Leg;
+import ilog.concert.IloException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import stochastic.dao.ScheduleDAO;
+import stochastic.delay.DelayGenerator;
+import stochastic.delay.Scenario;
+import stochastic.delay.StrategicDelayGenerator;
+import stochastic.domain.Leg;
 import stochastic.domain.Tail;
 import stochastic.network.Path;
 import stochastic.output.KpiManager;
 import stochastic.output.QualityChecker;
 import stochastic.output.RescheduleSolution;
-import stochastic.output.TestKPISet;
 import stochastic.registry.DataRegistry;
 import stochastic.registry.Parameters;
 import stochastic.solver.BendersSolver;
-import stochastic.solver.NaiveSolver;
 import stochastic.solver.DepSolver;
+import stochastic.solver.NaiveSolver;
 import stochastic.utility.OptException;
-import ilog.concert.IloException;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.*;
-
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 
 class Controller {
     /**
@@ -237,9 +240,9 @@ class Controller {
             tailLegs.sort(Comparator.comparing(Leg::getDepTime));
 
             // correct turn times as we assume that the input schedule is always valid.
-            for(int i = 0; i < tailLegs.size() - 1; ++i) {
+            for (int i = 0; i < tailLegs.size() - 1; ++i) {
                 Leg leg = tailLegs.get(i);
-                Leg nextLeg =  tailLegs.get(i+1);
+                Leg nextLeg = tailLegs.get(i + 1);
                 int turnTime = (int) Duration.between(leg.getArrTime(), nextLeg.getDepTime()).toMinutes();
                 if (turnTime < leg.getTurnTimeInMin()) {
                     logger.warn("turn after leg " + leg.getId() + " is shorter than its turn time "
@@ -270,15 +273,15 @@ class Controller {
         int tailIndex = 0;
 
         for (int i = 0; i < 60; ++i, ++tailIndex) { // this causes infeasible 2nd stage, check why
-        // for (int i = 10; i < 60; ++i, ++tailIndex) {
-        // for (int i = 20; i < 60; ++i, ++tailIndex) {
-        // for (int i = 30; i < 60; ++i, ++tailIndex) {
-        // for (int i = 40; i < 60; ++i, ++tailIndex) {
-        // for (int i = 43; i < 60; ++i, ++tailIndex) {
-        // for (int i = 44; i < 60; ++i, ++tailIndex) {
-        // for (int i = 44; i < 55; ++i, ++tailIndex) {
-        // for (int i = 44; i < 54; ++i, ++tailIndex) {
-        // for (int i = 45; i < 54; ++i, ++tailIndex) {
+            // for (int i = 10; i < 60; ++i, ++tailIndex) {
+            // for (int i = 20; i < 60; ++i, ++tailIndex) {
+            // for (int i = 30; i < 60; ++i, ++tailIndex) {
+            // for (int i = 40; i < 60; ++i, ++tailIndex) {
+            // for (int i = 43; i < 60; ++i, ++tailIndex) {
+            // for (int i = 44; i < 60; ++i, ++tailIndex) {
+            // for (int i = 44; i < 55; ++i, ++tailIndex) {
+            // for (int i = 44; i < 54; ++i, ++tailIndex) {
+            // for (int i = 45; i < 54; ++i, ++tailIndex) {
             Tail tail = oldTails.get(i);
             tail.setIndex(tailIndex);
             newTails.add(tail);
@@ -338,12 +341,6 @@ class Controller {
             logger.error(ex);
             throw new OptException("error writing solution");
         }
-    }
-
-    TestKPISet[] getAverageTestStats() {
-        QualityChecker qc = new QualityChecker(dataRegistry);
-        ArrayList<RescheduleSolution> rescheduleSolutions = getAllRescheduleSolutions();
-        return qc.collectAverageTestStatsForBatchRun(rescheduleSolutions);
     }
 
     ArrayList<RescheduleSolution> getAllRescheduleSolutions() {

@@ -28,7 +28,7 @@ import java.util.List;
  * Helps to read and write a CSV file, all methods are static writeLine:
  * Converts list of String values into a line of a CSV file parseLine: read a
  * line from a LineNumberReader and return the list of Strings
- *
+ * <p>
  * That should be all you need. Create or open the file and streams yourself from
  * whatever source you need to read from.. Everything in this class works on
  * characters, and not bytes.
@@ -39,7 +39,7 @@ public class CSVHelper {
      * Just a convenience method that iterates the rows of a table and outputs
      * to a writer which is presumably a CSV file.
      *
-     * @param w writer (usually a BufferedWriter object to write to a file).
+     * @param w     writer (usually a BufferedWriter object to write to a file).
      * @param table rows to write as comma-separated values.
      * @throws IOException if there is an issue writing to the csv file via the writer.
      */
@@ -51,7 +51,7 @@ public class CSVHelper {
     /**
      * Write a single row of a CSV table, all values are quoted.
      *
-     * @param w writer (usually a BufferedWriter object to write to a file).
+     * @param w      writer (usually a BufferedWriter object to write to a file).
      * @param values row to write to csv file.
      * @throws IOException if there is an issue writing to the csv file via the writer.
      */
@@ -77,7 +77,7 @@ public class CSVHelper {
 
     /**
      * returns a row of values as a list.
-     *
+     * <p>
      * returns null if you are past the end of the line.
      *
      * @param r handle that holds a csv file.
@@ -90,24 +90,22 @@ public class CSVHelper {
             //ignore linefeed characters wherever they are, particularly just before end of file
             ch = r.read();
         }
-        if (ch<0) {
+        if (ch < 0) {
             return null;
         }
         ArrayList<String> store = new ArrayList<>();
         StringBuilder curVal = new StringBuilder();
         boolean inquotes = false;
         boolean started = false;
-        while (ch>=0) {
+        while (ch >= 0) {
             if (inquotes) {
-                started=true;
+                started = true;
                 if (ch == '\"') {
                     inquotes = false;
+                } else {
+                    curVal.append((char) ch);
                 }
-                else {
-                    curVal.append((char)ch);
-                }
-            }
-            else {
+            } else {
                 if (ch == '\"') {
                     inquotes = true;
                     if (started) {
@@ -115,21 +113,17 @@ public class CSVHelper {
                         // this is for the double quote in the middle of a value
                         curVal.append('\"');
                     }
-                }
-                else if (ch == ',') {
+                } else if (ch == ',') {
                     store.add(curVal.toString());
                     curVal = new StringBuilder();
                     started = false;
-                }
-                else if (ch == '\r') {
+                } else if (ch == '\r') {
                     //ignore LF characters
-                }
-                else if (ch == '\n') {
+                } else if (ch == '\n') {
                     //end of a line, break out
                     break;
-                }
-                else {
-                    curVal.append((char)ch);
+                } else {
+                    curVal.append((char) ch);
                 }
             }
             ch = r.read();

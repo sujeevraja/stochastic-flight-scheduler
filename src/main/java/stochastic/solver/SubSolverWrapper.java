@@ -1,5 +1,7 @@
 package stochastic.solver;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import stochastic.delay.Scenario;
 import stochastic.registry.DataRegistry;
 import stochastic.registry.Parameters;
@@ -7,9 +9,6 @@ import stochastic.utility.OptException;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
 
 class SubSolverWrapper {
     /**

@@ -1,6 +1,5 @@
 package stochastic.domain;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 
 public class Leg {
@@ -23,7 +22,7 @@ public class Leg {
     private LocalDateTime arrTime;
 
     // info for labeling algorithm       
-    
+
     public Leg(Integer id, Integer fltNum, Integer depPort, Integer arrPort, int turnTimeInMin,
                Integer origTailId, LocalDateTime depTime, LocalDateTime arrTime) {
         this.id = id;
@@ -50,7 +49,7 @@ public class Leg {
         this.arrTime = arrTime;
     }
 
-	public Integer getId() {
+    public Integer getId() {
         return id;
     }
 
@@ -70,7 +69,9 @@ public class Leg {
         return arrPort;
     }
 
-    public Integer getFltNum() { return fltNum;}
+    public Integer getFltNum() {
+        return fltNum;
+    }
 
     public void setTurnTimeInMin(int turnTimeInMin) {
         this.turnTimeInMin = turnTimeInMin;

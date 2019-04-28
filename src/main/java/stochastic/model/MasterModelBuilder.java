@@ -52,12 +52,12 @@ public class MasterModelBuilder {
     }
 
     private void addOriginalRoutingConstraints() throws IloException {
-        for(Tail tail : tails) {
+        for (Tail tail : tails) {
             ArrayList<Leg> tailLegs = tail.getOrigSchedule();
-            if(tailLegs.size() <= 1)
+            if (tailLegs.size() <= 1)
                 continue;
 
-            for(int i = 0; i < tailLegs.size() - 1; ++i) {
+            for (int i = 0; i < tailLegs.size() - 1; ++i) {
                 Leg currLeg = tailLegs.get(i);
                 Leg nextLeg = tailLegs.get(i + 1);
                 int currLegIndex = currLeg.getIndex();

@@ -2,7 +2,10 @@ package stochastic.solver;
 
 import stochastic.network.Path;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 public class PathCache {
     /**
@@ -11,7 +14,8 @@ public class PathCache {
      */
     private HashMap<Integer, ArrayList<Path>> cachedPaths; // includes on-plan paths and empty paths
 
-    public PathCache() {}
+    public PathCache() {
+    }
 
     public void setCachedPaths(HashMap<Integer, ArrayList<Path>> cachedPaths) {
         this.cachedPaths = cachedPaths;

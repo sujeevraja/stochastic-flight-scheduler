@@ -28,7 +28,8 @@ public class DepSolver {
     private double solutionTimeInSeconds;
     private RescheduleSolution depSolution;
 
-    public DepSolver() {}
+    public DepSolver() {
+    }
 
     public void solve(DataRegistry dataRegistry) throws OptException {
         try {

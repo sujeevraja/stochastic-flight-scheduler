@@ -1,5 +1,9 @@
 package stochastic.solver;
 
+import ilog.concert.*;
+import ilog.cplex.IloCplex;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import stochastic.delay.Scenario;
 import stochastic.domain.Leg;
 import stochastic.domain.Tail;
@@ -7,22 +11,16 @@ import stochastic.output.RescheduleSolution;
 import stochastic.registry.DataRegistry;
 import stochastic.registry.Parameters;
 import stochastic.utility.Constants;
-import ilog.concert.*;
-import ilog.cplex.IloCplex;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 public class NaiveSolver {
     /**
      * This class builds a naive rescheduling solution (i.e. solution to Benders first stage).
-     *
+     * <p>
      * For each leg with a primary delay, it reschedules the leg by the biggest amount less than or equal to the delay.
      * These delays are then propagated downstream in the original routes.
      */
@@ -55,7 +53,7 @@ public class NaiveSolver {
 
     private void buildAveragePrimaryDelays() {
         Scenario[] scenarios = dataRegistry.getDelayScenarios();
-        for(Scenario scenario : scenarios) {
+        for (Scenario scenario : scenarios) {
             int[] primaryDelays = scenario.getPrimaryDelays();
             for (int i = 0; i < primaryDelays.length; ++i)
                 if (primaryDelays[i] > 0)
@@ -97,12 +95,12 @@ public class NaiveSolver {
         }
 
         // Add original routing constraints
-        for(Tail tail : dataRegistry.getTails()) {
+        for (Tail tail : dataRegistry.getTails()) {
             ArrayList<Leg> tailLegs = tail.getOrigSchedule();
-            if(tailLegs.size() <= 1)
+            if (tailLegs.size() <= 1)
                 continue;
 
-            for(int i = 0; i < tailLegs.size() - 1; ++i) {
+            for (int i = 0; i < tailLegs.size() - 1; ++i) {
                 Leg currLeg = tailLegs.get(i);
                 Leg nextLeg = tailLegs.get(i + 1);
                 int currLegIndex = currLeg.getIndex();
@@ -155,8 +153,7 @@ public class NaiveSolver {
             if (xValues[i] >= Constants.EPS) {
                 reschedules[i] = (int) Math.round(xValues[i]);
                 rescheduleCost += (reschedules[i] * legs.get(i).getRescheduleCostPerMin());
-            }
-            else
+            } else
                 reschedules[i] = 0;
         }
 
