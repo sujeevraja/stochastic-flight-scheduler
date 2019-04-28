@@ -37,7 +37,9 @@ dependencies {
 
 tasks {
     register<Jar>("uberJar") {
-        archiveClassifier.set("uber")
+        // archiveClassifier.set("uber")
+        // archiveAppendix.set("_uber")
+        archiveFileName.set("stochastic_uber.jar")
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
         manifest {
@@ -54,7 +56,7 @@ tasks {
                 .map { if (it.isDirectory) it else zipTree(it) })
     }
 
-    register("cleanFiles", Delete::class.java) {
+    register<Delete>("cleanLogs") {
         delete(fileTree("logs") {
            include("*.csv", "*.lp", "*.log", "*.xml")
         })
