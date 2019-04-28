@@ -151,8 +151,8 @@ public class Main {
             parameters.put("benders num iterations", Parameters.getNumBendersIterations());
             parameters.put("benders warm start", Parameters.isWarmStartBenders());
             parameters.put("expected excess enabled", Parameters.isExpectedExcess());
-            parameters.put("expected excess rho: ", Parameters.getRho());
-            parameters.put("expected excess target: ", Parameters.getExcessTarget());
+            parameters.put("expected excess rho", Parameters.getRho());
+            parameters.put("expected excess target", Parameters.getExcessTarget());
             parameters.put("flight pick strategy", Parameters.getFlightPickStrategy().name());
             parameters.put("reschedule time budget fraction", Parameters.getRescheduleBudgetFraction());
             parameters.put("reschedule time limit for flights", Parameters.getFlightRescheduleBound());

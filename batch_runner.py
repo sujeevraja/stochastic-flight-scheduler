@@ -200,6 +200,8 @@ def handle_command_line():
     parser.add_argument("-j", "--jarpath", type=str,
                         help="path to stochastic solver jar")
 
+    parser.add_argument("-a", "--all", help="run all sets",
+                        action="store_true")
     parser.add_argument("-b", "--budget", help="run budget set",
                         action="store_true")
     parser.add_argument("-m", "--mean", help="run mean set",
@@ -212,10 +214,16 @@ def handle_command_line():
     args = parser.parse_args()
     config = Config()
 
-    config.run_budget_set = args.budget
-    config.run_mean_set = args.mean
-    config.run_quality_set = args.quality
-    config.run_time_comparison_set = args.time
+    if args.all:
+        config.run_budget_set = True
+        config.run_mean_set = True
+        config.run_quality_set = True
+        config.run_time_comparison_set = True
+    else:
+        config.run_budget_set = args.budget
+        config.run_mean_set = args.mean
+        config.run_quality_set = args.quality
+        config.run_time_comparison_set = args.time
 
     if args.jarpath:
         config.jar_path = args.jarpath
