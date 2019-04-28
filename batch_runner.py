@@ -93,18 +93,20 @@ class Controller(object):
     def _run_mean_set(self):
         log.info("starting mean comparison runs...")
         for name, path in zip(self.config.names, self.config.paths):
-            for mean in ["15", "30", "45", "60"]:
-                cmd = [c for c in self._base_cmd]
-                cmd.extend([
-                    "-b",
-                    "-t",
-                    "mean",
-                    "-p", path,
-                    "-n", name,
-                    "-m", mean, ])
-                subprocess.check_output(cmd)
-                log.info('finished mean run for {}, {}'.format(
-                    name, mean))
+            for distribution in ['exp', 'tnorm', 'lnorm']:
+                for mean in ["15", "30", "45", "60"]:
+                    cmd = [c for c in self._base_cmd]
+                    cmd.extend([
+                        "-b",
+                        "-t",
+                        "mean",
+                        "-p", path,
+                        "-n", name,
+                        "-d", distribution,
+                        "-m", mean, ])
+                    subprocess.check_output(cmd)
+                    log.info('finished mean run for {}, {}, {}'.format(
+                        name, distribution, mean))
         log.info("completed mean comparison runs.")
 
     def _run_quality_set(self):

@@ -342,6 +342,7 @@ class BatchRunner {
             if (addTrainingHeaders) {
                 ArrayList<String> trainingHeaders = new ArrayList<>(Arrays.asList(
                         "instance",
+                        "distribution type",
                         "distribution mean",
                         "Naive model reschedule cost",
                         "Naive model solution time (seconds)",
@@ -364,7 +365,7 @@ class BatchRunner {
 
             if (addTestHeaders) {
                 ArrayList<String> testHeaders = new ArrayList<>(
-                        Arrays.asList("instance", "mean", "approach"));
+                        Arrays.asList("instance", "distribution", "mean", "approach"));
 
                 for (Enums.TestKPI kpi : Enums.TestKPI.values()) {
                     testHeaders.add(kpi.name());
@@ -375,6 +376,7 @@ class BatchRunner {
 
             ArrayList<String> row = new ArrayList<>();
             row.add(instanceName);
+            row.add(Parameters.getDistributionType().name());
             row.add(Double.toString(Parameters.getDistributionMean()));
 
             // solve models
@@ -414,6 +416,7 @@ class BatchRunner {
             for (int j = 0; j < testKPISets.length; ++j) {
                 row = new ArrayList<>(Arrays.asList(
                         instanceName,
+                        Parameters.getDistributionType().name(),
                         Double.toString(Parameters.getDistributionMean()),
                         rescheduleSolutions.get(j).getName()
                 ));
