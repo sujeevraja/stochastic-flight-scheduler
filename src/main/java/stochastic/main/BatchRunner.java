@@ -223,9 +223,11 @@ class BatchRunner {
     }
 
     /**
-     * Performs runs to show the effect of changing budget.
+     * Does a quality run to compare the effect of changing time budgets.
+     *
+     * @throws OptException when there is any issue with solving/writing.
      */
-    void runBudgetComparisonSet() throws OptException {
+    void runForBudget() throws OptException {
         try {
             final double[] budgetFractions = new double[]{0.25, 0.5, 0.75, 1.0, 2.0};
 

@@ -34,31 +34,40 @@ public class Main {
             options.addOption("n", true,
                     "instance name");
             options.addOption("p", true, "instance path");
+            options.addOption("r", true, "reschedule budget fraction");
             options.addOption("t", true,
                     "type (quality/time/budget/mean/excess)");
 
             CommandLineParser parser = new DefaultParser();
             CommandLine cmd = parser.parse(options, args);
 
-            String name = cmd.hasOption('n') ? cmd.getOptionValue('n') :"instance1";
+            String name = cmd.hasOption('n') ? cmd.getOptionValue('n') : "instance1";
             String instancePath = cmd.hasOption('p') ? cmd.getOptionValue("p") : ("data/" + name);
             Parameters.setInstancePath(instancePath);
 
             setDefaultParameters();
             writeDefaultParameters();
             updateParameters(cmd);
-            System.out.println("finished updating parameters");
 
             if (cmd.hasOption('b')) {
                 BatchRunner batchRunner = new BatchRunner(name);
                 String runType = cmd.getOptionValue('t');
-                if (runType.equals("quality")) batchRunner.runForQuality();
-                else if (runType.equals("time")) batchRunner.runForTimeComparison();
-                else logger.error("unknown run type: " + runType);
-            }
-            else
+                switch(runType) {
+                    case "quality":
+                        batchRunner.runForQuality();
+                        break;
+                    case "time":
+                        batchRunner.runForTimeComparison();
+                        break;
+                    case "budget":
+                        batchRunner.runForBudget();
+                        break;
+                    default:
+                        throw new OptException("unknown run type: " + runType);
+                }
+            } else
                 singleRun();
-        } catch (ParseException|OptException ex) {
+        } catch (ParseException | OptException ex) {
             logger.error(ex);
         }
     }
@@ -216,6 +225,10 @@ public class Main {
                     logger.error("unknown flight pick strategy: " + distribution);
                     break;
             }
+        }
+        if (cmd.hasOption('r')) {
+            final double budgetFraction = Double.parseDouble(cmd.getOptionValue('r'));
+            Parameters.setRescheduleBudgetFraction(budgetFraction);
         }
     }
 }

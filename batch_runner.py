@@ -13,6 +13,7 @@ class Config(object):
     """Class that holds global parameters."""
 
     def __init__(self):
+        self.run_budget_set = False
         self.run_quality_set = False
         self.run_time_comparison_set = False
         self.jar_path = "build/libs/stochastic_uber.jar"
@@ -54,10 +55,13 @@ class Controller(object):
             "-jar",
             self.config.jar_path, ]
 
-        if not (self.config.run_quality_set or
+        if not (self.config.run_budget_set or
+                self.config.run_quality_set or
                 self.config.run_time_comparison_set):
             raise ScriptException("no batch run chosen, nothing to do.")
 
+        if self.config.run_budget_set:
+            self._run_budget_set()
         if self.config.run_quality_set:
             self._run_quality_set()
         if self.config.run_time_comparison_set:
@@ -104,6 +108,23 @@ class Controller(object):
                         log.info('finished time run for {}, {}, {}, {}'.format(
                             name, distribution, flight_pick, cgen))
         log.info("completed time comparison runs.")
+
+    def _run_budget_set(self):
+        log.info("starting budget comparison runs...")
+        for name, path in zip(self.config.names, self.config.paths):
+            for budget_fraction in ["0.25", "0.5", "0.75", "1", "2"]:
+                cmd = [c for c in self._base_cmd]
+                cmd.extend([
+                    "-b",
+                    "-t",
+                    "budget",
+                    "-p", path,
+                    "-n", name,
+                    "-r", budget_fraction, ])
+                subprocess.check_output(cmd)
+                log.info('finished budget run for {}, {}'.format(
+                    name, budget_fraction))
+        log.info("completed budget comparison runs.")
 
     def _validate_setup(self):
         if not os.path.isfile(self.config.jar_path):
@@ -155,6 +176,9 @@ def handle_command_line():
 
     parser.add_argument("-j", "--jarpath", type=str,
                         help="path to stochastic solver jar")
+
+    parser.add_argument("-b", "--budget", help="run budget set",
+                        action="store_true")
     parser.add_argument("-q", "--quality", help="run quality set",
                         action="store_true")
     parser.add_argument("-t", "--time", help="run time comparison set",
@@ -163,12 +187,14 @@ def handle_command_line():
     args = parser.parse_args()
     config = Config()
 
+    config.run_budget_set = args.budget
     config.run_quality_set = args.quality
     config.run_time_comparison_set = args.time
 
     if args.jarpath:
         config.jar_path = args.jarpath
 
+    log.info("do budget runs: {}".format(config.run_budget_set))
     log.info("do quality runs: {}".format(config.run_quality_set))
     log.info("do time comparison runs: {}".format(
         config.run_time_comparison_set))
