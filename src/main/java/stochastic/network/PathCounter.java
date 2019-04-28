@@ -43,7 +43,7 @@ class PathCounter {
             numPaths += 1;
 
         ArrayList<Integer> neighbors = adjacencyList.getOrDefault(legIndex, null);
-        if  (neighbors != null) {
+        if (neighbors != null) {
             for (Integer neighborIndex : neighbors) {
                 if (numPathsToSink[neighborIndex] < 0)
                     findNumPathsToSink(neighborIndex);

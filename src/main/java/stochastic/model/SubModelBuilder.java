@@ -150,12 +150,12 @@ public class SubModelBuilder {
      */
     public void updateModelWithFirstStageVars(IloNumVar[] x) throws IloException {
         for (int i = 0; i < x.length; ++i)
-                delayExprs[i].addTerm(x[i], -1);
+            delayExprs[i].addTerm(x[i], -1);
 
         if (Parameters.isExpectedExcess()) {
             IloLinearNumExpr riskExpr = cplex.linearNumExpr();
             for (int i = 0; i < x.length; ++i)
-                riskExpr.addTerm(x[i],  legs.get(i).getRescheduleCostPerMin());
+                riskExpr.addTerm(x[i], legs.get(i).getRescheduleCostPerMin());
 
             for (int i = 0; i < numLegs; i++)
                 riskExpr.addTerm(d[i], legs.get(i).getDelayCostPerMin());
@@ -168,7 +168,7 @@ public class SubModelBuilder {
     public void addConstraintsToModel() throws IloException {
         for (int i = 0; i < numTails; ++i)
             onePathPerTailConstraints[i] = cplex.addEq(
-                    tailCoverExprs[i], 1.0, prefix +"tail_" + i + "_" + tails.get(i).getId());
+                    tailCoverExprs[i], 1.0, prefix + "tail_" + i + "_" + tails.get(i).getId());
 
         for (int i = 0; i < numLegs; ++i) {
             legCoverConstraints[i] = cplex.addEq(

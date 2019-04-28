@@ -73,9 +73,9 @@ public class FirstFlightDelayGenerator implements DelayGenerator {
         int[] delays = new int[numLegs];
         Arrays.fill(delays, 0);
 
-        for(Tail tail : tails) {
+        for (Tail tail : tails) {
             ArrayList<Leg> tailLegs = tail.getOrigSchedule();
-            if(!tailLegs.isEmpty()) {
+            if (!tailLegs.isEmpty()) {
                 Leg leg = tailLegs.get(0);
                 delays[leg.getIndex()] = delayTimeInMin;
             }

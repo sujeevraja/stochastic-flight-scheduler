@@ -4,15 +4,13 @@ import stochastic.domain.Tail;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 
 public class TestDelayGenerator extends FirstFlightDelayGenerator {
     /**
      * Class that generates specified delays for the first flight of each tail.
      *
      * @param numLegs number of legs for FirstFlightDelayGenerator.
-     * @param tails tails for which the first flights on original routes will get random delays.
+     * @param tails   tails for which the first flights on original routes will get random delays.
      */
     public TestDelayGenerator(int numLegs, ArrayList<Tail> tails) {
         super(numLegs, tails);

@@ -30,7 +30,7 @@ public class DelaySolution {
         this.totalDelays = totalDelays;
         double sumTotalDelay = 0;
         double maxTotalDelay = 0;
-        for(int delay : totalDelays) {
+        for (int delay : totalDelays) {
             sumTotalDelay += delay;
             if (maxTotalDelay < delay)
                 maxTotalDelay = delay;
@@ -42,13 +42,13 @@ public class DelaySolution {
         this.propagatedDelays = propagatedDelays;
         double sumPropagatedDelay = 0;
         double maxPropagatedDelay = 0;
-        for(int delay : propagatedDelays) {
+        for (int delay : propagatedDelays) {
             sumPropagatedDelay += delay;
             if (maxPropagatedDelay < delay)
                 maxPropagatedDelay = delay;
         }
         testKPISet.setKpi(Enums.TestKPI.totalPropagatedDelay, sumPropagatedDelay);
-        testKPISet.setKpi(Enums.TestKPI.maximumExcessDelay,  maxPropagatedDelay);
+        testKPISet.setKpi(Enums.TestKPI.maximumExcessDelay, maxPropagatedDelay);
         testKPISet.setKpi(Enums.TestKPI.averagePropagatedDelay, sumPropagatedDelay / propagatedDelays.length);
 
         excessDelays = new int[recourseDelays.length];
@@ -75,12 +75,13 @@ public class DelaySolution {
 
     /**
      * Writes stored solution to a file with the given path.
+     *
      * @param path path to file (assumed to be csv).
      */
     void writeCSV(String path, ArrayList<Leg> legs) throws IOException {
         BufferedWriter writer = new BufferedWriter(new FileWriter(path));
         ArrayList<String> headers = new ArrayList<>(Arrays.asList("leg_id", "flt_num",
-            "primary_delay", "total_delay", "propagated_delay", "excess_delay"));
+                "primary_delay", "total_delay", "propagated_delay", "excess_delay"));
         CSVHelper.writeLine(writer, headers);
 
         for (int i = 0; i < legs.size(); ++i) {

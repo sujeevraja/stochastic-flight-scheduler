@@ -63,7 +63,7 @@ class PricingProblemSolver {
 
     /**
      * Builds paths for the given tail using the label setting algorithm.
-     *
+     * <p>
      * Note that only negative reduced cost paths built from non-dominated labels will be provided.
      *
      * @return ArrayList with generated paths (possibly empty).
@@ -96,14 +96,14 @@ class PricingProblemSolver {
         ArrayList<Leg> pathLegs = new ArrayList<>();
         ArrayList<Integer> pathDelays = new ArrayList<>();
 
-        while(label != null) {
+        while (label != null) {
             pathLegs.add(label.getLeg());
             pathDelays.add(label.getTotalDelay());
             label = label.getPredecessor();
         }
 
         Path path = new Path(tail);
-        for(int i = pathLegs.size() - 1; i >= 0; --i) {
+        for (int i = pathLegs.size() - 1; i >= 0; --i) {
             path.addLeg(pathLegs.get(i), pathDelays.get(i));
         }
         return path;
@@ -111,7 +111,7 @@ class PricingProblemSolver {
 
     /**
      * Runs the forward label setting algorithm to solve the pricing problem for the second-stage.
-     *
+     * <p>
      * Using the labels created in "initSourceLabels", this algorithm builds and adds feasible extensions for each
      * unprcessed label until no more extensions are possible. A label is said to be unprocessed if we have not checked
      * it for feasible extension. It is processed when we have built all of its possible feasible extensions. This is
@@ -177,7 +177,7 @@ class PricingProblemSolver {
     /**
      * Generates and stores all feasible extensions of the given label.
      *
-     * @param label label to be extended.
+     * @param label     label to be extended.
      * @param neighbors candidates for feasible extensions.
      */
     private void generateFeasibleExtensions(Label label, ArrayList<Integer> neighbors) {
@@ -208,7 +208,7 @@ class PricingProblemSolver {
     /**
      * Create a new label as a forward extension of label using the given legIndex.
      *
-     * @param label label to be extended forward (similar to appending to a path).
+     * @param label    label to be extended forward (similar to appending to a path).
      * @param legIndex vertex of the new label.
      * @return extended Label object (will be a new object).
      */
@@ -233,11 +233,11 @@ class PricingProblemSolver {
     /**
      * Returns true if label is dominated by any element of labels, false otherwise.
      *
-     * @param label The label we want to add to labels if it is not dominated.
+     * @param label  The label we want to add to labels if it is not dominated.
      * @param labels The labels that we have alredy created/processed.
      * @return true if label can be added to labels, false otherwise.
      */
-    private boolean canAddTo(Label label, ArrayList<Label> labels)  {
+    private boolean canAddTo(Label label, ArrayList<Label> labels) {
         for (Label existingLabel : labels) {
             if (existingLabel.dominates(label))
                 return false;
@@ -248,7 +248,7 @@ class PricingProblemSolver {
     /**
      * Calculates the reduced cost of the given leg using the provided delay value.
      *
-     * @param legIndex position of leg in legs list.
+     * @param legIndex   position of leg in legs list.
      * @param totalDelay delay time of leg (includes primary and propagated delays).
      * @return reduced cost of leg.
      */

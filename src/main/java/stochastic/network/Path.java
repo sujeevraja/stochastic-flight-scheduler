@@ -1,12 +1,11 @@
 package stochastic.network;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import stochastic.domain.Leg;
 import stochastic.domain.Tail;
 
 import java.util.ArrayList;
-
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
 
 public class Path {
     /**
@@ -19,8 +18,8 @@ public class Path {
     private ArrayList<Integer> delayTimesInMin;
     private static int pathCounter = 0;
     private int index;
-    
-	public Path(Tail tail) {
+
+    public Path(Tail tail) {
         this.tail = tail;
         legs = new ArrayList<>();
         delayTimesInMin = new ArrayList<>();
@@ -30,32 +29,31 @@ public class Path {
 
     @Override
     public String toString() {
-	    StringBuilder pathStr = new StringBuilder();
-	    pathStr.append(index);
-	    pathStr.append(": ");
-	    if (legs.isEmpty()) {
+        StringBuilder pathStr = new StringBuilder();
+        pathStr.append(index);
+        pathStr.append(": ");
+        if (legs.isEmpty()) {
             pathStr.append("empty");
-        }
-        else {
-	        pathStr.append(legs.get(0).getId());
-	        for(int i = 1; i < legs.size(); ++i) {
-	            pathStr.append(" -> ");
-	            pathStr.append(legs.get(i).getId());
+        } else {
+            pathStr.append(legs.get(0).getId());
+            for (int i = 1; i < legs.size(); ++i) {
+                pathStr.append(" -> ");
+                pathStr.append(legs.get(i).getId());
             }
         }
         return pathStr.toString();
     }
 
     static void resetPathCounter() {
-	    pathCounter = 0;
+        pathCounter = 0;
     }
 
     public void addLeg(Leg leg, Integer delayTimeInMin) {
         legs.add(leg);
-        
-        if(delayTimeInMin == null)
-        	delayTimeInMin = 0;
-        
+
+        if (delayTimeInMin == null)
+            delayTimeInMin = 0;
+
         delayTimesInMin.add(delayTimeInMin);
     }
 
@@ -68,16 +66,16 @@ public class Path {
     }
 
     public int getIndex() {
-		return index;
-	}
+        return index;
+    }
 
-	public ArrayList<Integer> getDelayTimesInMin() {
-		return delayTimesInMin;
-	}
+    public ArrayList<Integer> getDelayTimesInMin() {
+        return delayTimesInMin;
+    }
 
-	public void print() {
+    public void print() {
         logger.info("Path for tail " + tail.getId());
-        for(int i = 0; i < legs.size(); ++i) {
+        for (int i = 0; i < legs.size(); ++i) {
             logger.info(legs.get(i));
             logger.info("delay time in minutes: " + delayTimesInMin.get(i));
         }

@@ -1,5 +1,8 @@
 package stochastic.solver;
 
+import ilog.concert.IloException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import stochastic.delay.Scenario;
 import stochastic.domain.Leg;
 import stochastic.network.Path;
@@ -7,11 +10,7 @@ import stochastic.output.RescheduleSolution;
 import stochastic.registry.DataRegistry;
 import stochastic.registry.Parameters;
 import stochastic.utility.CSVHelper;
-import stochastic.utility.Enums;
 import stochastic.utility.OptException;
-import ilog.concert.IloException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -101,7 +100,8 @@ public class BendersSolver {
 
         cacheOnPlanPathsForSecondStage();
 
-        do { runBendersIteration();
+        do {
+            runBendersIteration();
         } while (!stoppingConditionReached());
 
         Instant end = Instant.now();
@@ -161,8 +161,7 @@ public class BendersSolver {
                         writeBendersCut(iteration, i, cut.getBeta(), cut.getAlpha());
                 }
             }
-        }
-        else {
+        } else {
             BendersCut cut = bendersData.getCut(0);
             Double thetaValue = thetaValues != null ? thetaValues[0] : null;
 

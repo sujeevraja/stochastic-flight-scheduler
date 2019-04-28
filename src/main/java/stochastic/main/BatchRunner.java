@@ -32,7 +32,7 @@ class BatchRunner {
 
     /**
      * Generates and tests solutions for naive model, DEP and Benders.
-     *
+     * <p>
      * Runs naive/DEP/Benders to generate reschedule solutions and compares them with the original
      * schedule with 100 randomly generated delay scenarios. Reschedule and test KPIs are written
      * to separate csv files.

@@ -1,5 +1,8 @@
 package stochastic.solver;
 
+import ilog.concert.IloException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import stochastic.domain.Leg;
 import stochastic.domain.Tail;
 import stochastic.network.Path;
@@ -9,11 +12,11 @@ import stochastic.registry.Parameters;
 import stochastic.utility.Constants;
 import stochastic.utility.Enums;
 import stochastic.utility.OptException;
-import ilog.concert.IloException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class SubSolverRunnable implements Runnable {
     private final static Logger logger = LogManager.getLogger(SubSolverWrapper.class);
@@ -242,7 +245,7 @@ public class SubSolverRunnable implements Runnable {
             if (Parameters.isDebugVerbose()) {
                 String name = "logs/qual_";
                 if (filePrefix != null)
-                    name += filePrefix +"_";
+                    name += filePrefix + "_";
                 name += iter + "_sub_labeling_mip";
                 ss.writeLPFile(name + ".lp");
                 ss.writeCplexSolution(name + ".xml");
@@ -323,7 +326,7 @@ public class SubSolverRunnable implements Runnable {
             Path bestPath = null;
 
             double[] yValuesForTail = yValues[tail.getIndex()];
-            for (int i =0; i < yValuesForTail.length; ++i) {
+            for (int i = 0; i < yValuesForTail.length; ++i) {
                 if (yValuesForTail[i] >= bestVal + Constants.EPS) {
                     bestVal = yValuesForTail[i];
                     bestPath = pathsForTail.get(i);

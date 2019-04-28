@@ -16,9 +16,9 @@ public class SolverUtility {
      * This function generates a map that contains two paths for each tail: an empty path with no legs and a path
      * that has the original plan with leg delays adjusted to be the maximum of primary and propagated delays.
      *
-     * @param tailHashMap map to retrieve tails using tail ids.
+     * @param tailHashMap     map to retrieve tails using tail ids.
      * @param originalPathMap map with original path of each tail (indexed by id).
-     * @param primaryDelays primary delays of a delay scenario to propagate on original paths.
+     * @param primaryDelays   primary delays of a delay scenario to propagate on original paths.
      * @return map with delayed and empty paths for each tail.
      */
     public static HashMap<Integer, ArrayList<Path>> getOriginalPaths(HashMap<Integer, Tail> tailHashMap,
@@ -73,7 +73,7 @@ public class SolverUtility {
         for (Tail t : tails)
             tailPathsMap.put(t.getId(), new ArrayList<>(Collections.singletonList(new Path(t))));
 
-        for(Path p : paths)
+        for (Path p : paths)
             tailPathsMap.get(p.getTail().getId()).add(p);
 
         return tailPathsMap;

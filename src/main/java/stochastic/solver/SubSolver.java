@@ -1,21 +1,19 @@
 package stochastic.solver;
 
+import ilog.concert.IloException;
+import ilog.concert.IloLinearNumExpr;
+import ilog.cplex.IloCplex;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import stochastic.domain.Leg;
 import stochastic.domain.Tail;
 import stochastic.model.SubModelBuilder;
 import stochastic.network.Path;
 import stochastic.registry.Parameters;
-import stochastic.utility.Constants;
 import stochastic.utility.OptException;
-import ilog.concert.*;
-import ilog.cplex.IloCplex;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
 
 public class SubSolver {
     /**

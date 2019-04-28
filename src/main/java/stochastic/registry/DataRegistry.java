@@ -28,16 +28,16 @@ public class DataRegistry {
         legs = new ArrayList<>();
         tails = new ArrayList<>();
     }
-    
+
     public HashMap<Integer, Path> getTailOrigPathMap() {
-		return tailOrigPathMap;
-	}
+        return tailOrigPathMap;
+    }
 
-	public void setTailOrigPathMap(HashMap<Integer, Path> tailOrigPathMap) {
-		this.tailOrigPathMap = tailOrigPathMap;
-	}
+    public void setTailOrigPathMap(HashMap<Integer, Path> tailOrigPathMap) {
+        this.tailOrigPathMap = tailOrigPathMap;
+    }
 
-	public ArrayList<Leg> getLegs() {
+    public ArrayList<Leg> getLegs() {
         return legs;
     }
 

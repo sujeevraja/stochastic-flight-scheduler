@@ -1,13 +1,13 @@
 package stochastic.main;
 
 import org.apache.commons.cli.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 import stochastic.registry.Parameters;
 import stochastic.utility.Enums;
 import stochastic.utility.OptException;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -53,7 +53,7 @@ public class Main {
             if (cmd.hasOption('b')) {
                 BatchRunner batchRunner = new BatchRunner(name);
                 String runType = cmd.getOptionValue('t');
-                switch(runType) {
+                switch (runType) {
                     case "quality":
                         batchRunner.runForQuality();
                         break;

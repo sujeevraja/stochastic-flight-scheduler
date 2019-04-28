@@ -108,6 +108,6 @@ public class StrategicDelayGenerator implements DelayGenerator {
                 selectedLegs.add(leg);
         }
 
-        return  selectedLegs;
+        return selectedLegs;
     }
 }

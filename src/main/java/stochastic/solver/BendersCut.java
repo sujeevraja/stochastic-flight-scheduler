@@ -1,8 +1,8 @@
 package stochastic.solver;
 
-import stochastic.utility.Constants;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import stochastic.utility.Constants;
 
 import java.util.Arrays;
 
@@ -10,7 +10,7 @@ class BendersCut {
     /**
      * Benders cut holds coefficients and RHS of feasibility cuts that will be added to the Benders master problem.
      * Given the first-stage variables x, cut coefficents \beta and cut RHS \alpha, the cut will be
-     *
+     * <p>
      * \beta x + \theta \geq \alpha
      */
     private final static Logger logger = LogManager.getLogger(BendersCut.class);
@@ -37,7 +37,8 @@ class BendersCut {
 
     /**
      * Check if the given master solution is cut off by the current cut.
-     * @param x master problem reschedule solution values
+     *
+     * @param x     master problem reschedule solution values
      * @param theta benders theta
      * @return true if cut separates the solution, fales otherwise
      */
@@ -49,5 +50,5 @@ class BendersCut {
 
         logger.debug("lhs: " + lhs + " rhs: " + alpha + " violation: " + (lhs - alpha));
         return lhs <= alpha - Constants.MINIMUM_CUT_VIOLATION;
-   }
+    }
 }

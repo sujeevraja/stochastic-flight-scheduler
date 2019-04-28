@@ -1,12 +1,14 @@
 package stochastic.dao;
 
-import stochastic.domain.Leg;
-import stochastic.utility.OptException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
+import stochastic.domain.Leg;
+import stochastic.utility.OptException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -16,8 +18,6 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
 
 public class ScheduleDAO {
     /**
@@ -39,7 +39,7 @@ public class ScheduleDAO {
 
             legs = new ArrayList<>();
             format = DateTimeFormatter.ISO_DATE_TIME;
-            for(int i = 0; i < nodeList.getLength(); ++i) {
+            for (int i = 0; i < nodeList.getLength(); ++i) {
                 Node legNode = nodeList.item(i);
                 legs.add(buildLeg((Element) legNode));
             }
