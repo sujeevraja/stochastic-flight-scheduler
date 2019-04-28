@@ -31,6 +31,7 @@ public class Main {
                     "distribution (exp/tnorm/lnorm");
             options.addOption("f", true,
                     "flight pick (all/hub/rush)");
+            options.addOption("m", true, "distribution mean");
             options.addOption("n", true,
                     "instance name");
             options.addOption("p", true, "instance path");
@@ -60,7 +61,10 @@ public class Main {
                         batchRunner.runForTimeComparison();
                         break;
                     case "budget":
-                        batchRunner.runForBudget();
+                        batchRunner.runForBudgetComparison();
+                        break;
+                    case "mean":
+                        batchRunner.runForMeanComparison();
                         break;
                     default:
                         throw new OptException("unknown run type: " + runType);
@@ -225,6 +229,10 @@ public class Main {
                     logger.error("unknown flight pick strategy: " + distribution);
                     break;
             }
+        }
+        if (cmd.hasOption('m')) {
+            final double mean = Double.parseDouble(cmd.getOptionValue('m'));
+            Parameters.setDistributionMean(mean);
         }
         if (cmd.hasOption('r')) {
             final double budgetFraction = Double.parseDouble(cmd.getOptionValue('r'));

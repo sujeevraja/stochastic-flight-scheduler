@@ -14,6 +14,7 @@ class Config(object):
 
     def __init__(self):
         self.run_budget_set = False
+        self.run_mean_set = False
         self.run_quality_set = False
         self.run_time_comparison_set = False
         self.jar_path = "build/libs/stochastic_uber.jar"
@@ -56,18 +57,55 @@ class Controller(object):
             self.config.jar_path, ]
 
         if not (self.config.run_budget_set or
+                self.config.run_mean_set or
                 self.config.run_quality_set or
                 self.config.run_time_comparison_set):
             raise ScriptException("no batch run chosen, nothing to do.")
 
         if self.config.run_budget_set:
             self._run_budget_set()
+        if self.config.run_mean_set:
+            self._run_mean_set()
         if self.config.run_quality_set:
             self._run_quality_set()
         if self.config.run_time_comparison_set:
             self._run_time_comparison_set()
 
         log.info("completed all batch runs")
+
+    def _run_budget_set(self):
+        log.info("starting budget comparison runs...")
+        for name, path in zip(self.config.names, self.config.paths):
+            for budget_fraction in ["0.25", "0.5", "0.75", "1", "2"]:
+                cmd = [c for c in self._base_cmd]
+                cmd.extend([
+                    "-b",
+                    "-t",
+                    "budget",
+                    "-p", path,
+                    "-n", name,
+                    "-r", budget_fraction, ])
+                subprocess.check_output(cmd)
+                log.info('finished budget run for {}, {}'.format(
+                    name, budget_fraction))
+        log.info("completed budget comparison runs.")
+
+    def _run_mean_set(self):
+        log.info("starting mean comparison runs...")
+        for name, path in zip(self.config.names, self.config.paths):
+            for mean in ["15", "30", "45", "60"]:
+                cmd = [c for c in self._base_cmd]
+                cmd.extend([
+                    "-b",
+                    "-t",
+                    "mean",
+                    "-p", path,
+                    "-n", name,
+                    "-m", mean, ])
+                subprocess.check_output(cmd)
+                log.info('finished mean run for {}, {}'.format(
+                    name, mean))
+        log.info("completed mean comparison runs.")
 
     def _run_quality_set(self):
         log.info("starting quality runs...")
@@ -108,23 +146,6 @@ class Controller(object):
                         log.info('finished time run for {}, {}, {}, {}'.format(
                             name, distribution, flight_pick, cgen))
         log.info("completed time comparison runs.")
-
-    def _run_budget_set(self):
-        log.info("starting budget comparison runs...")
-        for name, path in zip(self.config.names, self.config.paths):
-            for budget_fraction in ["0.25", "0.5", "0.75", "1", "2"]:
-                cmd = [c for c in self._base_cmd]
-                cmd.extend([
-                    "-b",
-                    "-t",
-                    "budget",
-                    "-p", path,
-                    "-n", name,
-                    "-r", budget_fraction, ])
-                subprocess.check_output(cmd)
-                log.info('finished budget run for {}, {}'.format(
-                    name, budget_fraction))
-        log.info("completed budget comparison runs.")
 
     def _validate_setup(self):
         if not os.path.isfile(self.config.jar_path):
@@ -179,6 +200,8 @@ def handle_command_line():
 
     parser.add_argument("-b", "--budget", help="run budget set",
                         action="store_true")
+    parser.add_argument("-m", "--mean", help="run mean set",
+                        action="store_true")
     parser.add_argument("-q", "--quality", help="run quality set",
                         action="store_true")
     parser.add_argument("-t", "--time", help="run time comparison set",
@@ -188,6 +211,7 @@ def handle_command_line():
     config = Config()
 
     config.run_budget_set = args.budget
+    config.run_mean_set = args.mean
     config.run_quality_set = args.quality
     config.run_time_comparison_set = args.time
 
@@ -195,6 +219,7 @@ def handle_command_line():
         config.jar_path = args.jarpath
 
     log.info("do budget runs: {}".format(config.run_budget_set))
+    log.info("do mean runs: {}".format(config.run_mean_set))
     log.info("do quality runs: {}".format(config.run_quality_set))
     log.info("do time comparison runs: {}".format(
         config.run_time_comparison_set))

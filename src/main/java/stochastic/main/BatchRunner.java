@@ -24,20 +24,10 @@ import java.util.Arrays;
  */
 class BatchRunner {
     private final static Logger logger = LogManager.getLogger(BatchRunner.class);
-    private ArrayList<String> instanceNames;
-    private ArrayList<String> instancePaths;
     private String instanceName;
 
     BatchRunner(String instanceName) {
-        instanceNames = new ArrayList<>();
-        instancePaths = new ArrayList<>();
         this.instanceName = instanceName;
-
-        for (int i = 1; i <= 2; ++i) {
-            String name = "instance" + i;
-            instanceNames.add(name);
-            instancePaths.add("data/" + name);
-        }
     }
 
     /**
@@ -227,108 +217,106 @@ class BatchRunner {
      *
      * @throws OptException when there is any issue with solving/writing.
      */
-    void runForBudget() throws OptException {
+    void runForBudgetComparison() throws OptException {
         try {
-            final double[] budgetFractions = new double[]{0.25, 0.5, 0.75, 1.0, 2.0};
-
-            ArrayList<String> trainingHeaders = new ArrayList<>(Arrays.asList(
-                    "instance",
-                    "budget fraction",
-                    "Naive model reschedule cost",
-                    "Naive model solution time (seconds)",
-                    "DEP reschedule cost",
-                    "DEP solution time (seconds)",
-                    "Benders reschedule cost",
-                    "Benders solution time (seconds)",
-                    "Benders lower bound",
-                    "Benders upper bound",
-                    "Benders gap",
-                    "Benders number of cuts",
-                    "Benders number of iterations"));
-
+            final String trainingPath = "solution/results_budget_training.csv";
+            final boolean addTrainingHeaders = !fileExists(trainingPath);
             BufferedWriter trainingWriter = new BufferedWriter(
-                    new FileWriter("solution/results_budget_training.csv"));
+                    new FileWriter(trainingPath, true));
 
-            CSVHelper.writeLine(trainingWriter, trainingHeaders);
-
-            BufferedWriter testWriter = new BufferedWriter(
-                    new FileWriter("solution/results_budget_test.csv"));
-
-            ArrayList<String> testHeaders = new ArrayList<>(Arrays.asList("instance", "budget fraction", "approach"));
-
-            for (Enums.TestKPI kpi : Enums.TestKPI.values()) {
-                testHeaders.add(kpi.name());
-                testHeaders.add("decrease (%)");
+            if (addTrainingHeaders) {
+                ArrayList<String> trainingHeaders = new ArrayList<>(Arrays.asList(
+                        "instance",
+                        "budget fraction",
+                        "Naive model reschedule cost",
+                        "Naive model solution time (seconds)",
+                        "DEP reschedule cost",
+                        "DEP solution time (seconds)",
+                        "Benders reschedule cost",
+                        "Benders solution time (seconds)",
+                        "Benders lower bound",
+                        "Benders upper bound",
+                        "Benders gap",
+                        "Benders number of cuts",
+                        "Benders number of iterations"));
+                CSVHelper.writeLine(trainingWriter, trainingHeaders);
             }
 
-            CSVHelper.writeLine(testWriter, testHeaders);
+            final String testPath = "solution/results_budget_test.csv";
+            final boolean addTestHeaders = !fileExists(testPath);
+            BufferedWriter testWriter = new BufferedWriter(
+                    new FileWriter("solution/results_budget_test.csv", true));
 
-            for (int i = 0; i < instancePaths.size(); ++i) {
-                Parameters.setInstancePath(instancePaths.get(i));
+            if (addTestHeaders) {
+                ArrayList<String> testHeaders = new ArrayList<>(Arrays.asList(
+                        "instance", "budget fraction", "approach"));
 
-                for (double budgetFraction : budgetFractions) {
-                    Parameters.setRescheduleBudgetFraction(budgetFraction);
-
-                    ArrayList<String> row = new ArrayList<>();
-                    row.add(instanceNames.get(i));
-                    row.add(Double.toString(budgetFraction));
-
-                    // solve models
-                    Controller controller = new Controller();
-                    controller.readData();
-                    controller.buildScenarios();
-
-                    controller.solveWithNaiveApproach();
-                    row.add(Double.toString(controller.getNaiveModelRescheduleCost()));
-                    row.add(Double.toString(controller.getNaiveModelSolutionTime()));
-
-                    controller.solveWithDEP();
-                    row.add(Double.toString(controller.getDepRescheduleCost()));
-                    row.add(Double.toString(controller.getDepSolutionTime()));
-
-                    controller.solveWithBenders();
-
-                    // write training results
-                    row.add(Double.toString(controller.getBendersRescheduleCost()));
-                    row.add(Double.toString(controller.getBendersSolutionTime()));
-                    row.add(Double.toString(controller.getBendersLowerBound()));
-                    row.add(Double.toString(controller.getBendersUpperBound()));
-                    row.add(Double.toString(controller.getBendersGap()));
-                    row.add(Integer.toString(controller.getBendersNumCuts()));
-                    row.add(Integer.toString(controller.getBendersNumIterations()));
-
-                    CSVHelper.writeLine(trainingWriter, row);
-
-                    // collect test solutions
-                    QualityChecker qc = new QualityChecker(controller.getDataRegistry());
-                    qc.generateTestDelays();
-                    ArrayList<RescheduleSolution> rescheduleSolutions = controller.getAllRescheduleSolutions();
-                    TestKPISet[] testKPISets = qc.collectAverageTestStatsForBatchRun(rescheduleSolutions);
-                    TestKPISet baseKPISet = testKPISets[0];
-
-                    // write test results
-                    for (int j = 0; j < testKPISets.length; ++j) {
-                        row = new ArrayList<>(Arrays.asList(
-                                instanceNames.get(i),
-                                Double.toString(budgetFraction),
-                                rescheduleSolutions.get(j).getName()
-                        ));
-
-                        TestKPISet testKPISet = testKPISets[j];
-                        TestKPISet percentDecreaseSet = j > 0
-                                ? TestKPISet.getPercentageDecrease(baseKPISet, testKPISet)
-                                : null;
-
-                        for (Enums.TestKPI kpi : Enums.TestKPI.values()) {
-                            row.add(testKPISet.getKpi(kpi).toString());
-                            double decrease = percentDecreaseSet != null
-                                    ? percentDecreaseSet.getKpi(kpi)
-                                    : 0;
-                            row.add(Double.toString(decrease));
-                        }
-                        CSVHelper.writeLine(testWriter, row);
-                    }
+                for (Enums.TestKPI kpi : Enums.TestKPI.values()) {
+                    testHeaders.add(kpi.name());
+                    testHeaders.add("decrease (%)");
                 }
+                CSVHelper.writeLine(testWriter, testHeaders);
+            }
+
+            ArrayList<String> row = new ArrayList<>();
+            row.add(instanceName);
+            row.add(Double.toString(Parameters.getRescheduleBudgetFraction()));
+
+            // solve models
+            Controller controller = new Controller();
+            controller.readData();
+            controller.buildScenarios();
+
+            controller.solveWithNaiveApproach();
+            row.add(Double.toString(controller.getNaiveModelRescheduleCost()));
+            row.add(Double.toString(controller.getNaiveModelSolutionTime()));
+
+            controller.solveWithDEP();
+            row.add(Double.toString(controller.getDepRescheduleCost()));
+            row.add(Double.toString(controller.getDepSolutionTime()));
+
+            controller.solveWithBenders();
+
+            // write training results
+            row.add(Double.toString(controller.getBendersRescheduleCost()));
+            row.add(Double.toString(controller.getBendersSolutionTime()));
+            row.add(Double.toString(controller.getBendersLowerBound()));
+            row.add(Double.toString(controller.getBendersUpperBound()));
+            row.add(Double.toString(controller.getBendersGap()));
+            row.add(Integer.toString(controller.getBendersNumCuts()));
+            row.add(Integer.toString(controller.getBendersNumIterations()));
+
+            CSVHelper.writeLine(trainingWriter, row);
+
+            // collect test solutions
+            QualityChecker qc = new QualityChecker(controller.getDataRegistry());
+            qc.generateTestDelays();
+            ArrayList<RescheduleSolution> rescheduleSolutions =
+                    controller.getAllRescheduleSolutions();
+            TestKPISet[] testKPISets = qc.collectAverageTestStatsForBatchRun(rescheduleSolutions);
+            TestKPISet baseKPISet = testKPISets[0];
+
+            // write test results
+            for (int j = 0; j < testKPISets.length; ++j) {
+                row = new ArrayList<>(Arrays.asList(
+                        instanceName,
+                        Double.toString(Parameters.getRescheduleBudgetFraction()),
+                        rescheduleSolutions.get(j).getName()
+                ));
+
+                TestKPISet testKPISet = testKPISets[j];
+                TestKPISet percentDecreaseSet = j > 0
+                        ? TestKPISet.getPercentageDecrease(baseKPISet, testKPISet)
+                        : null;
+
+                for (Enums.TestKPI kpi : Enums.TestKPI.values()) {
+                    row.add(testKPISet.getKpi(kpi).toString());
+                    double decrease = percentDecreaseSet != null
+                            ? percentDecreaseSet.getKpi(kpi)
+                            : 0;
+                    row.add(Double.toString(decrease));
+                }
+                CSVHelper.writeLine(testWriter, row);
             }
 
             trainingWriter.close();
@@ -340,110 +328,109 @@ class BatchRunner {
     }
 
     /**
-     * Performs runs to show the effect of changing distribution mean.
+     * Performs a run to show the effect of changing distribution mean.
+     *
+     * @throws OptException when there is any issue with solving/writing.
      */
-    void runMeanComparisonSet() throws OptException {
+    void runForMeanComparison() throws OptException {
         try {
-            final double[] means = new double[]{15, 30, 45, 60};
-
-            ArrayList<String> trainingHeaders = new ArrayList<>(Arrays.asList(
-                    "instance",
-                    "distribution mean",
-                    "Naive model reschedule cost",
-                    "Naive model solution time (seconds)",
-                    "DEP reschedule cost",
-                    "DEP solution time (seconds)",
-                    "Benders reschedule cost",
-                    "Benders solution time (seconds)",
-                    "Benders lower bound",
-                    "Benders upper bound",
-                    "Benders gap",
-                    "Benders number of cuts",
-                    "Benders number of iterations"));
-
+            final String trainingPath = "solution/results_mean_training.csv";
+            final boolean addTrainingHeaders = !fileExists(trainingPath);
             BufferedWriter trainingWriter = new BufferedWriter(
-                    new FileWriter("solution/results_mean_training.csv"));
+                    new FileWriter(trainingPath, true));
 
-            CSVHelper.writeLine(trainingWriter, trainingHeaders);
-
-            BufferedWriter testWriter = new BufferedWriter(
-                    new FileWriter("solution/results_mean_test.csv"));
-
-            ArrayList<String> testHeaders = new ArrayList<>(Arrays.asList("instance", "mean", "approach"));
-
-            for (Enums.TestKPI kpi : Enums.TestKPI.values()) {
-                testHeaders.add(kpi.name());
-                testHeaders.add("decrease (%)");
+            if (addTrainingHeaders) {
+                ArrayList<String> trainingHeaders = new ArrayList<>(Arrays.asList(
+                        "instance",
+                        "distribution mean",
+                        "Naive model reschedule cost",
+                        "Naive model solution time (seconds)",
+                        "DEP reschedule cost",
+                        "DEP solution time (seconds)",
+                        "Benders reschedule cost",
+                        "Benders solution time (seconds)",
+                        "Benders lower bound",
+                        "Benders upper bound",
+                        "Benders gap",
+                        "Benders number of cuts",
+                        "Benders number of iterations"));
+                CSVHelper.writeLine(trainingWriter, trainingHeaders);
             }
 
-            CSVHelper.writeLine(testWriter, testHeaders);
+            final String testPath = "solution/results_mean_test.csv";
+            final boolean addTestHeaders = !fileExists(testPath);
+            BufferedWriter testWriter = new BufferedWriter(
+                    new FileWriter(testPath, true));
 
-            for (int i = 0; i < instancePaths.size(); ++i) {
-                Parameters.setInstancePath(instancePaths.get(i));
+            if (addTestHeaders) {
+                ArrayList<String> testHeaders = new ArrayList<>(
+                        Arrays.asList("instance", "mean", "approach"));
 
-                for (double mean : means) {
-                    Parameters.setDistributionMean(mean);
-
-                    ArrayList<String> row = new ArrayList<>();
-                    row.add(instanceNames.get(i));
-                    row.add(Double.toString(mean));
-
-                    // solve models
-                    Controller controller = new Controller();
-                    controller.readData();
-                    controller.buildScenarios();
-
-                    controller.solveWithNaiveApproach();
-                    row.add(Double.toString(controller.getNaiveModelRescheduleCost()));
-                    row.add(Double.toString(controller.getNaiveModelSolutionTime()));
-
-                    controller.solveWithDEP();
-                    row.add(Double.toString(controller.getDepRescheduleCost()));
-                    row.add(Double.toString(controller.getDepSolutionTime()));
-
-                    controller.solveWithBenders();
-
-                    // write training results
-                    row.add(Double.toString(controller.getBendersRescheduleCost()));
-                    row.add(Double.toString(controller.getBendersSolutionTime()));
-                    row.add(Double.toString(controller.getBendersLowerBound()));
-                    row.add(Double.toString(controller.getBendersUpperBound()));
-                    row.add(Double.toString(controller.getBendersGap()));
-                    row.add(Integer.toString(controller.getBendersNumCuts()));
-                    row.add(Integer.toString(controller.getBendersNumIterations()));
-
-                    CSVHelper.writeLine(trainingWriter, row);
-
-                    // collect test solutions
-                    QualityChecker qc = new QualityChecker(controller.getDataRegistry());
-                    qc.generateTestDelays();
-                    ArrayList<RescheduleSolution> rescheduleSolutions = controller.getAllRescheduleSolutions();
-                    TestKPISet[] testKPISets = qc.collectAverageTestStatsForBatchRun(rescheduleSolutions);
-                    TestKPISet baseKPISet = testKPISets[0];
-
-                    // write test results
-                    for (int j = 0; j < testKPISets.length; ++j) {
-                        row = new ArrayList<>(Arrays.asList(
-                                instanceNames.get(i),
-                                Double.toString(mean),
-                                rescheduleSolutions.get(j).getName()
-                        ));
-
-                        TestKPISet testKPISet = testKPISets[j];
-                        TestKPISet percentDecreaseSet = j > 0
-                                ? TestKPISet.getPercentageDecrease(baseKPISet, testKPISet)
-                                : null;
-
-                        for (Enums.TestKPI kpi : Enums.TestKPI.values()) {
-                            row.add(testKPISet.getKpi(kpi).toString());
-                            double decrease = percentDecreaseSet != null
-                                    ? percentDecreaseSet.getKpi(kpi)
-                                    : 0;
-                            row.add(Double.toString(decrease));
-                        }
-                        CSVHelper.writeLine(testWriter, row);
-                    }
+                for (Enums.TestKPI kpi : Enums.TestKPI.values()) {
+                    testHeaders.add(kpi.name());
+                    testHeaders.add("decrease (%)");
                 }
+                CSVHelper.writeLine(testWriter, testHeaders);
+            }
+
+            ArrayList<String> row = new ArrayList<>();
+            row.add(instanceName);
+            row.add(Double.toString(Parameters.getDistributionMean()));
+
+            // solve models
+            Controller controller = new Controller();
+            controller.readData();
+            controller.buildScenarios();
+
+            controller.solveWithNaiveApproach();
+            row.add(Double.toString(controller.getNaiveModelRescheduleCost()));
+            row.add(Double.toString(controller.getNaiveModelSolutionTime()));
+
+            controller.solveWithDEP();
+            row.add(Double.toString(controller.getDepRescheduleCost()));
+            row.add(Double.toString(controller.getDepSolutionTime()));
+
+            controller.solveWithBenders();
+
+            // write training results
+            row.add(Double.toString(controller.getBendersRescheduleCost()));
+            row.add(Double.toString(controller.getBendersSolutionTime()));
+            row.add(Double.toString(controller.getBendersLowerBound()));
+            row.add(Double.toString(controller.getBendersUpperBound()));
+            row.add(Double.toString(controller.getBendersGap()));
+            row.add(Integer.toString(controller.getBendersNumCuts()));
+            row.add(Integer.toString(controller.getBendersNumIterations()));
+
+            CSVHelper.writeLine(trainingWriter, row);
+
+            // collect test solutions
+            QualityChecker qc = new QualityChecker(controller.getDataRegistry());
+            qc.generateTestDelays();
+            ArrayList<RescheduleSolution> rescheduleSolutions = controller.getAllRescheduleSolutions();
+            TestKPISet[] testKPISets = qc.collectAverageTestStatsForBatchRun(rescheduleSolutions);
+            TestKPISet baseKPISet = testKPISets[0];
+
+            // write test results
+            for (int j = 0; j < testKPISets.length; ++j) {
+                row = new ArrayList<>(Arrays.asList(
+                        instanceName,
+                        Double.toString(Parameters.getDistributionMean()),
+                        rescheduleSolutions.get(j).getName()
+                ));
+
+                TestKPISet testKPISet = testKPISets[j];
+                TestKPISet percentDecreaseSet = j > 0
+                        ? TestKPISet.getPercentageDecrease(baseKPISet, testKPISet)
+                        : null;
+
+                for (Enums.TestKPI kpi : Enums.TestKPI.values()) {
+                    row.add(testKPISet.getKpi(kpi).toString());
+                    double decrease = percentDecreaseSet != null
+                            ? percentDecreaseSet.getKpi(kpi)
+                            : 0;
+                    row.add(Double.toString(decrease));
+                }
+                CSVHelper.writeLine(testWriter, row);
             }
 
             trainingWriter.close();
