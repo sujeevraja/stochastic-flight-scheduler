@@ -11,11 +11,11 @@ solution/
 .idea/
 *.iml
 
-# Ignore Gradle project-specific cache directory
+# Gradle project-specific cache directory
 .gradle
 
-# Ignore Gradle build output directory
+# Gradle build output directory
 build
 
-# Ignore gradle properties file as they contain user-specific paths
-gradle.properties
+# VSCode
+.vscode/

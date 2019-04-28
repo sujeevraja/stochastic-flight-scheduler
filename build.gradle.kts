@@ -18,12 +18,14 @@ repositories {
     // Use jcenter for resolving your dependencies.
     // You can declare any Maven/Ivy/file repository here.
     jcenter()
+    mavenCentral()
 }
 
 dependencies {
     implementation("org.apache.logging.log4j:log4j-api:2.11.2")
     implementation("org.apache.logging.log4j:log4j-core:2.11.2")
     implementation("org.apache.commons:commons-math3:3.0")
+    implementation("commons-cli:commons-cli:1.4")
     implementation("org.yaml:snakeyaml:1.8")
 
     val cplexJarPath: String by project
@@ -34,21 +36,27 @@ dependencies {
 }
 
 tasks {
-    register("fatjar", Jar::class.java) {
-        archiveAppendix.set("fat")
+    register<Jar>("uberJar") {
+        // archiveClassifier.set("uber")
+        // archiveAppendix.set("_uber")
+        archiveFileName.set("stochastic_uber.jar")
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
         manifest {
             attributes("Main-Class" to "stochastic.main.Main")
         }
+
+        val sourcesMain = sourceSets.main.get()
+        sourcesMain.allSource.forEach { println("add from sources: ${it.name}") }
+        from(sourceSets.main.get().output)
+
+        dependsOn(configurations.runtimeClasspath)
         from(configurations.runtimeClasspath.get()
                 .onEach { println("add from dependencies: ${it.name}") }
                 .map { if (it.isDirectory) it else zipTree(it) })
-        val sourcesMain = sourceSets.main.get()
-        sourcesMain.allSource.forEach { println("add from sources: ${it.name}") }
-        from(sourcesMain.output)
     }
 
-    register("cleanfiles", Delete::class.java) {
+    register<Delete>("cleanLogs") {
         delete(fileTree("logs") {
            include("*.csv", "*.lp", "*.log", "*.xml")
         })

@@ -1,5 +1,6 @@
 package stochastic.main;
 
+import org.apache.commons.cli.*;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 import stochastic.registry.Parameters;
@@ -21,29 +22,58 @@ public class Main {
 
     public static void main(String[] args) {
         try {
-            batchRun();
-            // singleRun();
-        } catch (OptException ex) {
+            Options options = new Options();
+            options.addOption("b", false,
+                    "batch run (single run otherwise)");
+            options.addOption("c", true,
+                    "column gen strategy (enum/all/best/first)");
+            options.addOption("d", true,
+                    "distribution (exp/tnorm/lnorm");
+            options.addOption("f", true,
+                    "flight pick (all/hub/rush)");
+            options.addOption("m", true, "distribution mean");
+            options.addOption("n", true,
+                    "instance name");
+            options.addOption("p", true, "instance path");
+            options.addOption("r", true, "reschedule budget fraction");
+            options.addOption("t", true,
+                    "type (quality/time/budget/mean/excess)");
+
+            CommandLineParser parser = new DefaultParser();
+            CommandLine cmd = parser.parse(options, args);
+
+            String name = cmd.hasOption('n') ? cmd.getOptionValue('n') : "instance1";
+            String instancePath = cmd.hasOption('p') ? cmd.getOptionValue("p") : ("data/" + name);
+            Parameters.setInstancePath(instancePath);
+
+            setDefaultParameters();
+            writeDefaultParameters();
+            updateParameters(cmd);
+
+            if (cmd.hasOption('b')) {
+                BatchRunner batchRunner = new BatchRunner(name);
+                String runType = cmd.getOptionValue('t');
+                switch(runType) {
+                    case "quality":
+                        batchRunner.runForQuality();
+                        break;
+                    case "time":
+                        batchRunner.runForTimeComparison();
+                        break;
+                    case "budget":
+                        batchRunner.runForBudgetComparison();
+                        break;
+                    case "mean":
+                        batchRunner.runForMeanComparison();
+                        break;
+                    default:
+                        throw new OptException("unknown run type: " + runType);
+                }
+            } else
+                singleRun();
+        } catch (ParseException | OptException ex) {
             logger.error(ex);
         }
-    }
-
-    private static void batchRun() throws OptException {
-        BatchRunner batchRunner = new BatchRunner();
-
-        setDefaultParameters();
-        writeDefaultParameters();
-
-        batchRunner.runQualitySet();
-
-        setDefaultParameters();
-        batchRunner.runTimeComparisonSet();
-
-        setDefaultParameters();
-        batchRunner.runBudgetComparisonSet();
-
-        setDefaultParameters();
-        batchRunner.runMeanComparisonSet();
     }
 
     private static void singleRun() throws OptException {
@@ -106,6 +136,9 @@ public class Main {
     private static void writeDefaultParameters() throws OptException {
         try {
             String kpiFileName = "solution/parameters.yaml";
+            if (BatchRunner.fileExists(kpiFileName))
+                return;
+
             TreeMap<String, Object> parameters = new TreeMap<>();
 
             parameters.put("column gen strategy", Parameters.getColumnGenStrategy().name());
@@ -118,8 +151,8 @@ public class Main {
             parameters.put("benders num iterations", Parameters.getNumBendersIterations());
             parameters.put("benders warm start", Parameters.isWarmStartBenders());
             parameters.put("expected excess enabled", Parameters.isExpectedExcess());
-            parameters.put("expected excess rho: ", Parameters.getRho());
-            parameters.put("expected excess target: ", Parameters.getExcessTarget());
+            parameters.put("expected excess rho", Parameters.getRho());
+            parameters.put("expected excess target", Parameters.getExcessTarget());
             parameters.put("flight pick strategy", Parameters.getFlightPickStrategy().name());
             parameters.put("reschedule time budget fraction", Parameters.getRescheduleBudgetFraction());
             parameters.put("reschedule time limit for flights", Parameters.getFlightRescheduleBound());
@@ -139,6 +172,71 @@ public class Main {
         } catch (IOException ex) {
             logger.error(ex);
             throw new OptException("error writing default parameters");
+        }
+    }
+
+    private static void updateParameters(CommandLine cmd) {
+        if (cmd.hasOption('c')) {
+            final String columnGen = cmd.getOptionValue('c');
+            switch (columnGen) {
+                case "enum":
+                    Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.FULL_ENUMERATION);
+                    break;
+                case "all":
+                    Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.ALL_PATHS);
+                    break;
+                case "best":
+                    Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.BEST_PATHS);
+                    break;
+                case "first":
+                    Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.FIRST_PATHS);
+                    break;
+                default:
+                    logger.error("unknown column generation strattegy: " + columnGen);
+                    break;
+            }
+        }
+        if (cmd.hasOption('d')) {
+            final String distribution = cmd.getOptionValue('d');
+            switch (distribution) {
+                case "exp":
+                    Parameters.setDistributionType(Enums.DistributionType.EXPONENTIAL);
+                    break;
+                case "tnorm":
+                    Parameters.setDistributionType(Enums.DistributionType.TRUNCATED_NORMAL);
+                    break;
+                case "lnorm":
+                    Parameters.setDistributionType(Enums.DistributionType.LOGNORMAL);
+                    break;
+                default:
+                    logger.error("unknown distribution: " + distribution);
+                    break;
+            }
+        }
+        if (cmd.hasOption('f')) {
+            final String distribution = cmd.getOptionValue('f');
+            switch (distribution) {
+                case "all":
+                    Parameters.setFlightPickStrategy(Enums.FlightPickStrategy.ALL);
+                    break;
+                case "hub":
+                    Parameters.setFlightPickStrategy(Enums.FlightPickStrategy.HUB);
+                    break;
+                case "rush":
+                    Parameters.setFlightPickStrategy(Enums.FlightPickStrategy.RUSH_TIME);
+                    break;
+                default:
+                    logger.error("unknown flight pick strategy: " + distribution);
+                    break;
+            }
+        }
+        if (cmd.hasOption('m')) {
+            final double mean = Double.parseDouble(cmd.getOptionValue('m'));
+            Parameters.setDistributionMean(mean);
+        }
+        if (cmd.hasOption('r')) {
+            final double budgetFraction = Double.parseDouble(cmd.getOptionValue('r'));
+            Parameters.setRescheduleBudgetFraction(budgetFraction);
         }
     }
 }
