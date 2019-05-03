@@ -38,9 +38,16 @@ public class Main {
             options.addOption("r", true, "reschedule budget fraction");
             options.addOption("t", true,
                     "type (quality/time/budget/mean/excess)");
+            options.addOption("h", false, "help (show options and exit)");
 
             CommandLineParser parser = new DefaultParser();
             CommandLine cmd = parser.parse(options, args);
+
+            if (cmd.hasOption('h')) {
+                HelpFormatter helpFormatter = new HelpFormatter();
+                helpFormatter.printHelp("stochastic.jar/stochastic-uber.jar", options);
+                return;
+            }
 
             String name = cmd.hasOption('n') ? cmd.getOptionValue('n') : "instance1";
             String instancePath = cmd.hasOption('p') ? cmd.getOptionValue("p") : ("data/" + name);
