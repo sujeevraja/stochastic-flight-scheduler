@@ -38,6 +38,10 @@ public class Main {
             options.addOption("r", true, "reschedule budget fraction");
             options.addOption("t", true,
                     "type (quality/time/budget/mean/excess)");
+            options.addOption("test", false,
+                    "test run");
+            options.addOption("training", false,
+                    "training run");
             options.addOption("h", false, "help (show options and exit)");
 
             CommandLineParser parser = new DefaultParser();
@@ -68,7 +72,10 @@ public class Main {
                         batchRunner.runForTimeComparison();
                         break;
                     case "budget":
-                        batchRunner.runForBudgetComparison();
+                        if (cmd.hasOption("training"))
+                            batchRunner.trainingRun();
+                        if (cmd.hasOption("test"))
+                            batchRunner.testRun();
                         break;
                     case "mean":
                         batchRunner.runForMeanComparison();

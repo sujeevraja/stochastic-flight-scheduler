@@ -334,6 +334,7 @@ class BatchRunner {
             throw new OptException("error writing to csv during test run");
         }
     }
+
     /**
      * Does a quality run to compare the effect of changing time budgets.
      *
