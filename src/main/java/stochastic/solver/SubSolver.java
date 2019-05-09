@@ -123,6 +123,7 @@ public class SubSolver {
     }
 
     void end() throws IloException {
+        subModelBuilder.clearCplexObjects();
         subModelBuilder = null;
         cplex.clearModel();
         cplex.endModel();

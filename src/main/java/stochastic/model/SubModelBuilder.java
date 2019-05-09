@@ -246,4 +246,52 @@ public class SubModelBuilder {
     public double getDualRisk() throws IloException {
         return cplex.getDual(riskConstraint);
     }
+
+    public void clearCplexObjects() {
+        for(int i = 0; i < y.length; ++i) {
+            for (int j = 0; j < y[i].length; ++j)
+                y[i][j] = null;
+            y[i] = null;
+        }
+        y = null;
+
+        for (int i = 0; i < d.length; ++i)
+            d[i] = null;
+        d = null;
+
+        v= null;
+
+        for (int i = 0; i < legCoverConstraints.length; ++i)
+            legCoverConstraints[i] = null;
+        legCoverConstraints = null;
+
+        for (int i = 0; i < onePathPerTailConstraints.length; ++i)
+            onePathPerTailConstraints[i] = null;
+        onePathPerTailConstraints = null;
+
+        for (int i = 0; i < legDelayLinkConstraints.length; ++i)
+            legDelayLinkConstraints[i] = null;
+        legDelayLinkConstraints = null;
+
+        for (int i = 0; i < boundConstraints.length; ++i) {
+            for (int j = 0; j < boundConstraints[i].length; ++j)
+                boundConstraints[i][j] = null;
+            boundConstraints[i] = null;
+        }
+        boundConstraints = null;
+
+        riskConstraint = null;
+
+        for (int i = 0; i < tailCoverExprs.length; ++i)
+            tailCoverExprs[i] = null;
+        tailCoverExprs = null;
+
+        for (int i = 0; i < legCoverExprs.length; ++i)
+            legCoverExprs[i] = null;
+        legCoverExprs = null;
+
+        for (int i = 0; i < delayExprs.length; ++i)
+            delayExprs[i] = null;
+        delayExprs = null;
+    }
 }

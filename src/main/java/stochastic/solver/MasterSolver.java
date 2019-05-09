@@ -150,7 +150,10 @@ public class MasterSolver {
 
     void end() throws IloException {
         obj = null;
+        for (int i = 0; i < thetas.length; ++i)
+            thetas[i] = null;
         thetas = null;
+        masterModelBuilder.clearCplexObjects();
         masterModelBuilder = null;
         cplex.clearModel();
         cplex.endModel();

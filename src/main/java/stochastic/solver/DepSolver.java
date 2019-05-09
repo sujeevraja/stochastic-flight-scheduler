@@ -52,6 +52,7 @@ public class DepSolver {
 
             // sub models
             Scenario[] scenarios = dataRegistry.getDelayScenarios();
+            SubModelBuilder[] subModelBuilders = new SubModelBuilder[scenarios.length];
             for (int i = 0; i < scenarios.length; ++i) {
                 Scenario s = scenarios[i];
                 ArrayList<Path> allPaths = dataRegistry.getNetwork().enumeratePathsForTails(
@@ -64,6 +65,7 @@ public class DepSolver {
                 subModelBuilder.addPathVarsToConstraints();
                 subModelBuilder.updateModelWithFirstStageVars(masterModelBuilder.getX());
                 subModelBuilder.addConstraintsToModel();
+                subModelBuilders[i] = subModelBuilder;
                 logger.info("added terms for scenario " + (i + 1) + " of " + scenarios.length);
             }
 
@@ -98,6 +100,10 @@ public class DepSolver {
 
             logger.info("DEP reschedule cost: " + rescheduleCost);
             depSolution = new RescheduleSolution("dep", rescheduleCost, reschedules);
+
+            masterModelBuilder.clearCplexObjects();
+            for (SubModelBuilder subModelBuilder : subModelBuilders)
+                subModelBuilder.clearCplexObjects();
             cplex.clearModel();
             cplex.endModel();
             cplex.end();

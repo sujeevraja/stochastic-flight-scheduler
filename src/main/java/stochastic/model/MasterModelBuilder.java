@@ -93,4 +93,10 @@ public class MasterModelBuilder {
     public double[] getxValues() throws IloException {
         return cplex.getValues(x);
     }
+
+    public void clearCplexObjects() {
+        for (int i = 0; i < x.length; ++i)
+            x[i] = null;
+        x = null;
+    }
 }
