@@ -29,6 +29,7 @@ public class Parameters {
     private static int numReducedCostPaths; // number of reduced cost paths to collect in second stage.
 
     private static boolean debugVerbose; // generates additional logging, writes lP files and solutions.
+    private static boolean setCplexNames; // adds names to model variables and constraints.
 
     private static boolean runSecondStageInParallel = false;
     private static int numThreadsForSecondStage = 1;
@@ -160,6 +161,14 @@ public class Parameters {
 
     public static boolean isDebugVerbose() {
         return debugVerbose;
+    }
+
+    public static void setSetCplexNames(boolean setCplexNames) {
+        Parameters.setCplexNames = setCplexNames;
+    }
+
+    public static boolean isSetCplexNames() {
+        return setCplexNames;
     }
 
     public static void setRunSecondStageInParallel(boolean runSecondStageInParallel) {
