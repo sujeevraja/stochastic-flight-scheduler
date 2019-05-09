@@ -77,15 +77,18 @@ class Controller {
         logger.info("built connection network.");
     }
 
+    final void setDelayGenerator() {
+        // DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getLegs().size(), dataRegistry.getTails());
+        // DelayGenerator dgen = new TestDelayGenerator(dataRegistry.getLegs().size(), dataRegistry.getTails());
+        DelayGenerator dgen = new StrategicDelayGenerator(dataRegistry.getLegs());
+        dataRegistry.setDelayGenerator(dgen);
+    }
+
     /**
      * Generates delay realizations and probabilities for second stage scenarios.
      */
     final void buildScenarios() {
-        // DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getLegs().size(), dataRegistry.getTails());
-        // DelayGenerator dgen = new TestDelayGenerator(dataRegistry.getLegs().size(), dataRegistry.getTails());
-        DelayGenerator dgen = new StrategicDelayGenerator(dataRegistry.getLegs());
-
-        dataRegistry.setDelayGenerator(dgen);
+        DelayGenerator dgen = dataRegistry.getDelayGenerator();
         Scenario[] scenarios = dgen.generateScenarios(Parameters.getNumSecondStageScenarios());
         dataRegistry.setDelayScenarios(scenarios);
 

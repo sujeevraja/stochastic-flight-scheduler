@@ -91,6 +91,7 @@ class BatchRunner {
             // solve models
             Controller controller = new Controller();
             controller.readData();
+            controller.setDelayGenerator();
             controller.buildScenarios();
 
             controller.solveWithNaiveApproach();
@@ -192,6 +193,7 @@ class BatchRunner {
             // solve models
             Controller controller = new Controller();
             controller.readData();
+            controller.setDelayGenerator();
             controller.buildScenarios();
             controller.solveWithBenders();
 
@@ -244,6 +246,7 @@ class BatchRunner {
             // solve models
             Controller controller = new Controller();
             controller.readData();
+            controller.setDelayGenerator();
             controller.buildScenarios();
 
             controller.solveWithNaiveApproach();
@@ -299,6 +302,7 @@ class BatchRunner {
             // solve models
             Controller controller = new Controller();
             controller.readData();
+            controller.setDelayGenerator();
             ArrayList<RescheduleSolution> rescheduleSolutions =
                     controller.collectRescheduleSolutionsFromFiles();
 
@@ -390,6 +394,7 @@ class BatchRunner {
             // solve models
             Controller controller = new Controller();
             controller.readData();
+            controller.setDelayGenerator();
             controller.buildScenarios();
 
             controller.solveWithNaiveApproach();
@@ -507,6 +512,7 @@ class BatchRunner {
             // solve models
             Controller controller = new Controller();
             controller.readData();
+            controller.setDelayGenerator();
             controller.buildScenarios();
 
             controller.solveWithNaiveApproach();
