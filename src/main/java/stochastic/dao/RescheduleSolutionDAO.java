@@ -22,7 +22,7 @@ public class RescheduleSolutionDAO {
     public RescheduleSolutionDAO(String modelName, ArrayList<Leg> legs) throws OptException {
         try {
             // Collect reschedule values.
-            String filePath = "solution/reschedule_solution_" + ".csv";
+            String filePath = "solution/reschedule_solution_" + modelName + ".csv";
             BufferedReader reader = new BufferedReader(new FileReader(filePath));
             Map<Integer, Integer> legIdRescheduleMap = new HashMap<>();
             CSVHelper.parseLine(reader); // parse once to skip headers
