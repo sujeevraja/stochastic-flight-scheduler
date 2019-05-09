@@ -267,6 +267,8 @@ class BatchRunner {
 
             CSVHelper.writeLine(trainingWriter, row);
             trainingWriter.close();
+
+            controller.writeRescheduleSolutions();
         } catch (IOException ex) {
             logger.error(ex);
             throw new OptException("error writing to csv during training run");

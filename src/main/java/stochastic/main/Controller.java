@@ -358,4 +358,20 @@ class Controller {
 
         return rescheduleSolutions;
     }
+
+    void writeRescheduleSolutions() throws OptException {
+        try {
+            if (naiveModelSolution != null)
+                naiveModelSolution.writeCSV(dataRegistry.getLegs());
+
+            if (depSolution != null)
+                depSolution.writeCSV(dataRegistry.getLegs());
+
+            if (bendersSolution != null)
+                bendersSolution.writeCSV(dataRegistry.getLegs());
+        } catch (IOException ex) {
+            logger.error(ex);
+            throw new OptException("problem writing reschedule solutions to csv");
+        }
+    }
 }
