@@ -48,7 +48,7 @@ public class DelaySolution {
                 maxPropagatedDelay = delay;
         }
         testKPISet.setKpi(Enums.TestKPI.totalPropagatedDelay, sumPropagatedDelay);
-        testKPISet.setKpi(Enums.TestKPI.maximumExcessDelay, maxPropagatedDelay);
+        testKPISet.setKpi(Enums.TestKPI.maximumPropagatedDelay, maxPropagatedDelay);
         testKPISet.setKpi(Enums.TestKPI.averagePropagatedDelay, sumPropagatedDelay / propagatedDelays.length);
 
         excessDelays = new int[recourseDelays.length];
