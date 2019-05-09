@@ -14,7 +14,7 @@ public class Leg {
     private double rescheduleCostPerMin; // first stage reschedule cost
     private double delayCostPerMin; // second stage reschedule cost
 
-    // times are all UNIX epoch times.
+    // times are all UNIX epoch times in minutes.
     private long origDepTime;
     private long depTime;
     private long origArrTime;
@@ -113,7 +113,7 @@ public class Leg {
     @Override
     public final String toString() {
         return ("Leg(id=" + id + ",index=" + index + ",fltNum=" + fltNum + ",depPort=" + depPort +
-                ",depTime=" + depTime + ",arrPort=" + arrPort + ",arrTime=" + arrTime + ",origTail=" +
-                origTailId + ")");
+                ",depTime=" + depTime + ",arrPort=" + arrPort + ",arrTime=" + arrTime +
+                ",origTail=" + origTailId + ")");
     }
 }

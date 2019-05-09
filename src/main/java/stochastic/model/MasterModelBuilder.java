@@ -6,7 +6,6 @@ import stochastic.domain.Leg;
 import stochastic.domain.Tail;
 import stochastic.registry.Parameters;
 
-import java.time.Duration;
 import java.util.ArrayList;
 
 public class MasterModelBuilder {
@@ -67,7 +66,7 @@ public class MasterModelBuilder {
                 cons.addTerm(x[currLegIndex], 1);
                 cons.addTerm(x[nextLegIndex], -1);
 
-                int rhs = (int) Duration.between(currLeg.getArrTime(), nextLeg.getDepTime()).toMinutes();
+                int rhs = (int) (nextLeg.getDepTime() - currLeg.getArrTime());
                 rhs -= currLeg.getTurnTimeInMin();
                 IloRange r = cplex.addLe(cons, (double) rhs);
                 r.setName("connect_" + currLeg.getId() + "_" + nextLeg.getId());

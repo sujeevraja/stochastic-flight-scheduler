@@ -21,7 +21,6 @@ import stochastic.solver.NaiveSolver;
 import stochastic.utility.OptException;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -243,7 +242,7 @@ class Controller {
             for (int i = 0; i < tailLegs.size() - 1; ++i) {
                 Leg leg = tailLegs.get(i);
                 Leg nextLeg = tailLegs.get(i + 1);
-                int turnTime = (int) Duration.between(leg.getArrTime(), nextLeg.getDepTime()).toMinutes();
+                int turnTime = (int) (nextLeg.getDepTime() - leg.getArrTime());
                 if (turnTime < leg.getTurnTimeInMin()) {
                     logger.warn("turn after leg " + leg.getId() + " is shorter than its turn time "
                             + leg.getTurnTimeInMin() + ".");

@@ -5,7 +5,6 @@ import org.apache.logging.log4j.Logger;
 import stochastic.domain.Leg;
 import stochastic.domain.Tail;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -70,10 +69,6 @@ public class Network {
         logger.info("completed building adjacency list.");
     }
 
-    public HashMap<Integer, ArrayList<Integer>> getAdjacencyList() {
-        return adjacencyList;
-    }
-
     public ArrayList<Integer> getNeighbors(int legIndex) {
         return adjacencyList.getOrDefault(legIndex, null);
     }
@@ -82,8 +77,8 @@ public class Network {
         if (!currLeg.getArrPort().equals(nextLeg.getDepPort()))
             return false;
 
-        LocalDateTime arrPlusTurnTime = currLeg.getArrTime().plusMinutes(currLeg.getTurnTimeInMin());
-        return !nextLeg.getDepTime().isBefore(arrPlusTurnTime);
+        long arrPlusTurnTime = currLeg.getArrTime() + currLeg.getTurnTimeInMin();
+        return nextLeg.getDepTime() >= arrPlusTurnTime;
     }
 
     private void addNeighbor(Integer legIndex, Integer neighborIndex) {

@@ -4,8 +4,6 @@ import stochastic.domain.Leg;
 import stochastic.domain.Tail;
 import stochastic.network.Path;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,22 +39,22 @@ public class SolverUtility {
             // must be on the original path of some tail.
 
             Path pathWithDelays = new Path(tail);
-            LocalDateTime currentTime = null;
+            long currentTime = -1;
             for (Leg leg : origPath.getLegs()) {
                 // find delayed departure time due to primary delay.
                 int legDelay = primaryDelays[leg.getIndex()];
-                LocalDateTime delayedDepTime = leg.getDepTime().plusMinutes(legDelay);
+                long delayedDepTime = leg.getDepTime() + legDelay;
 
                 // find delayed departure time due to propagated delay
-                if (currentTime != null && currentTime.isAfter(delayedDepTime))
+                if (currentTime != -1 && currentTime > delayedDepTime)
                     delayedDepTime = currentTime;
 
                 // Add leg to the path with maximum of primary and propagated delay.
-                legDelay = (int) Duration.between(leg.getDepTime(), delayedDepTime).toMinutes();
+                legDelay = (int) (delayedDepTime - leg.getDepTime());
                 pathWithDelays.addLeg(leg, legDelay);
 
                 // update current time based on leg's delayed arrival time and turn time.
-                currentTime = leg.getArrTime().plusMinutes(legDelay).plusMinutes(leg.getTurnTimeInMin());
+                currentTime = leg.getArrTime() + legDelay + leg.getTurnTimeInMin();
             }
 
             ArrayList<Path> tailPaths = new ArrayList<>();

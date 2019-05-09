@@ -16,6 +16,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
@@ -69,11 +70,14 @@ public class ScheduleDAO {
 
         String depTimeStr = legElem.getElementsByTagName("depTime").item(0).getTextContent();
         LocalDateTime depTime = LocalDateTime.parse(depTimeStr, format);
+        long depTimeMinutesUnix = depTime.toEpochSecond(ZoneOffset.UTC) / 60;
 
         String arrTimeStr = legElem.getElementsByTagName("arrTime").item(0).getTextContent();
         LocalDateTime arrTime = LocalDateTime.parse(arrTimeStr, format);
+        long arrTimeMinutesUnix = arrTime.toEpochSecond(ZoneOffset.UTC) / 60;
 
-        return new Leg(id, fltNum, depPort, arrPort, turnTime, tail, depTime, arrTime);
+        return new Leg(id, fltNum, depPort, arrPort, turnTime, tail, depTimeMinutesUnix,
+                arrTimeMinutesUnix);
     }
 
     private static Integer getInt(Element elem, String tag) {

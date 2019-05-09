@@ -110,7 +110,7 @@ public class NaiveSolver {
                 cons.addTerm(x[currLegIndex], 1);
                 cons.addTerm(x[nextLegIndex], -1);
 
-                int rhs = (int) Duration.between(currLeg.getArrTime(), nextLeg.getDepTime()).toMinutes();
+                int rhs = (int) (nextLeg.getDepTime() - currLeg.getArrTime());
                 rhs -= currLeg.getTurnTimeInMin();
                 cplex.addLe(cons, (double) rhs, "connect_" + currLeg.getId() + "_" + nextLeg.getId());
             }

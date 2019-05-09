@@ -4,8 +4,6 @@ import stochastic.domain.Leg;
 import stochastic.registry.Parameters;
 import stochastic.utility.Enums;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -85,26 +83,23 @@ public class StrategicDelayGenerator implements DelayGenerator {
 
     private ArrayList<Leg> selectRushTimeLegs() {
         // find earliest departure and latest arrival times.
-        LocalDateTime earliestDepTime = legs.get(0).getDepTime();
-        LocalDateTime latestArrTime = legs.get(0).getArrTime();
+        long earliestDepTime = legs.get(0).getDepTime();
+        long latestArrTime = legs.get(0).getArrTime();
 
         for (int i = 1; i < legs.size(); ++i) {
             Leg leg = legs.get(i);
-            if (leg.getDepTime().isBefore(earliestDepTime))
-                earliestDepTime = leg.getDepTime();
-
-            if (leg.getArrTime().isAfter(latestArrTime))
-                latestArrTime = leg.getArrTime();
+            earliestDepTime = Math.min(earliestDepTime, leg.getDepTime());
+            latestArrTime = Math.max(latestArrTime, leg.getArrTime());
         }
 
-        int dayLengthInMinutes = (int) Duration.between(earliestDepTime, latestArrTime).toMinutes();
+        int dayLengthInMinutes = (int) (latestArrTime - earliestDepTime);
         int rushTimeMinutes = (int) (0.25 * dayLengthInMinutes); // first one-fourth of day assumed to be rush time.
 
-        LocalDateTime latestDepTime = earliestDepTime.plusMinutes(rushTimeMinutes);
+        long latestDepTime = earliestDepTime + rushTimeMinutes;
 
         ArrayList<Leg> selectedLegs = new ArrayList<>();
         for (Leg leg : legs) {
-            if (!leg.getDepTime().isAfter(latestDepTime))
+            if (leg.getDepTime() <= latestDepTime)
                 selectedLegs.add(leg);
         }
 
