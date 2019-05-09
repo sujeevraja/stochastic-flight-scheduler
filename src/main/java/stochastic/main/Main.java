@@ -125,6 +125,7 @@ public class Main {
 
         // Debugging parameter
         Parameters.setDebugVerbose(false); // Set to true to see CPLEX logs, lp files and solution xml files.
+        Parameters.setSetCplexNames(false);
 
         // Multi-threading parameters
         Parameters.setRunSecondStageInParallel(true);

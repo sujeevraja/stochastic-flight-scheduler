@@ -74,11 +74,14 @@ public class NaiveSolver {
         IloLinearNumExpr objExpr = cplex.linearNumExpr();
         for (int j = 0; j < legs.size(); ++j) {
             Leg leg = legs.get(j);
-            v[j] = cplex.numVar(0, Double.MAX_VALUE, "v_" + leg.getId());
+            v[j] = cplex.numVar(0, Double.MAX_VALUE);
+            if (Parameters.isSetCplexNames())
+                v[j].setName("v_" + leg.getId());
             objExpr.addTerm(v[j], leg.getDelayCostPerMin());
 
-            String varName = "x_" + legs.get(j).getId();
-            x[j] = cplex.numVar(0, Parameters.getFlightRescheduleBound(), IloNumVarType.Int, varName);
+            x[j] = cplex.numVar(0, Parameters.getFlightRescheduleBound(), IloNumVarType.Int);
+            if (Parameters.isSetCplexNames())
+                x[j].setName("x_" + legs.get(j).getId());
             objExpr.addTerm(x[j], leg.getRescheduleCostPerMin());
         }
         cplex.addMinimize(objExpr);
@@ -91,7 +94,9 @@ public class NaiveSolver {
             IloLinearNumExpr expr = cplex.linearNumExpr();
             expr.addTerm(v[i], 1.0);
             expr.addTerm(x[i], 1.0);
-            cplex.addGe(expr, expectedDelays[i], "delay_reschedule_link_" + legs.get(i).getId());
+            IloRange cons = cplex.addGe(expr, expectedDelays[i]);
+            if (Parameters.isSetCplexNames())
+                cons.setName("delay_reschedule_link_" + legs.get(i).getId());
         }
 
         // Add original routing constraints
@@ -106,13 +111,15 @@ public class NaiveSolver {
                 int currLegIndex = currLeg.getIndex();
                 int nextLegIndex = nextLeg.getIndex();
 
-                IloLinearNumExpr cons = cplex.linearNumExpr();
-                cons.addTerm(x[currLegIndex], 1);
-                cons.addTerm(x[nextLegIndex], -1);
+                IloLinearNumExpr expr = cplex.linearNumExpr();
+                expr.addTerm(x[currLegIndex], 1);
+                expr.addTerm(x[nextLegIndex], -1);
 
                 int rhs = (int) (nextLeg.getDepTime() - currLeg.getArrTime());
                 rhs -= currLeg.getTurnTimeInMin();
-                cplex.addLe(cons, (double) rhs, "connect_" + currLeg.getId() + "_" + nextLeg.getId());
+                IloRange cons = cplex.addLe(expr, (double) rhs);
+                if (Parameters.isSetCplexNames())
+                    cons.setName( "connect_" + currLeg.getId() + "_" + nextLeg.getId());
             }
         }
 
@@ -121,7 +128,9 @@ public class NaiveSolver {
         for (int j = 0; j < legs.size(); ++j)
             budgetExpr.addTerm(x[j], 1);
 
-        cplex.addLe(budgetExpr, (double) dataRegistry.getRescheduleTimeBudget(), "reschedule_time_budget");
+        IloRange cons = cplex.addLe(budgetExpr, (double) dataRegistry.getRescheduleTimeBudget());
+        if (Parameters.isSetCplexNames())
+            cons.setName("reschedule_time_budget");
 
         if (Parameters.isDebugVerbose())
             cplex.exportModel("logs/naive_model.lp");

@@ -26,9 +26,10 @@ public class MasterModelBuilder {
 
     public void buildVariables() throws IloException {
         for (int j = 0; j < legs.size(); j++) {
-            String varName = "x_" + legs.get(j).getId();
-            x[j] = cplex.numVar(0, Parameters.getFlightRescheduleBound(), IloNumVarType.Int, varName);
-
+            x[j] = cplex.numVar(0, Parameters.getFlightRescheduleBound(), IloNumVarType.Int);
+            if (Parameters.isSetCplexNames()) {
+                x[j].setName("x_" + legs.get(j).getId());
+            }
         }
     }
 
@@ -69,7 +70,8 @@ public class MasterModelBuilder {
                 int rhs = (int) (nextLeg.getDepTime() - currLeg.getArrTime());
                 rhs -= currLeg.getTurnTimeInMin();
                 IloRange r = cplex.addLe(cons, (double) rhs);
-                r.setName("connect_" + currLeg.getId() + "_" + nextLeg.getId());
+                if (Parameters.isSetCplexNames())
+                    r.setName("connect_" + currLeg.getId() + "_" + nextLeg.getId());
             }
         }
     }
@@ -80,7 +82,8 @@ public class MasterModelBuilder {
             budgetExpr.addTerm(x[j], 1);
 
         IloRange budgetConstraint = cplex.addLe(budgetExpr, budget);
-        budgetConstraint.setName("reschedule_time_budget");
+        if (Parameters.isSetCplexNames())
+            budgetConstraint.setName("reschedule_time_budget");
     }
 
     public IloNumVar[] getX() {
