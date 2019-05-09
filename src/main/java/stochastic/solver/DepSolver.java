@@ -99,6 +99,7 @@ public class DepSolver {
             logger.info("DEP reschedule cost: " + rescheduleCost);
             depSolution = new RescheduleSolution("dep", rescheduleCost, reschedules);
             cplex.clearModel();
+            cplex.endModel();
             cplex.end();
 
             logger.info("completed DEP");

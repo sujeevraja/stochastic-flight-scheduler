@@ -149,7 +149,11 @@ public class MasterSolver {
     }
 
     void end() throws IloException {
+        obj = null;
+        thetas = null;
+        masterModelBuilder = null;
         cplex.clearModel();
+        cplex.endModel();
         cplex.end();
     }
 }
