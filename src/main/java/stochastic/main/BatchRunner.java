@@ -212,6 +212,128 @@ class BatchRunner {
         }
     }
 
+    void trainingRun() throws OptException {
+        try {
+            final String trainingPath = "solution/results_training.csv";
+            final boolean addTrainingHeaders = !fileExists(trainingPath);
+            BufferedWriter trainingWriter = new BufferedWriter(
+                    new FileWriter(trainingPath, true));
+
+            if (addTrainingHeaders) {
+                ArrayList<String> trainingHeaders = new ArrayList<>(Arrays.asList(
+                        "instance",
+                        "budget fraction",
+                        "Naive model reschedule cost",
+                        "Naive model solution time (seconds)",
+                        "DEP reschedule cost",
+                        "DEP solution time (seconds)",
+                        "Benders reschedule cost",
+                        "Benders solution time (seconds)",
+                        "Benders lower bound",
+                        "Benders upper bound",
+                        "Benders gap",
+                        "Benders number of cuts",
+                        "Benders number of iterations"));
+                CSVHelper.writeLine(trainingWriter, trainingHeaders);
+            }
+
+            ArrayList<String> row = new ArrayList<>();
+            row.add(instanceName);
+            row.add(Double.toString(Parameters.getRescheduleBudgetFraction()));
+
+            // solve models
+            Controller controller = new Controller();
+            controller.readData();
+            controller.buildScenarios();
+
+            controller.solveWithNaiveApproach();
+            row.add(Double.toString(controller.getNaiveModelRescheduleCost()));
+            row.add(Double.toString(controller.getNaiveModelSolutionTime()));
+
+            controller.solveWithDEP();
+            row.add(Double.toString(controller.getDepRescheduleCost()));
+            row.add(Double.toString(controller.getDepSolutionTime()));
+
+            controller.solveWithBenders();
+
+            // write training results
+            row.add(Double.toString(controller.getBendersRescheduleCost()));
+            row.add(Double.toString(controller.getBendersSolutionTime()));
+            row.add(Double.toString(controller.getBendersLowerBound()));
+            row.add(Double.toString(controller.getBendersUpperBound()));
+            row.add(Double.toString(controller.getBendersGap()));
+            row.add(Integer.toString(controller.getBendersNumCuts()));
+            row.add(Integer.toString(controller.getBendersNumIterations()));
+
+            CSVHelper.writeLine(trainingWriter, row);
+            trainingWriter.close();
+        } catch (IOException ex) {
+            logger.error(ex);
+            throw new OptException("error writing to csv during training run");
+        }
+    }
+
+    void testRun() throws OptException {
+        try {
+            final String testPath = "solution/results_test.csv";
+            final boolean addTestHeaders = !fileExists(testPath);
+            BufferedWriter testWriter = new BufferedWriter(new FileWriter(testPath, true));
+
+            if (addTestHeaders) {
+                ArrayList<String> testHeaders = new ArrayList<>(Arrays.asList(
+                        "instance", "budget fraction", "approach"));
+
+                for (Enums.TestKPI kpi : Enums.TestKPI.values()) {
+                    testHeaders.add(kpi.name());
+                    testHeaders.add("decrease (%)");
+                }
+                CSVHelper.writeLine(testWriter, testHeaders);
+            }
+
+            ArrayList<String> row = new ArrayList<>();
+            row.add(instanceName);
+            row.add(Double.toString(Parameters.getRescheduleBudgetFraction()));
+
+            // solve models
+            Controller controller = new Controller();
+            controller.readData();
+
+            QualityChecker qc = new QualityChecker(controller.getDataRegistry());
+            qc.generateTestDelays();
+            ArrayList<RescheduleSolution> rescheduleSolutions =
+                    controller.getAllRescheduleSolutions();
+            TestKPISet[] testKPISets = qc.collectAverageTestStatsForBatchRun(rescheduleSolutions);
+            TestKPISet baseKPISet = testKPISets[0];
+
+            // write test results
+            for (int j = 0; j < testKPISets.length; ++j) {
+                row = new ArrayList<>(Arrays.asList(
+                        instanceName,
+                        Double.toString(Parameters.getRescheduleBudgetFraction()),
+                        rescheduleSolutions.get(j).getName()
+                ));
+
+                TestKPISet testKPISet = testKPISets[j];
+                TestKPISet percentDecreaseSet = j > 0
+                        ? TestKPISet.getPercentageDecrease(baseKPISet, testKPISet)
+                        : null;
+
+                for (Enums.TestKPI kpi : Enums.TestKPI.values()) {
+                    row.add(testKPISet.getKpi(kpi).toString());
+                    double decrease = percentDecreaseSet != null
+                            ? percentDecreaseSet.getKpi(kpi)
+                            : 0;
+                    row.add(Double.toString(decrease));
+                }
+                CSVHelper.writeLine(testWriter, row);
+            }
+
+            testWriter.close();
+        } catch (IOException ex) {
+            logger.error(ex);
+            throw new OptException("error writing to csv during test run");
+        }
+    }
     /**
      * Does a quality run to compare the effect of changing time budgets.
      *
