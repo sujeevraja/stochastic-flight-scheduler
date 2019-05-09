@@ -223,7 +223,7 @@ public class SubSolverRunnable implements Runnable {
                 }
             }
 
-            // Cleanup CPLEX continers of the SubSolver object.
+            // Cleanup CPLEX containers of the SubSolver object.
             if (!optimal)
                 ss.end();
             ++columnGenIter;
@@ -256,8 +256,8 @@ public class SubSolverRunnable implements Runnable {
             ss.end();
         } else {
             // Update master problem data
-            double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(),
-                    ss.getDualsBound(), ss.getDualRisk());
+            double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(),
+                    ss.getDualsDelay(), ss.getDualsBound(), ss.getDualRisk());
 
             final int cutNum = Parameters.isBendersMultiCut() ? scenarioNum : 0;
             updateAlpha(cutNum, scenAlpha);
@@ -270,7 +270,8 @@ public class SubSolverRunnable implements Runnable {
         }
     }
 
-    private void buildDelaySolution(SubSolver ss, int[] primaryDelays, HashMap<Integer, ArrayList<Path>> tailPaths) {
+    private void buildDelaySolution(SubSolver ss, int[] primaryDelays,
+                                    HashMap<Integer, ArrayList<Path>> tailPaths) {
         // find selected paths for each tail
         ArrayList<Tail> tails = dataRegistry.getTails();
         ArrayList<Path> selectedPaths = new ArrayList<>();
@@ -340,8 +341,8 @@ public class SubSolverRunnable implements Runnable {
         return bestPaths;
     }
 
-    private double calculateAlpha(double[] dualsLegs, double[] dualsTail, double[] dualsDelay, double[][] dualsBnd,
-                                  double dualRisk) {
+    private double calculateAlpha(double[] dualsLegs, double[] dualsTail, double[] dualsDelay,
+                                  double[][] dualsBnd, double dualRisk) {
         ArrayList<Leg> legs = dataRegistry.getLegs();
 
         double scenAlpha = 0;

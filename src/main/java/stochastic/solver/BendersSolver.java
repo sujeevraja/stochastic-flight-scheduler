@@ -38,7 +38,6 @@ public class BendersSolver {
     private PathCache[] secondStageCaches;
 
     private RescheduleSolution finalRescheduleSolution;
-    private double[] finalThetaValues;
     private int numBendersCuts;
     private double solutionTime;
     private double percentGap;
@@ -58,10 +57,6 @@ public class BendersSolver {
 
     public RescheduleSolution getFinalRescheduleSolution() {
         return finalRescheduleSolution;
-    }
-
-    public double[] getFinalThetaValues() {
-        return finalThetaValues;
     }
 
     public int getNumBendersCuts() {
@@ -217,9 +212,8 @@ public class BendersSolver {
     }
 
     private void storeFinalSolution() {
-        finalRescheduleSolution = new RescheduleSolution("benders", masterSolver.getRescheduleCost(),
-                masterSolver.getReschedules());
-        finalThetaValues = masterSolver.getThetaValues();
+        finalRescheduleSolution = new RescheduleSolution("benders",
+                masterSolver.getRescheduleCost(), masterSolver.getReschedules());
     }
 
     private void writeCsvHeaders() throws IOException {

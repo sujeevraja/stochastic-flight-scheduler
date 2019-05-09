@@ -53,11 +53,16 @@ public class MasterSolver {
     void addTheta() throws IloException {
         if (Parameters.isBendersMultiCut()) {
             thetas = new IloNumVar[numScenarios];
-            for (int i = 0; i < numScenarios; ++i)
-                thetas[i] = cplex.numVar(-Double.MAX_VALUE, Double.MAX_VALUE, "theta_" + i);
+            for (int i = 0; i < numScenarios; ++i) {
+                thetas[i] = cplex.numVar(-Double.MAX_VALUE, Double.MAX_VALUE);
+                if (Parameters.isSetCplexNames())
+                    thetas[i].setName("theta_" + i);
+            }
         } else {
             thetas = new IloNumVar[1];
-            thetas[0] = cplex.numVar(-Double.MAX_VALUE, Double.MAX_VALUE, "theta");
+            thetas[0] = cplex.numVar(-Double.MAX_VALUE, Double.MAX_VALUE);
+            if (Parameters.isSetCplexNames())
+                thetas[0].setName("theta");
         }
         for (IloNumVar theta : thetas)
             cplex.setLinearCoef(obj, theta, 1);
@@ -123,7 +128,8 @@ public class MasterSolver {
         double alpha = cutData.getAlpha();
         double rhs = Math.abs(alpha) >= Constants.EPS ? alpha : 0.0;
         IloRange r = cplex.addGe(cons, rhs);
-        r.setName("benders_cut_" + cutIndex);
+        if (Parameters.isSetCplexNames())
+            r.setName("benders_cut_" + cutIndex);
     }
 
     double getObjValue() {
@@ -142,7 +148,15 @@ public class MasterSolver {
         return thetaValues;
     }
 
-    void end() {
+    void end() throws IloException {
+        obj = null;
+        for (int i = 0; i < thetas.length; ++i)
+            thetas[i] = null;
+        thetas = null;
+        masterModelBuilder.clearCplexObjects();
+        masterModelBuilder = null;
+        cplex.clearModel();
+        cplex.endModel();
         cplex.end();
     }
 }

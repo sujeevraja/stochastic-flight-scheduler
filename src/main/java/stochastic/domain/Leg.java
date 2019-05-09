@@ -1,7 +1,5 @@
 package stochastic.domain;
 
-import java.time.LocalDateTime;
-
 public class Leg {
     /**
      * Class used to represent leg data
@@ -16,15 +14,16 @@ public class Leg {
     private double rescheduleCostPerMin; // first stage reschedule cost
     private double delayCostPerMin; // second stage reschedule cost
 
-    private LocalDateTime origDepTime;
-    private LocalDateTime depTime;
-    private LocalDateTime origArrTime;
-    private LocalDateTime arrTime;
+    // times are all UNIX epoch times in minutes.
+    private long origDepTime;
+    private long depTime;
+    private long origArrTime;
+    private long arrTime;
 
     // info for labeling algorithm       
 
     public Leg(Integer id, Integer fltNum, Integer depPort, Integer arrPort, int turnTimeInMin,
-               Integer origTailId, LocalDateTime depTime, LocalDateTime arrTime) {
+               Integer origTailId, long depTime, long arrTime) {
         this.id = id;
         this.fltNum = fltNum;
         this.index = null;
@@ -93,17 +92,17 @@ public class Leg {
         return delayCostPerMin;
     }
 
-    public LocalDateTime getDepTime() {
+    public long getDepTime() {
         return depTime;
     }
 
-    public LocalDateTime getArrTime() {
+    public long getArrTime() {
         return arrTime;
     }
 
     public void reschedule(int numMinutes) {
-        depTime = depTime.plusMinutes(numMinutes);
-        arrTime = arrTime.plusMinutes(numMinutes);
+        depTime += numMinutes;
+        arrTime += numMinutes;
     }
 
     public void revertReschedule() {
@@ -114,7 +113,7 @@ public class Leg {
     @Override
     public final String toString() {
         return ("Leg(id=" + id + ",index=" + index + ",fltNum=" + fltNum + ",depPort=" + depPort +
-                ",depTime=" + depTime + ",arrPort=" + arrPort + ",arrTime=" + arrTime + ",origTail=" +
-                origTailId + ")");
+                ",depTime=" + depTime + ",arrPort=" + arrPort + ",arrTime=" + arrTime +
+                ",origTail=" + origTailId + ")");
     }
 }

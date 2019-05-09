@@ -6,7 +6,6 @@ import stochastic.domain.Leg;
 import stochastic.domain.Tail;
 import stochastic.registry.Parameters;
 
-import java.time.Duration;
 import java.util.ArrayList;
 
 public class MasterModelBuilder {
@@ -27,9 +26,10 @@ public class MasterModelBuilder {
 
     public void buildVariables() throws IloException {
         for (int j = 0; j < legs.size(); j++) {
-            String varName = "x_" + legs.get(j).getId();
-            x[j] = cplex.numVar(0, Parameters.getFlightRescheduleBound(), IloNumVarType.Int, varName);
-
+            x[j] = cplex.numVar(0, Parameters.getFlightRescheduleBound(), IloNumVarType.Int);
+            if (Parameters.isSetCplexNames()) {
+                x[j].setName("x_" + legs.get(j).getId());
+            }
         }
     }
 
@@ -67,10 +67,11 @@ public class MasterModelBuilder {
                 cons.addTerm(x[currLegIndex], 1);
                 cons.addTerm(x[nextLegIndex], -1);
 
-                int rhs = (int) Duration.between(currLeg.getArrTime(), nextLeg.getDepTime()).toMinutes();
+                int rhs = (int) (nextLeg.getDepTime() - currLeg.getArrTime());
                 rhs -= currLeg.getTurnTimeInMin();
                 IloRange r = cplex.addLe(cons, (double) rhs);
-                r.setName("connect_" + currLeg.getId() + "_" + nextLeg.getId());
+                if (Parameters.isSetCplexNames())
+                    r.setName("connect_" + currLeg.getId() + "_" + nextLeg.getId());
             }
         }
     }
@@ -81,7 +82,8 @@ public class MasterModelBuilder {
             budgetExpr.addTerm(x[j], 1);
 
         IloRange budgetConstraint = cplex.addLe(budgetExpr, budget);
-        budgetConstraint.setName("reschedule_time_budget");
+        if (Parameters.isSetCplexNames())
+            budgetConstraint.setName("reschedule_time_budget");
     }
 
     public IloNumVar[] getX() {
@@ -90,5 +92,11 @@ public class MasterModelBuilder {
 
     public double[] getxValues() throws IloException {
         return cplex.getValues(x);
+    }
+
+    public void clearCplexObjects() {
+        for (int i = 0; i < x.length; ++i)
+            x[i] = null;
+        x = null;
     }
 }

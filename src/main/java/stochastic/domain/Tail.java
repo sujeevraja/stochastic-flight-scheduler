@@ -1,6 +1,5 @@
 package stochastic.domain;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 public class Tail {
@@ -13,8 +12,8 @@ public class Tail {
     private ArrayList<Leg> origSchedule;
     private Integer sourcePort;
     private Integer sinkPort;
-    private LocalDateTime sourceTime;
-    private LocalDateTime sinkTime;
+    private long sourceTime;
+    private long sinkTime;
 
     public Tail(Integer id, ArrayList<Leg> origSchedule) {
         this.id = id;
@@ -50,11 +49,11 @@ public class Tail {
         return sinkPort;
     }
 
-    public LocalDateTime getSourceTime() {
+    public long getSourceTime() {
         return sourceTime;
     }
 
-    public LocalDateTime getSinkTime() {
+    public long getSinkTime() {
         return sinkTime;
     }
 

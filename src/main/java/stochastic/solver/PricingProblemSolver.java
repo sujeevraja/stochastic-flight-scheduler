@@ -8,8 +8,6 @@ import stochastic.registry.Parameters;
 import stochastic.utility.Constants;
 import stochastic.utility.Enums;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.PriorityQueue;
@@ -214,17 +212,16 @@ class PricingProblemSolver {
      */
     private Label extend(Label label, int legIndex) {
         Leg nextLeg = legs.get(legIndex);
-        LocalDateTime nextLegDepTime = nextLeg.getDepTime().plusMinutes(delays[legIndex]);
+        long nextLegDepTime = nextLeg.getDepTime() + delays[legIndex];
 
         Leg prevLeg = legs.get(label.getVertex());
-        LocalDateTime prevLegEndTime = prevLeg.getArrTime()
-                .plusMinutes(label.getTotalDelay())
-                .plusMinutes(prevLeg.getTurnTimeInMin());
+        long prevLegEndTime = (prevLeg.getArrTime() + label.getTotalDelay() +
+                               prevLeg.getTurnTimeInMin());
 
-        if (nextLegDepTime.isBefore(prevLegEndTime))
+        if (nextLegDepTime < prevLegEndTime)
             nextLegDepTime = prevLegEndTime;
 
-        int totalDelay = (int) Duration.between(nextLeg.getDepTime(), nextLegDepTime).toMinutes();
+        int totalDelay = (int) (nextLegDepTime - nextLeg.getDepTime());
 
         double reducedCost = label.getReducedCost() + getReducedCostForLeg(legIndex, totalDelay);
         return label.extend(nextLeg, totalDelay, reducedCost);

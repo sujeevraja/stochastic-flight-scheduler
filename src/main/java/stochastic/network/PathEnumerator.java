@@ -3,8 +3,6 @@ package stochastic.network;
 import stochastic.domain.Leg;
 import stochastic.domain.Tail;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -53,10 +51,10 @@ public class PathEnumerator {
                 continue;
 
             // add initial (1st-stage/random) delay.
-            LocalDateTime newDepTime = getNewDepTime(leg);
+            long newDepTime = getNewDepTime(leg);
 
             // generate paths starting from leg.
-            int delayTime = (int) Duration.between(leg.getDepTime(), newDepTime).toMinutes();
+            int delayTime = (int) (newDepTime - leg.getDepTime());
             depthFirstSearch(i, delayTime);
         }
         return paths;
@@ -86,20 +84,18 @@ public class PathEnumerator {
 
             // the object returned by getArrTime() is immutable.
             // So, the leg's original arrival time won't get affected here.
-            LocalDateTime arrivalTime = leg.getArrTime().plusMinutes(delayTimeInMin);
+            long arrivalTime = leg.getArrTime() + delayTimeInMin;
 
             for (Integer neighborIndex : neighbors) {
                 if (onPath[neighborIndex])
                     continue;
 
                 Leg neighborLeg = legs.get(neighborIndex);
-                LocalDateTime newDepTime = getNewDepTime(neighborLeg);
-                LocalDateTime minReqDepTime = arrivalTime.plusMinutes(leg.getTurnTimeInMin());
-                LocalDateTime depTimeOnPath = newDepTime.isAfter(minReqDepTime)
-                        ? newDepTime
-                        : minReqDepTime;
+                long newDepTime = getNewDepTime(neighborLeg);
+                long minReqDepTime = arrivalTime + leg.getTurnTimeInMin();
+                long depTimeOnPath = Math.max(newDepTime, minReqDepTime);
 
-                int neighborDelayTime = (int) Duration.between(neighborLeg.getDepTime(), depTimeOnPath).toMinutes();
+                int neighborDelayTime = (int) (depTimeOnPath - neighborLeg.getDepTime());
                 depthFirstSearch(neighborIndex, neighborDelayTime);
             }
         }
@@ -118,7 +114,7 @@ public class PathEnumerator {
         paths.add(path);
     }
 
-    private LocalDateTime getNewDepTime(Leg leg) {
-        return leg.getDepTime().plusMinutes(delays[leg.getIndex()]);
+    private long getNewDepTime(Leg leg) {
+        return leg.getDepTime() + delays[leg.getIndex()];
     }
 }
