@@ -299,11 +299,11 @@ class BatchRunner {
             // solve models
             Controller controller = new Controller();
             controller.readData();
+            ArrayList<RescheduleSolution> rescheduleSolutions =
+                    controller.collectRescheduleSolutionsFromFiles();
 
             QualityChecker qc = new QualityChecker(controller.getDataRegistry());
             qc.generateTestDelays();
-            ArrayList<RescheduleSolution> rescheduleSolutions =
-                    controller.getAllRescheduleSolutions();
             TestKPISet[] testKPISets = qc.collectAverageTestStatsForBatchRun(rescheduleSolutions);
             TestKPISet baseKPISet = testKPISets[0];
 
