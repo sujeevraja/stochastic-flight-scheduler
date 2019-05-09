@@ -148,7 +148,8 @@ public class MasterSolver {
         return thetaValues;
     }
 
-    void end() {
+    void end() throws IloException {
+        cplex.clearModel();
         cplex.end();
     }
 }

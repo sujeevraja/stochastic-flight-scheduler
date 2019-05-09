@@ -122,7 +122,8 @@ public class SubSolver {
         cplex.writeSolution(name);
     }
 
-    void end() {
+    void end() throws IloException {
+        cplex.clearModel();
         cplex.end();
     }
 

@@ -172,6 +172,7 @@ public class NaiveSolver {
 
         finalRescheduleSolution = new RescheduleSolution("naive_model",
                 cplexObjValue - excessDelayPenalty, reschedules);
+        cplex.clearModel();
         cplex.end();
     }
 }
