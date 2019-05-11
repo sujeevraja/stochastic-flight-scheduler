@@ -20,10 +20,10 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
+/**
+ * Used to read build Leg objects from data in Schedule.xml
+ */
 public class ScheduleDAO {
-    /**
-     * Used to read relevant leg data from Schedule.xml
-     */
     private final static Logger logger = LogManager.getLogger(ScheduleDAO.class);
     private ArrayList<Leg> legs;
     private DateTimeFormatter format;

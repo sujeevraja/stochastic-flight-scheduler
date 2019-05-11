@@ -3,6 +3,7 @@ package stochastic.main;
 import ilog.concert.IloException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import stochastic.dao.RescheduleSolutionDAO;
 import stochastic.dao.ScheduleDAO;
 import stochastic.delay.DelayGenerator;
 import stochastic.delay.Scenario;
@@ -76,15 +77,18 @@ class Controller {
         logger.info("built connection network.");
     }
 
+    final void setDelayGenerator() {
+        // DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getLegs().size(), dataRegistry.getTails());
+        // DelayGenerator dgen = new TestDelayGenerator(dataRegistry.getLegs().size(), dataRegistry.getTails());
+        DelayGenerator dgen = new StrategicDelayGenerator(dataRegistry.getLegs());
+        dataRegistry.setDelayGenerator(dgen);
+    }
+
     /**
      * Generates delay realizations and probabilities for second stage scenarios.
      */
     final void buildScenarios() {
-        // DelayGenerator dgen = new FirstFlightDelayGenerator(dataRegistry.getLegs().size(), dataRegistry.getTails());
-        // DelayGenerator dgen = new TestDelayGenerator(dataRegistry.getLegs().size(), dataRegistry.getTails());
-        DelayGenerator dgen = new StrategicDelayGenerator(dataRegistry.getLegs());
-
-        dataRegistry.setDelayGenerator(dgen);
+        DelayGenerator dgen = dataRegistry.getDelayGenerator();
         Scenario[] scenarios = dgen.generateScenarios(Parameters.getNumSecondStageScenarios());
         dataRegistry.setDelayScenarios(scenarios);
 
@@ -355,6 +359,38 @@ class Controller {
 
         if (bendersSolution != null)
             rescheduleSolutions.add(bendersSolution);
+
+        return rescheduleSolutions;
+    }
+
+    void writeRescheduleSolutions() throws OptException {
+        try {
+            if (naiveModelSolution != null)
+                naiveModelSolution.writeCSV(dataRegistry.getLegs());
+
+            if (depSolution != null)
+                depSolution.writeCSV(dataRegistry.getLegs());
+
+            if (bendersSolution != null)
+                bendersSolution.writeCSV(dataRegistry.getLegs());
+        } catch (IOException ex) {
+            logger.error(ex);
+            throw new OptException("problem writing reschedule solutions to csv");
+        }
+    }
+
+    ArrayList<RescheduleSolution> collectRescheduleSolutionsFromFiles() throws OptException {
+        ArrayList<RescheduleSolution> rescheduleSolutions = new ArrayList<>();
+        RescheduleSolution original = new RescheduleSolution("original", 0, null);
+        original.setOriginalSchedule(true);
+        rescheduleSolutions.add(original);
+
+        ArrayList<Leg> legs = dataRegistry.getLegs();
+
+        String[] models = new String[] {"naive_model", "dep", "benders"};
+        for (String model : models)
+            rescheduleSolutions.add(
+                    (new RescheduleSolutionDAO(model, legs)).getRescheduleSolution());
 
         return rescheduleSolutions;
     }
