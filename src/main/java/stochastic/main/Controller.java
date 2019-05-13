@@ -19,13 +19,13 @@ import stochastic.registry.Parameters;
 import stochastic.solver.BendersSolver;
 import stochastic.solver.DepSolver;
 import stochastic.solver.NaiveSolver;
+import stochastic.utility.CSVHelper;
 import stochastic.utility.OptException;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 class Controller {
     /**
@@ -101,6 +101,40 @@ class Controller {
 
         final int budget = (int) Math.round(avgTotalPrimaryDelay * Parameters.getRescheduleBudgetFraction());
         dataRegistry.setRescheduleTimeBudget(budget);
+    }
+
+    final void writeScenariosToFile() throws OptException {
+        logger.info("starting scenario writing...");
+        Scenario[] scenarios = dataRegistry.getDelayScenarios();
+        ArrayList<Leg> legs = dataRegistry.getLegs();
+        String prefix = "solution/primary_delays_";
+        String suffix = ".csv";
+        List<String> headers = new ArrayList<>(Arrays.asList("leg_id", "delay_minutes"));
+
+        for (int i = 0; i < scenarios.length; ++i) {
+            String filePath = prefix + i + suffix;
+            try {
+                BufferedWriter writer = new BufferedWriter(new FileWriter(filePath));
+                CSVHelper.writeLine(writer, headers);
+
+                int[] primaryDelays = scenarios[i].getPrimaryDelays();
+                for (int j = 0; j < primaryDelays.length; ++j) {
+                    if (primaryDelays[j] > 0) {
+                        Leg leg = legs.get(j);
+                        List<String> line = new ArrayList<>(Arrays.asList(
+                            leg.getId().toString(),
+                            Integer.toString(primaryDelays[j])));
+
+                        CSVHelper.writeLine(writer, line);
+                    }
+                }
+            } catch (IOException ex) {
+                logger.error(ex);
+                throw new OptException("error writing primary delays to file");
+            }
+
+        }
+        logger.info("completed scenario writing.");
     }
 
     final void solveWithBenders() throws OptException {

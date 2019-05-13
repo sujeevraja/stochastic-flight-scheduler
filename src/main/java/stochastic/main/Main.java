@@ -31,6 +31,8 @@ public class Main {
                     "distribution (exp/tnorm/lnorm");
             options.addOption("f", true,
                     "flight pick (all/hub/rush)");
+            options.addOption("g", false,
+                "generate primary delays, write to file and exit");
             options.addOption("m", true, "distribution mean");
             options.addOption("n", true,
                     "instance name");
@@ -61,32 +63,49 @@ public class Main {
             writeDefaultParameters();
             updateParameters(cmd);
 
-            if (cmd.hasOption('b')) {
-                BatchRunner batchRunner = new BatchRunner(name);
-                String runType = cmd.getOptionValue('t');
-                switch (runType) {
-                    case "quality":
-                        batchRunner.runForQuality();
-                        break;
-                    case "time":
-                        batchRunner.runForTimeComparison();
-                        break;
-                    case "budget":
-                        if (cmd.hasOption("training"))
-                            batchRunner.trainingRun();
-                        if (cmd.hasOption("test"))
-                            batchRunner.testRun();
-                        break;
-                    case "mean":
-                        batchRunner.runForMeanComparison();
-                        break;
-                    default:
-                        throw new OptException("unknown run type: " + runType);
-                }
-            } else
+            if (cmd.hasOption('g'))
+                writeDelaysAndExit();
+            else if (cmd.hasOption('b'))
+                batchRun(name, cmd.getOptionValue('t'), cmd.hasOption("training"),
+                    cmd.hasOption("test"));
+            else
                 singleRun();
         } catch (ParseException | OptException ex) {
             logger.error(ex);
+        }
+    }
+
+    private static void writeDelaysAndExit() throws OptException {
+        logger.info("started primary delay generation...");
+        Controller controller = new Controller();
+        controller.readData();
+        controller.setDelayGenerator();
+        controller.buildScenarios();
+        controller.writeScenariosToFile();
+        logger.info("completed primary delay generation.");
+    }
+
+    private static void batchRun(String name, String runType, boolean runTraining, boolean runTest)
+            throws OptException {
+        BatchRunner batchRunner = new BatchRunner(name);
+        switch (runType) {
+            case "quality":
+                batchRunner.runForQuality();
+                break;
+            case "time":
+                batchRunner.runForTimeComparison();
+                break;
+            case "budget":
+                if (runTraining)
+                    batchRunner.trainingRun();
+                if (runTest)
+                    batchRunner.testRun();
+                break;
+            case "mean":
+                batchRunner.runForMeanComparison();
+                break;
+            default:
+                throw new OptException("unknown run type: " + runType);
         }
     }
 
