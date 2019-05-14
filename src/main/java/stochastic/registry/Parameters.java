@@ -17,6 +17,7 @@ public class Parameters {
     private static Enums.DistributionType distributionType;
     private static double distributionMean;
     private static double distributionSd; // standard deviation
+    private static boolean parsePrimaryDelaysFromFiles;
 
     private static Enums.FlightPickStrategy flightPickStrategy;
 
@@ -97,6 +98,14 @@ public class Parameters {
 
     public static double getDistributionSd() {
         return distributionSd;
+    }
+
+    public static void setParsePrimaryDelaysFromFiles(boolean parsePrimaryDelaysFromFiles) {
+        Parameters.parsePrimaryDelaysFromFiles = parsePrimaryDelaysFromFiles;
+    }
+
+    public static boolean isParsePrimaryDelaysFromFiles() {
+        return parsePrimaryDelaysFromFiles;
     }
 
     public static void setFlightPickStrategy(Enums.FlightPickStrategy flightPickStrategy) {

@@ -22,9 +22,7 @@ import stochastic.solver.NaiveSolver;
 import stochastic.utility.CSVHelper;
 import stochastic.utility.OptException;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 class Controller {
@@ -84,10 +82,17 @@ class Controller {
         dataRegistry.setDelayGenerator(dgen);
     }
 
+    final void buildScenarios() throws OptException {
+        if (Parameters.isParsePrimaryDelaysFromFiles())
+            parsePrimaryDelaysFromFiles();
+        else
+            buildScenariosFromDistribution();
+    }
+
     /**
      * Generates delay realizations and probabilities for second stage scenarios.
      */
-    final void buildScenarios() {
+    private void buildScenariosFromDistribution() {
         DelayGenerator dgen = dataRegistry.getDelayGenerator();
         Scenario[] scenarios = dgen.generateScenarios(Parameters.getNumSecondStageScenarios());
         dataRegistry.setDelayScenarios(scenarios);
@@ -128,6 +133,8 @@ class Controller {
                         CSVHelper.writeLine(writer, line);
                     }
                 }
+
+                writer.close();
             } catch (IOException ex) {
                 logger.error(ex);
                 throw new OptException("error writing primary delays to file");
@@ -135,6 +142,67 @@ class Controller {
 
         }
         logger.info("completed scenario writing.");
+    }
+
+    private void parsePrimaryDelaysFromFiles() throws OptException {
+        logger.info("staring primary delay parsing...");
+        ArrayList<Leg> legs = dataRegistry.getLegs();
+        final int numScenarios = Parameters.getNumSecondStageScenarios();
+        final double probability = 1.0 / numScenarios;
+        Scenario[] scenarios = new Scenario[numScenarios];
+        final String prefix = "solution/primary_delays_";
+        final String suffix = ".csv";
+
+        // Build map from leg id to index for delay data collection.
+        Map<Integer, Integer> legIdIndexMap = new HashMap<>();
+        for (int i = 0; i < legs.size(); ++i)
+            legIdIndexMap.put(legs.get(i).getId(), i);
+
+        double avgTotalPrimaryDelay = 0.0;
+
+        for (int i = 0; i < numScenarios; ++i) {
+            // read delay data
+            String filePath = prefix + i + suffix;
+            Map<Integer, Integer> primaryDelayMap = new HashMap<>();
+            try {
+                BufferedReader reader = new BufferedReader(new FileReader(filePath));
+                CSVHelper.parseLine(reader); // parse once to skip headers
+
+                while (true) {
+                    List<String> line = CSVHelper.parseLine(reader);
+                    if (line == null)
+                        break;
+
+                    int legId = Integer.parseInt(line.get(0));
+                    int primaryDelay = Integer.parseInt(line.get(1));
+                    primaryDelayMap.put(legId, primaryDelay);
+                }
+
+                reader.close();
+            } catch (IOException ex) {
+                logger.error(ex);
+                throw new OptException("error reading primary delays from file");
+            }
+
+            // build scenario, store it
+            int[] delays = new int[legs.size()];
+            Arrays.fill(delays, 0);
+            for (Map.Entry<Integer, Integer> entry : primaryDelayMap.entrySet())
+                delays[legIdIndexMap.get(entry.getKey())] = entry.getValue();
+
+            scenarios[i] = new Scenario(probability, delays);
+            avgTotalPrimaryDelay += scenarios[i].getTotalPrimaryDelay();
+        }
+
+        dataRegistry.setDelayScenarios(scenarios);
+
+        avgTotalPrimaryDelay /= scenarios.length;
+        logger.info("average total primary delay (minutes): " + avgTotalPrimaryDelay);
+
+        final int budget = (int) Math.round(
+            avgTotalPrimaryDelay * Parameters.getRescheduleBudgetFraction());
+        dataRegistry.setRescheduleTimeBudget(budget);
+        logger.info("completed primary delay parsing.");
     }
 
     final void solveWithBenders() throws OptException {

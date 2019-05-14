@@ -10,7 +10,7 @@ public class Scenario {
     private int[] primaryDelays; // keys are leg indices, values are delays.
     private double totalPrimaryDelay;
 
-    Scenario(double probability, int[] primaryDelays) {
+    public Scenario(double probability, int[] primaryDelays) {
         this.probability = probability;
         this.primaryDelays = primaryDelays;
         this.totalPrimaryDelay = Arrays.stream(primaryDelays).sum();

@@ -9,12 +9,14 @@ import stochastic.network.Path;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 public class DataRegistry {
     /**
      * Holds input data.
      */
     private ArrayList<Leg> legs;
+    private Map<Integer, Integer> legIdIndexMap;
     private ArrayList<Tail> tails;
     private HashMap<Integer, Tail> idTailMap;
     private HashMap<Integer, Path> tailOrigPathMap;
@@ -43,6 +45,16 @@ public class DataRegistry {
 
     public void setLegs(ArrayList<Leg> legs) {
         this.legs = legs;
+    }
+
+    public void buildLegIdIndexMap() {
+        legIdIndexMap = new HashMap<>();
+        for (int i = 0; i < legs.size(); ++i)
+            legIdIndexMap.put(legs.get(i).getId(), i);
+    }
+
+    public Map<Integer, Integer> getLegIdIndexMap() {
+        return legIdIndexMap;
     }
 
     public void setTails(ArrayList<Tail> tails) {

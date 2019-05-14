@@ -37,6 +37,8 @@ public class Main {
             options.addOption("n", true,
                     "instance name");
             options.addOption("p", true, "instance path");
+            options.addOption("parseDelays", false,
+                "parse primary delays from files");
             options.addOption("r", true, "reschedule budget fraction");
             options.addOption("t", true,
                     "type (quality/time/budget/mean/excess)");
@@ -80,6 +82,7 @@ public class Main {
         Controller controller = new Controller();
         controller.readData();
         controller.setDelayGenerator();
+        Parameters.setParsePrimaryDelaysFromFiles(false);
         controller.buildScenarios();
         controller.writeScenariosToFile();
         logger.info("completed primary delay generation.");
@@ -272,6 +275,9 @@ public class Main {
         if (cmd.hasOption('r')) {
             final double budgetFraction = Double.parseDouble(cmd.getOptionValue('r'));
             Parameters.setRescheduleBudgetFraction(budgetFraction);
+        }
+        if (cmd.hasOption("parseDelays")) {
+            Parameters.setParsePrimaryDelaysFromFiles(true);
         }
     }
 }
