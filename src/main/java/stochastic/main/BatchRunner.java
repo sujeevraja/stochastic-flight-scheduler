@@ -10,9 +10,8 @@ import stochastic.utility.CSVHelper;
 import stochastic.utility.Enums;
 import stochastic.utility.OptException;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.nio.Buffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,6 +39,7 @@ class BatchRunner {
      * @throws OptException when there is any issue with solving/writing.
      */
     void runForQuality() throws OptException {
+        /*
         try {
             final String trainingPath = "solution/results_quality_training.csv";
             final boolean addTrainingHeaders = !fileExists(trainingPath);
@@ -154,6 +154,7 @@ class BatchRunner {
             logger.error(ex);
             throw new OptException("error writing to csv during quality run");
         }
+         */
     }
 
     /**
@@ -162,6 +163,7 @@ class BatchRunner {
      * @throws OptException when there is any issue with solving/writing.
      */
     void runForTimeComparison() throws OptException {
+        /*
         try {
             final String resultsPath = "solution/results_time_comparison.csv";
             final boolean addHeaders = !fileExists(resultsPath);
@@ -212,16 +214,16 @@ class BatchRunner {
             logger.error(ex);
             throw new OptException("error writing to csv during time comparison run");
         }
+         */
     }
 
     void trainingRun() throws OptException {
         try {
             final String trainingPath = "solution/results_training.csv";
             final boolean addTrainingHeaders = !fileExists(trainingPath);
-            BufferedWriter trainingWriter = new BufferedWriter(
-                    new FileWriter(trainingPath, true));
-
             if (addTrainingHeaders) {
+                BufferedWriter trainingWriter = new BufferedWriter(
+                    new FileWriter(trainingPath));
                 ArrayList<String> trainingHeaders = new ArrayList<>(Arrays.asList(
                         "instance",
                         "budget fraction",
@@ -237,42 +239,73 @@ class BatchRunner {
                         "Benders number of cuts",
                         "Benders number of iterations"));
                 CSVHelper.writeLine(trainingWriter, trainingHeaders);
+                trainingWriter.close();
             }
 
-            ArrayList<String> row = new ArrayList<>();
-            row.add(instanceName);
-            row.add(Double.toString(Parameters.getRescheduleBudgetFraction()));
+            final String trainingRowPath = "solution/training_result.txt";
+            TrainingResult trainingResult;
+            if (fileExists(trainingRowPath)) {
+                FileInputStream fileInputStream = new FileInputStream(trainingRowPath);
+                ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
+                trainingResult = (TrainingResult) objectInputStream.readObject();
+                objectInputStream.close();
+            } else
+                trainingResult = new TrainingResult();
 
-            // solve models
+            if (trainingResult.getInstance() == null)
+                trainingResult.setInstance(instanceName);
+
+            if (trainingResult.getBudgetFraction() == null)
+                trainingResult.setBudgetFraction(Parameters.getRescheduleBudgetFraction());
+
+            // solve models and write solutions
             Controller controller = new Controller();
             controller.readData();
             controller.setDelayGenerator();
             controller.buildScenarios();
-
-            controller.solveWithNaiveApproach();
-            row.add(Double.toString(controller.getNaiveModelRescheduleCost()));
-            row.add(Double.toString(controller.getNaiveModelSolutionTime()));
-
-            controller.solveWithDEP();
-            row.add(Double.toString(controller.getDepRescheduleCost()));
-            row.add(Double.toString(controller.getDepSolutionTime()));
-
-            controller.solveWithBenders();
-
-            // write training results
-            row.add(Double.toString(controller.getBendersRescheduleCost()));
-            row.add(Double.toString(controller.getBendersSolutionTime()));
-            row.add(Double.toString(controller.getBendersLowerBound()));
-            row.add(Double.toString(controller.getBendersUpperBound()));
-            row.add(Double.toString(controller.getBendersGap()));
-            row.add(Integer.toString(controller.getBendersNumCuts()));
-            row.add(Integer.toString(controller.getBendersNumIterations()));
-
-            CSVHelper.writeLine(trainingWriter, row);
-            trainingWriter.close();
-
+            controller.solve();
             controller.writeRescheduleSolutions();
-        } catch (IOException ex) {
+
+            // collect solution KPIs
+            Enums.Model model = Parameters.getModel();
+            if (model == Enums.Model.NAIVE || model == Enums.Model.ALL) {
+                trainingResult.setNaiveRescheduleCost(controller.getNaiveModelRescheduleCost());
+                trainingResult.setNaiveSolutionTime(controller.getNaiveModelSolutionTime());
+            }
+            if (model == Enums.Model.DEP || model == Enums.Model.ALL) {
+                trainingResult.setDepRescheduleCost(controller.getDepRescheduleCost());
+                trainingResult.setDepSolutionTime(controller.getDepSolutionTime());
+            }
+            if (model == Enums.Model.BENDERS || model == Enums.Model.ALL) {
+                trainingResult.setBendersRescheduleCost(controller.getBendersRescheduleCost());
+                trainingResult.setBendersSolutionTime(controller.getBendersSolutionTime());
+                trainingResult.setBendersLowerBound(controller.getBendersLowerBound());
+                trainingResult.setBendersUpperBound(controller.getBendersUpperBound());
+                trainingResult.setBendersGap(controller.getBendersGap());
+                trainingResult.setBendersNumCuts(controller.getBendersNumCuts());
+                trainingResult.setBendersNumIterations(controller.getBendersNumIterations());
+            }
+
+            // write KPIs
+            if (trainingResult.allPopulated()) {
+                BufferedWriter bw = new BufferedWriter(new FileWriter(trainingPath, true));
+                CSVHelper.writeLine(bw, trainingResult.getCsvRow());
+                bw.close();
+                File file = new File(trainingRowPath);
+                if (!file.delete())
+                    throw new OptException("unable to delete object file");
+            } else {
+                FileOutputStream fileOutputStream = new FileOutputStream(trainingRowPath);
+                ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
+                objectOutputStream.writeObject(trainingResult);
+                objectOutputStream.flush();
+                objectOutputStream.close();
+            }
+        } catch (ClassNotFoundException ex) {
+            logger.error(ex);
+            throw new OptException("unable to parse training row from file");
+        }
+        catch (IOException ex) {
             logger.error(ex);
             throw new OptException("error writing to csv during training run");
         }
@@ -347,6 +380,7 @@ class BatchRunner {
      * @throws OptException when there is any issue with solving/writing.
      */
     void runForMeanComparison() throws OptException {
+        /*
         try {
             final String trainingPath = "solution/results_mean_training.csv";
             final boolean addTrainingHeaders = !fileExists(trainingPath);
@@ -457,6 +491,7 @@ class BatchRunner {
             logger.error(ex);
             throw new OptException("error writing to csv during budget comparison run");
         }
+         */
     }
 
     static boolean fileExists(String pathString) {

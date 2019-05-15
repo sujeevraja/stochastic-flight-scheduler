@@ -1,123 +1,129 @@
 package stochastic.main;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-public class TrainingResult implements Serializable {
+class TrainingResult implements Serializable {
     private String instance;
     private Double budgetFraction;
     private Double naiveRescheduleCost;
     private Double naiveSolutionTime;
     private Double depRescheduleCost;
-    private Double rescheduleSolutionTime;
+    private Double depSolutionTime;
     private Double bendersRescheduleCost;
     private Double bendersSolutionTime;
     private Double bendersLowerBound;
     private Double bendersUpperBound;
     private Double bendersGap;
-    private Double bendersNumCuts;
-    private Double bendersNumIterations;
+    private Integer bendersNumCuts;
+    private Integer bendersNumIterations;
 
-    public Double getBendersGap() {
+    TrainingResult() {}
+
+    Double getBendersGap() {
         return bendersGap;
     }
 
-    public Double getBendersLowerBound() {
+    Double getBendersLowerBound() {
         return bendersLowerBound;
     }
 
-    public Double getBendersNumCuts() {
+    Integer getBendersNumCuts() {
         return bendersNumCuts;
     }
-    public Double getBendersNumIterations() {
+
+    Integer getBendersNumIterations() {
         return bendersNumIterations;
     }
 
-    public Double getBendersRescheduleCost() {
+    Double getBendersRescheduleCost() {
         return bendersRescheduleCost;
     }
 
-    public Double getBendersSolutionTime() {
+    Double getBendersSolutionTime() {
         return bendersSolutionTime;
     }
 
-    public Double getBendersUpperBound() {
+    Double getBendersUpperBound() {
         return bendersUpperBound;
     }
 
-    public Double getBudgetFraction() {
+    Double getBudgetFraction() {
         return budgetFraction;
     }
 
-    public Double getDepRescheduleCost() {
+    Double getDepRescheduleCost() {
         return depRescheduleCost;
     }
 
-    public Double getNaiveRescheduleCost() {
+    Double getDepSolutionTime() {
+        return depSolutionTime;
+    }
+
+    Double getNaiveRescheduleCost() {
         return naiveRescheduleCost;
     }
 
-    public Double getNaiveSolutionTime() {
+    Double getNaiveSolutionTime() {
         return naiveSolutionTime;
     }
 
-    public Double getRescheduleSolutionTime() {
-        return rescheduleSolutionTime;
-    }
-
-    public String getInstance() {
+    String getInstance() {
         return instance;
     }
 
-    public void setBendersGap(Double bendersGap) {
+    void setBendersGap(Double bendersGap) {
         this.bendersGap = bendersGap;
     }
 
-    public void setBendersLowerBound(Double bendersLowerBound) {
+    void setBendersLowerBound(Double bendersLowerBound) {
         this.bendersLowerBound = bendersLowerBound;
     }
 
-    public void setBendersNumCuts(Double bendersNumCuts) {
+    void setBendersNumCuts(Integer bendersNumCuts) {
         this.bendersNumCuts = bendersNumCuts;
     }
 
-    public void setBendersNumIterations(Double bendersNumIterations) {
+    void setBendersNumIterations(Integer bendersNumIterations) {
         this.bendersNumIterations = bendersNumIterations;
     }
 
-    public void setBendersRescheduleCost(Double bendersRescheduleCost) {
+    void setBendersRescheduleCost(Double bendersRescheduleCost) {
         this.bendersRescheduleCost = bendersRescheduleCost;
     }
 
-    public void setBendersSolutionTime(Double bendersSolutionTime) {
+    void setBendersSolutionTime(Double bendersSolutionTime) {
         this.bendersSolutionTime = bendersSolutionTime;
     }
 
-    public void setBendersUpperBound(Double bendersUpperBound) {
+    void setBendersUpperBound(Double bendersUpperBound) {
         this.bendersUpperBound = bendersUpperBound;
     }
 
-    public void setBudgetFraction(Double budgetFraction) {
+    void setBudgetFraction(Double budgetFraction) {
         this.budgetFraction = budgetFraction;
     }
 
-    public void setDepRescheduleCost(Double depRescheduleCost) {
+    void setDepRescheduleCost(Double depRescheduleCost) {
         this.depRescheduleCost = depRescheduleCost;
     }
 
-    public void setInstance(String instance) {
+    void setDepSolutionTime(Double depSolutionTime) {
+        this.depSolutionTime = depSolutionTime;
+    }
+
+    void setInstance(String instance) {
         this.instance = instance;
     }
 
-    public void setNaiveRescheduleCost(Double naiveRescheduleCost) {
+    void setNaiveRescheduleCost(Double naiveRescheduleCost) {
         this.naiveRescheduleCost = naiveRescheduleCost;
     }
 
-    public void setNaiveSolutionTime(Double naiveSolutionTime) {
+    void setNaiveSolutionTime(Double naiveSolutionTime) {
         this.naiveSolutionTime = naiveSolutionTime;
-    }
-
-    public void setRescheduleSolutionTime(Double rescheduleSolutionTime) {
-        this.rescheduleSolutionTime = rescheduleSolutionTime;
     }
 
     boolean allPopulated() {
@@ -126,7 +132,7 @@ public class TrainingResult implements Serializable {
             && naiveRescheduleCost != null
             && naiveSolutionTime != null
             && depRescheduleCost != null
-            && rescheduleSolutionTime != null
+            && depSolutionTime != null
             && bendersRescheduleCost != null
             && bendersSolutionTime != null
             && bendersLowerBound != null
@@ -134,5 +140,22 @@ public class TrainingResult implements Serializable {
             && bendersGap != null
             && bendersNumCuts != null
             && bendersNumIterations != null;
+    }
+
+    List<String> getCsvRow() {
+        return new ArrayList<>(Arrays.asList(
+            instance,
+            Double.toString(budgetFraction),
+            Double.toString(naiveRescheduleCost),
+            Double.toString(naiveSolutionTime),
+            Double.toString(depRescheduleCost),
+            Double.toString(depSolutionTime),
+            Double.toString(bendersRescheduleCost),
+            Double.toString(bendersSolutionTime),
+            Double.toString(bendersLowerBound),
+            Double.toString(bendersUpperBound),
+            Double.toString(bendersGap),
+            Integer.toString(bendersNumCuts),
+            Integer.toString(bendersNumIterations)));
     }
 }
