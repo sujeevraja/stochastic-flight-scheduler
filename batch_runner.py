@@ -103,7 +103,7 @@ class Controller(object):
     def _generate_delays(self, orig_cmd):
         cmd = [c for c in orig_cmd]
         cmd.append("-generateDelays")
-        subprocess.check_output(cmd)
+        subprocess.check_call(cmd)
 
     def _generate_reschedule_solution(self, orig_cmd, model):
         cmd = [c for c in orig_cmd]
@@ -111,12 +111,12 @@ class Controller(object):
             "-model", model,
             "-parseDelays",
             "-training"])
-        subprocess.check_output(cmd)
+        subprocess.check_call(cmd)
 
     def _generate_test_results(self, orig_cmd):
         cmd = [c for c in orig_cmd]
         cmd.append("-test")
-        subprocess.check_output(cmd)
+        subprocess.check_call(cmd)
 
     def _run_mean_set(self):
         log.info("starting mean comparison runs...")
@@ -132,7 +132,7 @@ class Controller(object):
                         "-n", name,
                         "-d", distribution,
                         "-m", mean, ])
-                    subprocess.check_output(cmd)
+                    subprocess.check_call(cmd)
                     log.info('finished mean run for {}, {}, {}'.format(
                         name, distribution, mean))
         log.info("completed mean comparison runs.")
@@ -151,7 +151,7 @@ class Controller(object):
                         "-n", name,
                         "-d", distribution,
                         "-f", flight_pick, ])
-                    subprocess.check_output(cmd)
+                    subprocess.check_call(cmd)
                     log.info('finished quality run for {}, {}, {}'.format(
                         name, distribution, flight_pick))
         log.info("completed quality runs.")
@@ -172,7 +172,7 @@ class Controller(object):
                             "-c", cgen,
                             "-d", distribution,
                             "-f", flight_pick, ])
-                        subprocess.check_output(cmd)
+                        subprocess.check_call(cmd)
                         log.info('finished time run for {}, {}, {}, {}'.format(
                             name, distribution, flight_pick, cgen))
         log.info("completed time comparison runs.")
