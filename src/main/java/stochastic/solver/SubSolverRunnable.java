@@ -1,6 +1,7 @@
 package stochastic.solver;
 
 import ilog.concert.IloException;
+import ilog.cplex.IloCplex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import stochastic.domain.Leg;
@@ -21,6 +22,7 @@ import java.util.Map;
 public class SubSolverRunnable implements Runnable {
     private final static Logger logger = LogManager.getLogger(SubSolverWrapper.class);
     private DataRegistry dataRegistry;
+    private IloCplex cplex;
     private int iter;
     private int scenarioNum;
     private double probability;
@@ -44,6 +46,10 @@ public class SubSolverRunnable implements Runnable {
         this.randomDelays = randomDelays;
         this.pathCache = pathCache;
         this.filePrefix = null;
+    }
+
+    public void setCplex(IloCplex cplex) {
+        this.cplex = cplex;
     }
 
     public void setFilePrefix(String filePrefix) {
@@ -91,7 +97,10 @@ public class SubSolverRunnable implements Runnable {
             HashMap<Integer, ArrayList<Path>> tailPathsMap = SolverUtility.getPathsForFullEnum(allPaths,
                     dataRegistry.getTails());
 
-            SubSolver ss = new SubSolver(scenarioNum, dataRegistry.getTails(), dataRegistry.getLegs(), reschedules);
+            SubSolver ss = new SubSolver(scenarioNum, dataRegistry.getTails(),
+                dataRegistry.getLegs(), reschedules);
+
+            ss.setCplex(cplex);
             if (solveForQuality)
                 ss.setSolveAsMIP();
             ss.constructSecondStage(tailPathsMap);
@@ -119,9 +128,8 @@ public class SubSolverRunnable implements Runnable {
             }
 
             ss.solve();
-            if (Parameters.isDebugVerbose()) {
+            if (Parameters.isDebugVerbose())
                 ss.writeCplexSolution(name + ".xml");
-            }
 
             if (solveForQuality) {
                 ss.collectSolution();
@@ -148,7 +156,9 @@ public class SubSolverRunnable implements Runnable {
     }
 
     private void solveWithLabeling() throws IloException, OptException {
-        SubSolver ss = new SubSolver(scenarioNum, dataRegistry.getTails(), dataRegistry.getLegs(), reschedules);
+        SubSolver ss = new SubSolver(scenarioNum, dataRegistry.getTails(), dataRegistry.getLegs(),
+            reschedules);
+        ss.setCplex(cplex);
 
         // Load on-plan paths with propagated delays.
         HashMap<Integer, ArrayList<Path>> pathsAll = pathCache.getCachedPaths();
@@ -226,6 +236,7 @@ public class SubSolverRunnable implements Runnable {
             // Cleanup CPLEX containers of the SubSolver object.
             if (!optimal)
                 ss.end();
+
             ++columnGenIter;
         }
 
@@ -238,6 +249,7 @@ public class SubSolverRunnable implements Runnable {
 
         if (solveForQuality) {
             // Solve problem with all columns as MIP to collect objective value.
+            ss.end();
             ss.setSolveAsMIP();
             ss.constructSecondStage(pathsAll);
             ss.solve();
@@ -267,6 +279,7 @@ public class SubSolverRunnable implements Runnable {
             // cache best paths for each tail
             ss.collectSolution();
             pathCache.addPaths(getBestPaths(ss.getyValues(), pathsAll));
+            ss.end();
         }
     }
 

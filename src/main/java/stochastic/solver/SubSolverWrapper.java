@@ -1,5 +1,6 @@
 package stochastic.solver;
 
+import ilog.cplex.IloCplex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import stochastic.delay.Scenario;
@@ -19,9 +20,10 @@ class SubSolverWrapper {
     private int[] reschedules; // planned delays from first stage solution.
     private int iter;
     private PathCache[] pathCaches;
-    private BendersData bendersData; // this object will be shared across threads by SubSolverRunnable.
+    private BendersData bendersData; // will be shared across threads by SubSolverRunnable.
 
-    SubSolverWrapper(DataRegistry dataRegistry, int[] reschedules, int iter, double uBound, PathCache[] pathCaches) {
+    SubSolverWrapper(DataRegistry dataRegistry, int[] reschedules, int iter, double uBound,
+                     PathCache[] pathCaches) {
         this.dataRegistry = dataRegistry;
         this.reschedules = reschedules;
         this.iter = iter;
@@ -29,30 +31,40 @@ class SubSolverWrapper {
         this.bendersData = new BendersData(uBound);
 
         final int numLegs = dataRegistry.getLegs().size();
-        final int numCuts = Parameters.isBendersMultiCut() ? dataRegistry.getDelayScenarios().length : 1;
+        final int numCuts = Parameters.isBendersMultiCut()
+            ? dataRegistry.getDelayScenarios().length
+            : 1;
         for (int i = 0; i < numCuts; ++i)
             bendersData.addCut(new BendersCut(0.0, numLegs));
     }
 
-    void solveSequential() {
+    void solveSequential(IloCplex cplex) {
         Scenario[] scenarios = dataRegistry.getDelayScenarios();
         for (int i = 0; i < scenarios.length; i++) {
             Scenario scenario = scenarios[i];
             SubSolverRunnable subSolverRunnable = new SubSolverRunnable(dataRegistry, iter, i,
-                    scenario.getProbability(), reschedules, scenario.getPrimaryDelays(), pathCaches[i]);
+                    scenario.getProbability(), reschedules, scenario.getPrimaryDelays(),
+                pathCaches[i]);
+            subSolverRunnable.setCplex(cplex);
             subSolverRunnable.setBendersData(bendersData);
             subSolverRunnable.run();
         }
     }
 
     void solveParallel() throws OptException {
+        // TODO This function will not work as we have not initialized CPLEX in the
+        //  SubSolverRunnable objects. Replace this function with an actor based logic to
+        //  make CPLEX object sharing safe.
         try {
             Scenario[] scenarios = dataRegistry.getDelayScenarios();
-            ExecutorService exSrv = Executors.newFixedThreadPool(Parameters.getNumThreadsForSecondStage());
+            ExecutorService exSrv = Executors.newFixedThreadPool(
+                Parameters.getNumThreadsForSecondStage());
+
             for (int i = 0; i < scenarios.length; i++) {
                 Scenario scenario = scenarios[i];
                 SubSolverRunnable subSolverRunnable = new SubSolverRunnable(dataRegistry, iter, i,
-                        scenario.getProbability(), reschedules, scenario.getPrimaryDelays(), pathCaches[i]);
+                        scenario.getProbability(), reschedules, scenario.getPrimaryDelays(),
+                    pathCaches[i]);
                 subSolverRunnable.setBendersData(bendersData);
                 exSrv.execute(subSolverRunnable); // this calls SubSolverRunnable.run()
             }
