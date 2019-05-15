@@ -4,6 +4,7 @@ import stochastic.utility.Enums;
 
 public class Parameters {
     private static String instancePath;
+    private static Enums.Model model;
 
     /**
      * This fraction will be used to set the reschedule time budget, which will be calculated as:
@@ -17,6 +18,7 @@ public class Parameters {
     private static Enums.DistributionType distributionType;
     private static double distributionMean;
     private static double distributionSd; // standard deviation
+    private static boolean parsePrimaryDelaysFromFiles;
 
     private static Enums.FlightPickStrategy flightPickStrategy;
 
@@ -49,6 +51,14 @@ public class Parameters {
 
     public static String getInstancePath() {
         return instancePath;
+    }
+
+    public static void setModel(Enums.Model model) {
+        Parameters.model = model;
+    }
+
+    public static Enums.Model getModel() {
+        return model;
     }
 
     public static void setRescheduleBudgetFraction(double rescheduleBudgetFraction) {
@@ -97,6 +107,14 @@ public class Parameters {
 
     public static double getDistributionSd() {
         return distributionSd;
+    }
+
+    public static void setParsePrimaryDelaysFromFiles(boolean parsePrimaryDelaysFromFiles) {
+        Parameters.parsePrimaryDelaysFromFiles = parsePrimaryDelaysFromFiles;
+    }
+
+    public static boolean isParsePrimaryDelaysFromFiles() {
+        return parsePrimaryDelaysFromFiles;
     }
 
     public static void setFlightPickStrategy(Enums.FlightPickStrategy flightPickStrategy) {

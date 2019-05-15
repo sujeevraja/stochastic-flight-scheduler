@@ -19,13 +19,12 @@ import stochastic.registry.Parameters;
 import stochastic.solver.BendersSolver;
 import stochastic.solver.DepSolver;
 import stochastic.solver.NaiveSolver;
+import stochastic.utility.CSVHelper;
+import stochastic.utility.Enums;
 import stochastic.utility.OptException;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.*;
+import java.util.*;
 
 class Controller {
     /**
@@ -84,10 +83,17 @@ class Controller {
         dataRegistry.setDelayGenerator(dgen);
     }
 
+    final void buildScenarios() throws OptException {
+        if (Parameters.isParsePrimaryDelaysFromFiles())
+            parsePrimaryDelaysFromFiles();
+        else
+            buildScenariosFromDistribution();
+    }
+
     /**
      * Generates delay realizations and probabilities for second stage scenarios.
      */
-    final void buildScenarios() {
+    private void buildScenariosFromDistribution() {
         DelayGenerator dgen = dataRegistry.getDelayGenerator();
         Scenario[] scenarios = dgen.generateScenarios(Parameters.getNumSecondStageScenarios());
         dataRegistry.setDelayScenarios(scenarios);
@@ -103,7 +109,116 @@ class Controller {
         dataRegistry.setRescheduleTimeBudget(budget);
     }
 
-    final void solveWithBenders() throws OptException {
+    final void writeScenariosToFile() throws OptException {
+        logger.info("starting scenario writing...");
+        Scenario[] scenarios = dataRegistry.getDelayScenarios();
+        ArrayList<Leg> legs = dataRegistry.getLegs();
+        String prefix = "solution/primary_delays_";
+        String suffix = ".csv";
+        List<String> headers = new ArrayList<>(Arrays.asList("leg_id", "delay_minutes"));
+
+        for (int i = 0; i < scenarios.length; ++i) {
+            String filePath = prefix + i + suffix;
+            try {
+                BufferedWriter writer = new BufferedWriter(new FileWriter(filePath));
+                CSVHelper.writeLine(writer, headers);
+
+                int[] primaryDelays = scenarios[i].getPrimaryDelays();
+                for (int j = 0; j < primaryDelays.length; ++j) {
+                    if (primaryDelays[j] > 0) {
+                        Leg leg = legs.get(j);
+                        List<String> line = new ArrayList<>(Arrays.asList(
+                            leg.getId().toString(),
+                            Integer.toString(primaryDelays[j])));
+
+                        CSVHelper.writeLine(writer, line);
+                    }
+                }
+
+                writer.close();
+            } catch (IOException ex) {
+                logger.error(ex);
+                throw new OptException("error writing primary delays to file");
+            }
+
+        }
+        logger.info("completed scenario writing.");
+    }
+
+    private void parsePrimaryDelaysFromFiles() throws OptException {
+        logger.info("staring primary delay parsing...");
+        ArrayList<Leg> legs = dataRegistry.getLegs();
+        final int numScenarios = Parameters.getNumSecondStageScenarios();
+        final double probability = 1.0 / numScenarios;
+        Scenario[] scenarios = new Scenario[numScenarios];
+        final String prefix = "solution/primary_delays_";
+        final String suffix = ".csv";
+
+        // Build map from leg id to index for delay data collection.
+        Map<Integer, Integer> legIdIndexMap = new HashMap<>();
+        for (int i = 0; i < legs.size(); ++i)
+            legIdIndexMap.put(legs.get(i).getId(), i);
+
+        double avgTotalPrimaryDelay = 0.0;
+
+        for (int i = 0; i < numScenarios; ++i) {
+            // read delay data
+            String filePath = prefix + i + suffix;
+            Map<Integer, Integer> primaryDelayMap = new HashMap<>();
+            try {
+                BufferedReader reader = new BufferedReader(new FileReader(filePath));
+                CSVHelper.parseLine(reader); // parse once to skip headers
+
+                while (true) {
+                    List<String> line = CSVHelper.parseLine(reader);
+                    if (line == null)
+                        break;
+
+                    int legId = Integer.parseInt(line.get(0));
+                    int primaryDelay = Integer.parseInt(line.get(1));
+                    primaryDelayMap.put(legId, primaryDelay);
+                }
+
+                reader.close();
+            } catch (IOException ex) {
+                logger.error(ex);
+                throw new OptException("error reading primary delays from file");
+            }
+
+            // build scenario, store it
+            int[] delays = new int[legs.size()];
+            Arrays.fill(delays, 0);
+            for (Map.Entry<Integer, Integer> entry : primaryDelayMap.entrySet())
+                delays[legIdIndexMap.get(entry.getKey())] = entry.getValue();
+
+            scenarios[i] = new Scenario(probability, delays);
+            avgTotalPrimaryDelay += scenarios[i].getTotalPrimaryDelay();
+        }
+
+        dataRegistry.setDelayScenarios(scenarios);
+
+        avgTotalPrimaryDelay /= scenarios.length;
+        logger.info("average total primary delay (minutes): " + avgTotalPrimaryDelay);
+
+        final int budget = (int) Math.round(
+            avgTotalPrimaryDelay * Parameters.getRescheduleBudgetFraction());
+        dataRegistry.setRescheduleTimeBudget(budget);
+        logger.info("completed primary delay parsing.");
+    }
+
+    final void solve() throws OptException {
+        Enums.Model model = Parameters.getModel();
+        if (model == Enums.Model.BENDERS) solveWithBenders();
+        else if (model == Enums.Model.DEP) solveWithDEP();
+        else if (model == Enums.Model.NAIVE) solveWithNaiveApproach();
+        else {
+            solveWithNaiveApproach();
+            solveWithDEP();
+            solveWithBenders();
+        }
+    }
+
+    private void solveWithBenders() throws OptException {
         try {
             BendersSolver bendersSolver = new BendersSolver(dataRegistry);
             if (Parameters.isWarmStartBenders())
@@ -155,7 +270,7 @@ class Controller {
         return bendersNumIterations;
     }
 
-    final void solveWithNaiveApproach() throws OptException {
+    private void solveWithNaiveApproach() throws OptException {
         try {
             NaiveSolver naiveSolver = new NaiveSolver(dataRegistry);
             naiveSolver.solve();
@@ -175,7 +290,7 @@ class Controller {
         return naiveModelSolutionTime;
     }
 
-    final void solveWithDEP() throws OptException {
+    private void solveWithDEP() throws OptException {
         DepSolver depSolver = new DepSolver();
         depSolver.solve(dataRegistry);
         depSolution = depSolver.getDepSolution();
@@ -387,7 +502,7 @@ class Controller {
 
         ArrayList<Leg> legs = dataRegistry.getLegs();
 
-        String[] models = new String[] {"naive_model", "dep", "benders"};
+        String[] models = new String[] {"naive", "dep", "benders"};
         for (String model : models)
             rescheduleSolutions.add(
                     (new RescheduleSolutionDAO(model, legs)).getRescheduleSolution());

@@ -23,7 +23,7 @@ public class Main {
     public static void main(String[] args) {
         try {
             Options options = new Options();
-            options.addOption("b", false,
+            options.addOption("batch", false,
                     "batch run (single run otherwise)");
             options.addOption("c", true,
                     "column gen strategy (enum/all/best/first)");
@@ -31,12 +31,17 @@ public class Main {
                     "distribution (exp/tnorm/lnorm");
             options.addOption("f", true,
                     "flight pick (all/hub/rush)");
-            options.addOption("m", true, "distribution mean");
+            options.addOption("generateDelays", false,
+                "generate primary delays, write to file and exit");
+            options.addOption("mean", true, "distribution mean");
+            options.addOption("model", true, "model (naive/dep/benders/all)");
             options.addOption("n", true,
                     "instance name");
-            options.addOption("p", true, "instance path");
+            options.addOption("parseDelays", false,
+                "parse primary delays from files");
+            options.addOption("path", true, "instance path");
             options.addOption("r", true, "reschedule budget fraction");
-            options.addOption("t", true,
+            options.addOption("type", true,
                     "type (quality/time/budget/mean/excess)");
             options.addOption("test", false,
                     "test run");
@@ -49,44 +54,64 @@ public class Main {
 
             if (cmd.hasOption('h')) {
                 HelpFormatter helpFormatter = new HelpFormatter();
-                helpFormatter.printHelp("stochastic.jar/stochastic-uber.jar", options);
+                helpFormatter.printHelp("stochastic.jar/stochastic_uber.jar", options);
                 return;
             }
 
             String name = cmd.hasOption('n') ? cmd.getOptionValue('n') : "instance1";
-            String instancePath = cmd.hasOption('p') ? cmd.getOptionValue("p") : ("data/" + name);
+            String instancePath = cmd.hasOption("path")
+                ? cmd.getOptionValue("path")
+                : ("data/" + name);
             Parameters.setInstancePath(instancePath);
 
             setDefaultParameters();
             writeDefaultParameters();
             updateParameters(cmd);
 
-            if (cmd.hasOption('b')) {
-                BatchRunner batchRunner = new BatchRunner(name);
-                String runType = cmd.getOptionValue('t');
-                switch (runType) {
-                    case "quality":
-                        batchRunner.runForQuality();
-                        break;
-                    case "time":
-                        batchRunner.runForTimeComparison();
-                        break;
-                    case "budget":
-                        if (cmd.hasOption("training"))
-                            batchRunner.trainingRun();
-                        if (cmd.hasOption("test"))
-                            batchRunner.testRun();
-                        break;
-                    case "mean":
-                        batchRunner.runForMeanComparison();
-                        break;
-                    default:
-                        throw new OptException("unknown run type: " + runType);
-                }
-            } else
+            if (cmd.hasOption("generateDelays"))
+                writeDelaysAndExit();
+            else if (cmd.hasOption("batch"))
+                batchRun(name, cmd.getOptionValue("type"), cmd.hasOption("training"),
+                    cmd.hasOption("test"));
+            else
                 singleRun();
         } catch (ParseException | OptException ex) {
             logger.error(ex);
+        }
+    }
+
+    private static void writeDelaysAndExit() throws OptException {
+        logger.info("started primary delay generation...");
+        Controller controller = new Controller();
+        controller.readData();
+        controller.setDelayGenerator();
+        Parameters.setParsePrimaryDelaysFromFiles(false);
+        controller.buildScenarios();
+        controller.writeScenariosToFile();
+        logger.info("completed primary delay generation.");
+    }
+
+    private static void batchRun(String name, String runType, boolean runTraining, boolean runTest)
+            throws OptException {
+        BatchRunner batchRunner = new BatchRunner(name);
+        switch (runType) {
+            case "quality":
+                batchRunner.runForQuality();
+                break;
+            case "time":
+                batchRunner.runForTimeComparison();
+                break;
+            case "budget":
+                if (runTraining)
+                    batchRunner.trainingRun();
+                if (runTest)
+                    batchRunner.testRun();
+                break;
+            case "mean":
+                batchRunner.runForMeanComparison();
+                break;
+            default:
+                throw new OptException("unknown run type: " + runType);
         }
     }
 
@@ -104,20 +129,19 @@ public class Main {
         controller.readData();
         controller.setDelayGenerator();
         controller.buildScenarios();
-        controller.solveWithNaiveApproach();
-        controller.solveWithDEP();
-        controller.solveWithBenders();
+        controller.solve();
         controller.processSolution();
 
         logger.info("completed optimization.");
     }
 
     private static void setDefaultParameters() {
+        Parameters.setModel(Enums.Model.BENDERS);
         Parameters.setRescheduleBudgetFraction(0.5);
         Parameters.setFlightRescheduleBound(30);
         Parameters.setNumSecondStageScenarios(30);
 
-        Parameters.setDistributionType(Enums.DistributionType.LOGNORMAL);
+        Parameters.setDistributionType(Enums.DistributionType.LOG_NORMAL);
         Parameters.setDistributionMean(15);
         Parameters.setDistributionSd(15); // ignored for exponential distribution.
         Parameters.setFlightPickStrategy(Enums.FlightPickStrategy.HUB);
@@ -191,7 +215,29 @@ public class Main {
         }
     }
 
-    private static void updateParameters(CommandLine cmd) {
+    private static void updateParameters(CommandLine cmd) throws OptException {
+        if (cmd.hasOption("model")) {
+            final String model = cmd.getOptionValue("model").toLowerCase();
+            switch (model) {
+                case "benders":
+                    Parameters.setModel(Enums.Model.BENDERS);
+                    break;
+                case "dep":
+                    Parameters.setModel(Enums.Model.DEP);
+                    break;
+                case "naive":
+                    Parameters.setModel(Enums.Model.NAIVE);
+                    break;
+                case "all":
+                    Parameters.setModel(Enums.Model.ALL);
+                    break;
+                default:
+                    throw new OptException("unknown model type, use benders/dep/naive/all");
+            }
+        }
+        else
+            logger.info("model not provided, defaulting to Benders");
+
         if (cmd.hasOption('c')) {
             final String columnGen = cmd.getOptionValue('c');
             switch (columnGen) {
@@ -208,7 +254,7 @@ public class Main {
                     Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.FIRST_PATHS);
                     break;
                 default:
-                    logger.error("unknown column generation strattegy: " + columnGen);
+                    logger.error("unknown column generation strategy: " + columnGen);
                     break;
             }
         }
@@ -222,7 +268,7 @@ public class Main {
                     Parameters.setDistributionType(Enums.DistributionType.TRUNCATED_NORMAL);
                     break;
                 case "lnorm":
-                    Parameters.setDistributionType(Enums.DistributionType.LOGNORMAL);
+                    Parameters.setDistributionType(Enums.DistributionType.LOG_NORMAL);
                     break;
                 default:
                     logger.error("unknown distribution: " + distribution);
@@ -246,13 +292,16 @@ public class Main {
                     break;
             }
         }
-        if (cmd.hasOption('m')) {
-            final double mean = Double.parseDouble(cmd.getOptionValue('m'));
+        if (cmd.hasOption("mean")) {
+            final double mean = Double.parseDouble(cmd.getOptionValue("mean"));
             Parameters.setDistributionMean(mean);
         }
         if (cmd.hasOption('r')) {
             final double budgetFraction = Double.parseDouble(cmd.getOptionValue('r'));
             Parameters.setRescheduleBudgetFraction(budgetFraction);
+        }
+        if (cmd.hasOption("parseDelays")) {
+            Parameters.setParsePrimaryDelaysFromFiles(true);
         }
     }
 }
