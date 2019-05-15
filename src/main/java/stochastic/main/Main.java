@@ -54,7 +54,7 @@ public class Main {
 
             if (cmd.hasOption('h')) {
                 HelpFormatter helpFormatter = new HelpFormatter();
-                helpFormatter.printHelp("stochastic.jar/stochastic-uber.jar", options);
+                helpFormatter.printHelp("stochastic.jar/stochastic_uber.jar", options);
                 return;
             }
 

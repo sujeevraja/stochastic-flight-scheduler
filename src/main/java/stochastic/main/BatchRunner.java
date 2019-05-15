@@ -219,6 +219,7 @@ class BatchRunner {
 
     void trainingRun() throws OptException {
         try {
+            logger.info("starting training run...");
             final String trainingPath = "solution/results_training.csv";
             final boolean addTrainingHeaders = !fileExists(trainingPath);
             if (addTrainingHeaders) {
@@ -242,7 +243,7 @@ class BatchRunner {
                 trainingWriter.close();
             }
 
-            final String trainingRowPath = "solution/training_result.txt";
+            final String trainingRowPath = "solution/partial_training_result.txt";
             TrainingResult trainingResult;
             if (fileExists(trainingRowPath)) {
                 FileInputStream fileInputStream = new FileInputStream(trainingRowPath);
@@ -301,6 +302,7 @@ class BatchRunner {
                 objectOutputStream.flush();
                 objectOutputStream.close();
             }
+            logger.info("completed training run.");
         } catch (ClassNotFoundException ex) {
             logger.error(ex);
             throw new OptException("unable to parse training row from file");
