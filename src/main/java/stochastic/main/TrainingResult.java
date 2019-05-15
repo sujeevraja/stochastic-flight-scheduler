@@ -22,52 +22,8 @@ class TrainingResult implements Serializable {
 
     TrainingResult() {}
 
-    Double getBendersGap() {
-        return bendersGap;
-    }
-
-    Double getBendersLowerBound() {
-        return bendersLowerBound;
-    }
-
-    Integer getBendersNumCuts() {
-        return bendersNumCuts;
-    }
-
-    Integer getBendersNumIterations() {
-        return bendersNumIterations;
-    }
-
-    Double getBendersRescheduleCost() {
-        return bendersRescheduleCost;
-    }
-
-    Double getBendersSolutionTime() {
-        return bendersSolutionTime;
-    }
-
-    Double getBendersUpperBound() {
-        return bendersUpperBound;
-    }
-
     Double getBudgetFraction() {
         return budgetFraction;
-    }
-
-    Double getDepRescheduleCost() {
-        return depRescheduleCost;
-    }
-
-    Double getDepSolutionTime() {
-        return depSolutionTime;
-    }
-
-    Double getNaiveRescheduleCost() {
-        return naiveRescheduleCost;
-    }
-
-    Double getNaiveSolutionTime() {
-        return naiveSolutionTime;
     }
 
     String getInstance() {

@@ -502,7 +502,7 @@ class Controller {
 
         ArrayList<Leg> legs = dataRegistry.getLegs();
 
-        String[] models = new String[] {"naive_model", "dep", "benders"};
+        String[] models = new String[] {"naive", "dep", "benders"};
         for (String model : models)
             rescheduleSolutions.add(
                     (new RescheduleSolutionDAO(model, legs)).getRescheduleSolution());

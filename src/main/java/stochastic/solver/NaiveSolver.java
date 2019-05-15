@@ -170,7 +170,7 @@ public class NaiveSolver {
         logger.info("naive model reschedule cost (for validation): " + rescheduleCost);
         logger.info("naive model solution time (seconds): " + solutionTime);
 
-        finalRescheduleSolution = new RescheduleSolution("naive_model",
+        finalRescheduleSolution = new RescheduleSolution("naive",
                 cplexObjValue - excessDelayPenalty, reschedules);
         cplex.clearModel();
         cplex.endModel();

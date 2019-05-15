@@ -23,7 +23,7 @@ public class Main {
     public static void main(String[] args) {
         try {
             Options options = new Options();
-            options.addOption("b", false,
+            options.addOption("batch", false,
                     "batch run (single run otherwise)");
             options.addOption("c", true,
                     "column gen strategy (enum/all/best/first)");
@@ -31,17 +31,17 @@ public class Main {
                     "distribution (exp/tnorm/lnorm");
             options.addOption("f", true,
                     "flight pick (all/hub/rush)");
-            options.addOption("g", false,
+            options.addOption("generateDelays", false,
                 "generate primary delays, write to file and exit");
             options.addOption("mean", true, "distribution mean");
             options.addOption("model", true, "model (naive/dep/benders/all)");
             options.addOption("n", true,
                     "instance name");
-            options.addOption("p", true, "instance path");
             options.addOption("parseDelays", false,
                 "parse primary delays from files");
+            options.addOption("path", true, "instance path");
             options.addOption("r", true, "reschedule budget fraction");
-            options.addOption("t", true,
+            options.addOption("type", true,
                     "type (quality/time/budget/mean/excess)");
             options.addOption("test", false,
                     "test run");
@@ -59,17 +59,19 @@ public class Main {
             }
 
             String name = cmd.hasOption('n') ? cmd.getOptionValue('n') : "instance1";
-            String instancePath = cmd.hasOption('p') ? cmd.getOptionValue("p") : ("data/" + name);
+            String instancePath = cmd.hasOption("path")
+                ? cmd.getOptionValue("path")
+                : ("data/" + name);
             Parameters.setInstancePath(instancePath);
 
             setDefaultParameters();
             writeDefaultParameters();
             updateParameters(cmd);
 
-            if (cmd.hasOption('g'))
+            if (cmd.hasOption("generateDelays"))
                 writeDelaysAndExit();
-            else if (cmd.hasOption('b'))
-                batchRun(name, cmd.getOptionValue('t'), cmd.hasOption("training"),
+            else if (cmd.hasOption("batch"))
+                batchRun(name, cmd.getOptionValue("type"), cmd.hasOption("training"),
                     cmd.hasOption("test"));
             else
                 singleRun();
