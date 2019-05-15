@@ -20,6 +20,7 @@ import stochastic.solver.BendersSolver;
 import stochastic.solver.DepSolver;
 import stochastic.solver.NaiveSolver;
 import stochastic.utility.CSVHelper;
+import stochastic.utility.Enums;
 import stochastic.utility.OptException;
 
 import java.io.*;
@@ -205,7 +206,19 @@ class Controller {
         logger.info("completed primary delay parsing.");
     }
 
-    final void solveWithBenders() throws OptException {
+    final void solve() throws OptException {
+        Enums.Model model = Parameters.getModel();
+        if (model == Enums.Model.BENDERS) solveWithBenders();
+        else if (model == Enums.Model.DEP) solveWithDEP();
+        else if (model == Enums.Model.NAIVE) solveWithNaiveApproach();
+        else {
+            solveWithNaiveApproach();
+            solveWithDEP();
+            solveWithBenders();
+        }
+    }
+
+    private void solveWithBenders() throws OptException {
         try {
             BendersSolver bendersSolver = new BendersSolver(dataRegistry);
             if (Parameters.isWarmStartBenders())
@@ -257,7 +270,7 @@ class Controller {
         return bendersNumIterations;
     }
 
-    final void solveWithNaiveApproach() throws OptException {
+    private void solveWithNaiveApproach() throws OptException {
         try {
             NaiveSolver naiveSolver = new NaiveSolver(dataRegistry);
             naiveSolver.solve();
@@ -277,7 +290,7 @@ class Controller {
         return naiveModelSolutionTime;
     }
 
-    final void solveWithDEP() throws OptException {
+    private void solveWithDEP() throws OptException {
         DepSolver depSolver = new DepSolver();
         depSolver.solve(dataRegistry);
         depSolution = depSolver.getDepSolution();

@@ -22,7 +22,7 @@ class Sampler {
             case TRUNCATED_NORMAL:
                 distribution = new NormalDistribution(mean, sd);
                 break;
-            case LOGNORMAL:
+            case LOG_NORMAL:
                 distribution = getLogNormal(mean, sd);
                 break;
             default:

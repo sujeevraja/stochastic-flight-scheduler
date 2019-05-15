@@ -33,7 +33,8 @@ public class Main {
                     "flight pick (all/hub/rush)");
             options.addOption("g", false,
                 "generate primary delays, write to file and exit");
-            options.addOption("m", true, "distribution mean");
+            options.addOption("mean", true, "distribution mean");
+            options.addOption("model", true, "model (naive/dep/benders/all)");
             options.addOption("n", true,
                     "instance name");
             options.addOption("p", true, "instance path");
@@ -126,20 +127,19 @@ public class Main {
         controller.readData();
         controller.setDelayGenerator();
         controller.buildScenarios();
-        controller.solveWithNaiveApproach();
-        controller.solveWithDEP();
-        controller.solveWithBenders();
+        controller.solve();
         controller.processSolution();
 
         logger.info("completed optimization.");
     }
 
     private static void setDefaultParameters() {
+        Parameters.setModel(Enums.Model.BENDERS);
         Parameters.setRescheduleBudgetFraction(0.5);
         Parameters.setFlightRescheduleBound(30);
         Parameters.setNumSecondStageScenarios(30);
 
-        Parameters.setDistributionType(Enums.DistributionType.LOGNORMAL);
+        Parameters.setDistributionType(Enums.DistributionType.LOG_NORMAL);
         Parameters.setDistributionMean(15);
         Parameters.setDistributionSd(15); // ignored for exponential distribution.
         Parameters.setFlightPickStrategy(Enums.FlightPickStrategy.HUB);
@@ -213,7 +213,29 @@ public class Main {
         }
     }
 
-    private static void updateParameters(CommandLine cmd) {
+    private static void updateParameters(CommandLine cmd) throws OptException {
+        if (cmd.hasOption("model")) {
+            final String model = cmd.getOptionValue("model").toLowerCase();
+            switch (model) {
+                case "benders":
+                    Parameters.setModel(Enums.Model.BENDERS);
+                    break;
+                case "dep":
+                    Parameters.setModel(Enums.Model.DEP);
+                    break;
+                case "naive":
+                    Parameters.setModel(Enums.Model.NAIVE);
+                    break;
+                case "all":
+                    Parameters.setModel(Enums.Model.ALL);
+                    break;
+                default:
+                    throw new OptException("unknown model type, use benders/dep/naive/all");
+            }
+        }
+        else
+            logger.info("model not provided, defaulting to Benders");
+
         if (cmd.hasOption('c')) {
             final String columnGen = cmd.getOptionValue('c');
             switch (columnGen) {
@@ -230,7 +252,7 @@ public class Main {
                     Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.FIRST_PATHS);
                     break;
                 default:
-                    logger.error("unknown column generation strattegy: " + columnGen);
+                    logger.error("unknown column generation strategy: " + columnGen);
                     break;
             }
         }
@@ -244,7 +266,7 @@ public class Main {
                     Parameters.setDistributionType(Enums.DistributionType.TRUNCATED_NORMAL);
                     break;
                 case "lnorm":
-                    Parameters.setDistributionType(Enums.DistributionType.LOGNORMAL);
+                    Parameters.setDistributionType(Enums.DistributionType.LOG_NORMAL);
                     break;
                 default:
                     logger.error("unknown distribution: " + distribution);
@@ -268,8 +290,8 @@ public class Main {
                     break;
             }
         }
-        if (cmd.hasOption('m')) {
-            final double mean = Double.parseDouble(cmd.getOptionValue('m'));
+        if (cmd.hasOption("mean")) {
+            final double mean = Double.parseDouble(cmd.getOptionValue("mean"));
             Parameters.setDistributionMean(mean);
         }
         if (cmd.hasOption('r')) {

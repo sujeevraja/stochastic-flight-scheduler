@@ -4,6 +4,7 @@ import stochastic.utility.Enums;
 
 public class Parameters {
     private static String instancePath;
+    private static Enums.Model model;
 
     /**
      * This fraction will be used to set the reschedule time budget, which will be calculated as:
@@ -50,6 +51,14 @@ public class Parameters {
 
     public static String getInstancePath() {
         return instancePath;
+    }
+
+    public static void setModel(Enums.Model model) {
+        Parameters.model = model;
+    }
+
+    public static Enums.Model getModel() {
+        return model;
     }
 
     public static void setRescheduleBudgetFraction(double rescheduleBudgetFraction) {
