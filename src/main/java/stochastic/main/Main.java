@@ -160,7 +160,7 @@ public class Main {
         Parameters.setSetCplexNames(false);
 
         // Multi-threading parameters
-        Parameters.setRunSecondStageInParallel(true);
+        Parameters.setRunSecondStageInParallel(false);
         Parameters.setNumThreadsForSecondStage(2);
 
         // Solution quality parameters
