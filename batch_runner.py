@@ -43,6 +43,7 @@ class Controller(object):
     def __init__(self, config):
         self.config = config
         self._base_cmd = None
+        self._models = ["naive", "dep", "benders"]
 
     def run(self):
         self._validate_setup()
@@ -75,8 +76,9 @@ class Controller(object):
 
     def _run_budget_set(self):
         log.info("starting budget comparison runs...")
+        budget_fractions = ["0.25", "0.5", "0.75", "1", "2"]
         for name, path in zip(self.config.names, self.config.paths):
-            for budget_fraction in ["0.25", "0.5", "0.75", "1", "2"]:
+            for bf in budget_fractions:
                 cmd = [c for c in self._base_cmd]
                 cmd.extend([
                     "-b",
@@ -84,11 +86,30 @@ class Controller(object):
                     "budget",
                     "-p", path,
                     "-n", name,
-                    "-r", budget_fraction, ])
-                subprocess.check_output(cmd)
-                log.info('finished budget run for {}, {}'.format(
-                    name, budget_fraction))
+                    "-r", bf])
+
+                self._generate_delays(cmd)
+                log.info(f'generated delays for {name}, {bf}')
+
+                for model in self._models:
+                    self._generate_reschedule_solution(cmd, model)
+                    log.info(
+                        f'finished budget run for {model}, {name}, {bf}')
+
         log.info("completed budget comparison runs.")
+
+    def _generate_delays(self, orig_cmd):
+        cmd = [c for c in orig_cmd]
+        cmd.append("-g")
+        subprocess.check_output(cmd)
+
+    def _generate_reschedule_solution(self, orig_cmd, model):
+        cmd = [c for c in orig_cmd]
+        cmd.extend([
+            "-model", model,
+            "-parseDelays",
+            "-training"])
+        subprocess.check_output(cmd)
 
     def _run_mean_set(self):
         log.info("starting mean comparison runs...")
