@@ -81,10 +81,9 @@ class Controller(object):
             for bf in budget_fractions:
                 cmd = [c for c in self._base_cmd]
                 cmd.extend([
-                    "-b",
-                    "-t",
-                    "budget",
-                    "-p", path,
+                    "-batch",
+                    "-type", "budget",
+                    "-path", path,
                     "-n", name,
                     "-r", bf])
 
@@ -96,11 +95,14 @@ class Controller(object):
                     log.info(
                         f'finished budget run for {model}, {name}, {bf}')
 
+                self._generate_test_results(cmd)
+                log.info(f'generated test results for {name}, {bf}')
+
         log.info("completed budget comparison runs.")
 
     def _generate_delays(self, orig_cmd):
         cmd = [c for c in orig_cmd]
-        cmd.append("-g")
+        cmd.append("-generateDelays")
         subprocess.check_output(cmd)
 
     def _generate_reschedule_solution(self, orig_cmd, model):
@@ -109,6 +111,11 @@ class Controller(object):
             "-model", model,
             "-parseDelays",
             "-training"])
+        subprocess.check_output(cmd)
+
+    def _generate_test_results(self, orig_cmd):
+        cmd = [c for c in orig_cmd]
+        cmd.append("-test")
         subprocess.check_output(cmd)
 
     def _run_mean_set(self):
