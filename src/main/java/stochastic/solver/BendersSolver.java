@@ -1,6 +1,7 @@
 package stochastic.solver;
 
 import ilog.concert.IloException;
+import ilog.cplex.IloCplex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import stochastic.delay.Scenario;
@@ -32,6 +33,7 @@ public class BendersSolver {
     private BufferedWriter slnWriter;
 
     private MasterSolver masterSolver;
+    private IloCplex subCplex;
     private int iteration;
     private double lowerBound;
     private double upperBound;
@@ -95,6 +97,10 @@ public class BendersSolver {
 
         cacheOnPlanPathsForSecondStage();
 
+        subCplex = new IloCplex();
+        if (!Parameters.isDebugVerbose())
+            subCplex.setOut(null);
+
         do {
             runBendersIteration();
         } while (!stoppingConditionReached());
@@ -105,6 +111,9 @@ public class BendersSolver {
         logger.info("Benders solution time: " + solutionTime + " seconds");
 
         storeFinalSolution();
+
+        subCplex.end();
+        subCplex = null;
 
         masterSolver.end();
         masterSolver = null;
@@ -137,7 +146,7 @@ public class BendersSolver {
         if (Parameters.isRunSecondStageInParallel())
             ssWrapper.solveParallel();
         else
-            ssWrapper.solveSequential();
+            ssWrapper.solveSequential(subCplex);
 
         BendersData bendersData = ssWrapper.getBendersData();
         double[] thetaValues = masterSolver.getThetaValues();

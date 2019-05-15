@@ -51,12 +51,12 @@ public class SubSolver {
         this.solveAsMIP = true;
     }
 
+    void setCplex(IloCplex cplex) {
+        this.cplex = cplex;
+    }
+
     void constructSecondStage(HashMap<Integer, ArrayList<Path>> paths) throws OptException {
         try {
-            cplex = new IloCplex();
-            if (!Parameters.isDebugVerbose())
-                cplex.setOut(null);
-
             subModelBuilder = new SubModelBuilder(scenarioNum, legs, tails, paths, cplex);
 
             IloLinearNumExpr objExpr = cplex.linearNumExpr();
@@ -126,8 +126,6 @@ public class SubSolver {
         subModelBuilder.clearCplexObjects();
         subModelBuilder = null;
         cplex.clearModel();
-        cplex.endModel();
-        cplex.end();
     }
 
     double getObjValue() {

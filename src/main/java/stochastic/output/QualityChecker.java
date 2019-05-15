@@ -1,5 +1,7 @@
 package stochastic.output;
 
+import ilog.concert.IloException;
+import ilog.cplex.IloCplex;
 import stochastic.delay.Scenario;
 import stochastic.domain.Leg;
 import stochastic.registry.DataRegistry;
@@ -9,6 +11,7 @@ import stochastic.solver.SolverUtility;
 import stochastic.solver.SubSolverRunnable;
 import stochastic.utility.CSVHelper;
 import stochastic.utility.Enums;
+import stochastic.utility.OptException;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -22,11 +25,12 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * QualityChecker generates random delays to compare different reschedule solutions including the original
- * schedule (i.e no reschedule). This is done by running the second-stage model as a MIP.
+ * QualityChecker generates random delays to compare different reschedule solutions including the
+ * original schedule (i.e no reschedule). This is done by running the second-stage model as a MIP.
  */
 public class QualityChecker {
     private DataRegistry dataRegistry;
+    private IloCplex cplex;
     private int[] zeroReschedules;
     private Scenario[] testScenarios;
 
@@ -36,21 +40,39 @@ public class QualityChecker {
         Arrays.fill(zeroReschedules, 0);
     }
 
-    public void generateTestDelays() {
-        testScenarios = dataRegistry.getDelayGenerator().generateScenarios(Parameters.getNumTestScenarios());
+    private void initCplex() throws OptException {
+        try {
+            this.cplex = new IloCplex();
+            if (!Parameters.isDebugVerbose())
+                cplex.setOut(null);
+        } catch (IloException ex) {
+            throw new OptException("error initializing CPLEX for quality checks");
+        }
     }
 
-    public TestKPISet[] collectAverageTestStatsForBatchRun(ArrayList<RescheduleSolution> rescheduleSolutions) {
-        // delaySolutionKpis[i] contains average delay KPIs of all test scenarios generated with rescheduleSolutions[i]
-        // applied to the base schedule.
+    private void endCplex() {
+        cplex.end();
+        cplex = null;
+    }
+
+    public void generateTestDelays() {
+        testScenarios = dataRegistry.getDelayGenerator().generateScenarios(
+            Parameters.getNumTestScenarios());
+    }
+
+    public TestKPISet[] collectAverageTestStatsForBatchRun(
+            ArrayList<RescheduleSolution> rescheduleSolutions) throws OptException {
+        // delaySolutionKpis[i] contains average delay KPIs of all test scenarios generated with
+        // rescheduleSolutions[i] applied to the base schedule.
         TestKPISet[] delaySolutionKPIs = new TestKPISet[rescheduleSolutions.size()];
 
+        initCplex();
         for (int i = 0; i < rescheduleSolutions.size(); ++i) {
             RescheduleSolution rescheduleSolution = rescheduleSolutions.get(i);
             TestKPISet[] kpis = new TestKPISet[testScenarios.length];
             for (int j = 0; j < testScenarios.length; ++j) {
-                DelaySolution delaySolution = getDelaySolution(testScenarios[j], j, rescheduleSolution.getName(),
-                        rescheduleSolution.getReschedules());
+                DelaySolution delaySolution = getDelaySolution(testScenarios[j], j,
+                    rescheduleSolution.getName(), rescheduleSolution.getReschedules());
 
                 kpis[j] = delaySolution.getTestKPISet();
             }
@@ -59,11 +81,13 @@ public class QualityChecker {
             averageKPIs.storeAverageKPIs(kpis);
             delaySolutionKPIs[i] = averageKPIs;
         }
+        endCplex();
 
         return delaySolutionKPIs;
     }
 
-    public void compareSolutions(ArrayList<RescheduleSolution> rescheduleSolutions) throws IOException {
+    public void compareSolutions(ArrayList<RescheduleSolution> rescheduleSolutions)
+            throws IOException, OptException {
         String compareFileName = "solution/comparison.csv";
         BufferedWriter csvWriter = new BufferedWriter(new FileWriter(compareFileName));
 
@@ -105,6 +129,7 @@ public class QualityChecker {
         }
 
         // collect solutions and write results for each scenario and setting.
+        initCplex();
         for (int j = 0; j < testScenarios.length; ++j) {
             final double probability = testScenarios[j].getProbability();
             TestKPISet baseSet = null;
@@ -116,11 +141,11 @@ public class QualityChecker {
                 row.add(Double.toString(Parameters.getDistributionMean()));
 
                 if (Parameters.getDistributionType() == Enums.DistributionType.EXPONENTIAL) {
-                    double variance = Parameters.getDistributionMean() * Parameters.getDistributionMean();
+                    final double variance = Parameters.getDistributionMean() *
+                        Parameters.getDistributionMean();
                     row.add(Double.toString(variance));
-                } else {
+                } else
                     row.add(Double.toString(Parameters.getDistributionSd()));
-                }
 
                 row.add(Parameters.getFlightPickStrategy().name());
                 row.add(Double.toString(probability));
@@ -129,8 +154,8 @@ public class QualityChecker {
                 row.add(rescheduleSolution.getName());
                 row.add(Double.toString(rescheduleSolution.getRescheduleCost()));
 
-                DelaySolution delaySolution = getDelaySolution(testScenarios[j], j, rescheduleSolution.getName(),
-                        rescheduleSolution.getReschedules());
+                DelaySolution delaySolution = getDelaySolution(testScenarios[j], j,
+                    rescheduleSolution.getName(), rescheduleSolution.getReschedules());
 
                 TestKPISet testKPISet = delaySolution.getTestKPISet();
                 TestKPISet percentDecreaseSet = baseSet != null
@@ -158,6 +183,7 @@ public class QualityChecker {
                 CSVHelper.writeLine(csvWriter, row);
             }
         }
+        endCplex();
 
         // write average results across all scenarios.
         final double numTestScenarios = testScenarios.length;
@@ -178,11 +204,11 @@ public class QualityChecker {
             row.add(Double.toString(Parameters.getDistributionMean()));
 
             if (Parameters.getDistributionType() == Enums.DistributionType.EXPONENTIAL) {
-                double variance = Parameters.getDistributionMean() * Parameters.getDistributionMean();
+                final double variance = Parameters.getDistributionMean() *
+                    Parameters.getDistributionMean();
                 row.add(Double.toString(variance));
-            } else {
+            } else
                 row.add(Double.toString(Parameters.getDistributionSd()));
-            }
 
             row.add(Parameters.getFlightPickStrategy().name());
             row.add("-");
@@ -204,7 +230,8 @@ public class QualityChecker {
         csvWriter.close();
     }
 
-    private DelaySolution getDelaySolution(Scenario scen, int scenarioNum, String slnName, int[] reschedules) {
+    private DelaySolution getDelaySolution(Scenario scen, int scenarioNum, String slnName,
+                                           int[] reschedules) {
         // update leg departure time according to reschedule values.
         if (reschedules != null) {
             for (Leg leg : dataRegistry.getLegs())
@@ -228,8 +255,9 @@ public class QualityChecker {
         pathCache.setCachedPaths(SolverUtility.getOriginalPaths(dataRegistry.getIdTailMap(),
                 dataRegistry.getTailOrigPathMap(), adjustedDelays));
 
-        SubSolverRunnable ssr = new SubSolverRunnable(dataRegistry, 0, scenarioNum, scen.getProbability(),
-                zeroReschedules, adjustedDelays, pathCache);
+        SubSolverRunnable ssr = new SubSolverRunnable(dataRegistry, 0, scenarioNum,
+            scen.getProbability(), zeroReschedules, adjustedDelays, pathCache);
+        ssr.setCplex(cplex);
         ssr.setFilePrefix(slnName);
         ssr.setSolveForQuality(true);
 
