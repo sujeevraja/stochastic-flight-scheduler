@@ -143,7 +143,7 @@ public class Main {
         controller.setDelayGenerator();
         controller.buildScenarios();
         controller.solve();
-        controller.processSolution();
+        // controller.processSolution();
 
         logger.info("completed optimization.");
     }

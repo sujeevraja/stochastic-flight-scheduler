@@ -1,45 +1,35 @@
 package stochastic.solver;
 
 import ilog.cplex.IloCplex;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import stochastic.actor.ActorManager;
 import stochastic.delay.Scenario;
 import stochastic.registry.DataRegistry;
 import stochastic.registry.Parameters;
 import stochastic.utility.OptException;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 /**
  * Wrapper class that can be used to solve the second-stage problems in parallel.
  */
 class SubSolverWrapper {
-    private final static Logger logger = LogManager.getLogger(SubSolverWrapper.class);
+    private static ActorManager actorManager;
     private DataRegistry dataRegistry;
     private int[] reschedules; // planned delays from first stage solution.
     private int iter;
+    private double uBound;
     private PathCache[] pathCaches;
-    private BendersData bendersData; // will be shared across threads by SubSolverRunnable.
 
     SubSolverWrapper(DataRegistry dataRegistry, int[] reschedules, int iter, double uBound,
                      PathCache[] pathCaches) {
         this.dataRegistry = dataRegistry;
         this.reschedules = reschedules;
         this.iter = iter;
+        this.uBound = uBound;
         this.pathCaches = pathCaches;
-        this.bendersData = new BendersData(uBound);
 
-        final int numLegs = dataRegistry.getLegs().size();
-        final int numCuts = Parameters.isBendersMultiCut()
-            ? dataRegistry.getDelayScenarios().length
-            : 1;
-        for (int i = 0; i < numCuts; ++i)
-            bendersData.addCut(new BendersCut(0.0, numLegs));
     }
 
-    void solveSequential(IloCplex cplex) {
+    BendersData solveSequential(IloCplex cplex) {
+        BendersData bendersData = buildBendersData();
         Scenario[] scenarios = dataRegistry.getDelayScenarios();
         for (int i = 0; i < scenarios.length; i++) {
             Scenario scenario = scenarios[i];
@@ -50,13 +40,11 @@ class SubSolverWrapper {
             subSolverRunnable.setBendersData(bendersData);
             subSolverRunnable.run();
         }
+        return bendersData;
     }
 
-    void solveParallel() throws OptException {
-        ActorManager actorManager = new ActorManager();
-        actorManager.createActors(Parameters.getNumThreadsForSecondStage(),
-            !Parameters.isDebugVerbose());
-
+    BendersData solveParallel() throws OptException {
+        BendersData bendersData = buildBendersData();
         Scenario[] scenarios = dataRegistry.getDelayScenarios();
         actorManager.initBendersData(bendersData, scenarios.length);
 
@@ -68,11 +56,29 @@ class SubSolverWrapper {
                 pathCaches[i]);
         }
 
-        bendersData = actorManager.solveModels(models);
-        actorManager.end();
+        return actorManager.solveModels(models);
     }
 
-    BendersData getBendersData() {
+    private BendersData buildBendersData() {
+        BendersData bendersData = new BendersData(uBound);
+        final int numLegs = dataRegistry.getLegs().size();
+        final int numCuts = Parameters.isBendersMultiCut()
+            ? dataRegistry.getDelayScenarios().length
+            : 1;
+        for (int i = 0; i < numCuts; ++i)
+            bendersData.addCut(new BendersCut(0.0, numLegs));
         return bendersData;
+    }
+
+
+    static void initActorManager() {
+        actorManager = new ActorManager();
+        actorManager.createActors(Parameters.getNumThreadsForSecondStage(),
+            !Parameters.isDebugVerbose());
+    }
+
+    static void clearActorManager() {
+        actorManager.end();
+        actorManager = null;
     }
 }

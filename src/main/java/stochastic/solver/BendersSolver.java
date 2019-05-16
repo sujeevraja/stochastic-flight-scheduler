@@ -101,9 +101,15 @@ public class BendersSolver {
         if (!Parameters.isDebugVerbose())
             subCplex.setOut(null);
 
+        if (Parameters.isRunSecondStageInParallel())
+            SubSolverWrapper.initActorManager();
+
         do {
             runBendersIteration();
         } while (!stoppingConditionReached());
+
+        if (Parameters.isRunSecondStageInParallel())
+            SubSolverWrapper.clearActorManager();
 
         Instant end = Instant.now();
 
@@ -143,13 +149,10 @@ public class BendersSolver {
         SubSolverWrapper ssWrapper = new SubSolverWrapper(dataRegistry, masterSolver.getReschedules(), iteration,
                 masterSolver.getRescheduleCost(), secondStageCaches);
 
-        if (Parameters.isRunSecondStageInParallel())
-            ssWrapper.solveParallel();
-            // ssWrapper.solveParallel();
-        else
-            ssWrapper.solveSequential(subCplex);
+        BendersData bendersData = Parameters.isRunSecondStageInParallel()
+            ? ssWrapper.solveParallel()
+            : ssWrapper.solveSequential(subCplex);
 
-        BendersData bendersData = ssWrapper.getBendersData();
         double[] thetaValues = masterSolver.getThetaValues();
         double[] xValues = masterSolver.getxValues();
 
