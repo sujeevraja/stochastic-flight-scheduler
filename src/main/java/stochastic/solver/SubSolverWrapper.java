@@ -11,10 +11,10 @@ import stochastic.utility.OptException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * Wrapper class that can be used to solve the second-stage problems in parallel.
+ */
 class SubSolverWrapper {
-    /**
-     * Wrapper class that can be used to solve the second-stage problems in parallel.
-     */
     private final static Logger logger = LogManager.getLogger(SubSolverWrapper.class);
     private DataRegistry dataRegistry;
     private int[] reschedules; // planned delays from first stage solution.

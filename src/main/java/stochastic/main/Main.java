@@ -5,6 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
+import stochastic.actor.ActorManager;
 import stochastic.registry.Parameters;
 import stochastic.utility.Enums;
 import stochastic.utility.OptException;
@@ -22,6 +23,8 @@ public class Main {
 
     public static void main(String[] args) {
         try {
+            checkActor();
+            /*
             CommandLine cmd = addOptions(args);
             if (cmd == null)
                 return;
@@ -45,9 +48,18 @@ public class Main {
                     cmd.hasOption("test"));
             else
                 singleRun();
+
+             */
         } catch (OptException ex) {
             logger.error(ex);
         }
+    }
+
+    private static void checkActor() throws OptException {
+        ActorManager actorManager = new ActorManager();
+        actorManager.createSubModelActors(2, true);
+        actorManager.solveModel();
+        actorManager.end();
     }
 
     private static CommandLine addOptions(String[] args) throws OptException {
