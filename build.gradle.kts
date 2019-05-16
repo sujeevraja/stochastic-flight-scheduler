@@ -22,6 +22,7 @@ repositories {
 }
 
 dependencies {
+    implementation("com.typesafe.akka:akka-actor_2.12:2.5.22")
     implementation("org.apache.logging.log4j:log4j-api:2.11.2")
     implementation("org.apache.logging.log4j:log4j-core:2.11.2")
     implementation("org.apache.commons:commons-math3:3.0")
