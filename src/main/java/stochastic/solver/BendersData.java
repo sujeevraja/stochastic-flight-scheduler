@@ -2,7 +2,7 @@ package stochastic.solver;
 
 import java.util.ArrayList;
 
-class BendersData {
+public class BendersData {
     /**
      * BendersData objects store cuts and updated upper bounds from second stage solutions.
      */

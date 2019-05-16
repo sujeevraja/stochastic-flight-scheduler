@@ -6,32 +6,33 @@ import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import ilog.concert.IloException;
 import ilog.cplex.IloCplex;
+import stochastic.solver.SubSolverRunnable;
 
 public class SubModelActor extends AbstractActor {
     private LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
     private IloCplex cplex;
+
+    private SubModelActor(boolean disableOutput) throws IloException {
+        cplex = new IloCplex();
+        if (disableOutput)
+            cplex.setOut(null);
+    }
 
     static Props props(boolean disableOutput) {
         return Props.create(SubModelActor.class,
             () -> new SubModelActor(disableOutput));
     }
 
-    SubModelActor(boolean disableOutput) throws IloException {
-        cplex = new IloCplex();
-        if (disableOutput)
-            cplex.setOut(null);
-    }
-
     // SubModelActor messages
     public static class SolveModel {
-        private final String message;
+        private SubSolverRunnable subSolverRunnable;
 
-        public SolveModel(String message) {
-            this.message = message;
+        public SolveModel(SubSolverRunnable subSolverRunnable) {
+            this.subSolverRunnable = subSolverRunnable;
         }
 
-        public String getMessage() {
-            return message;
+        public SubSolverRunnable getSubSolverRunnable() {
+            return subSolverRunnable;
         }
     }
 
@@ -49,7 +50,11 @@ public class SubModelActor extends AbstractActor {
 
     private void handle(SolveModel solveModel) {
         log.debug("received solveModel message");
-        getSender().tell("reply from SubModelActor", getSelf());
+        SubSolverRunnable subSolverRunnable = solveModel.getSubSolverRunnable();
+        subSolverRunnable.setCplex(cplex);
+        // subSolverRunnable.setBendersData(bendersData);
+        subSolverRunnable.run();
+        // getSender().tell("reply from SubModelActor", getSelf());
     }
 }
 

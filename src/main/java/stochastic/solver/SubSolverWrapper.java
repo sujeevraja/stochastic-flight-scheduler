@@ -3,6 +3,7 @@ package stochastic.solver;
 import ilog.cplex.IloCplex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import stochastic.actor.ActorManager;
 import stochastic.delay.Scenario;
 import stochastic.registry.DataRegistry;
 import stochastic.registry.Parameters;
@@ -49,6 +50,26 @@ class SubSolverWrapper {
             subSolverRunnable.setBendersData(bendersData);
             subSolverRunnable.run();
         }
+    }
+
+    void solveParallelNew() throws OptException {
+        ActorManager actorManager = new ActorManager();
+        Scenario[] scenarios = dataRegistry.getDelayScenarios();
+
+        actorManager.initBendersData(bendersData, scenarios.length);
+        actorManager.createActors(Parameters.getNumThreadsForSecondStage(),
+            !Parameters.isDebugVerbose());
+
+        SubSolverRunnable[] models = new SubSolverRunnable[scenarios.length];
+        for (int i = 0; i < scenarios.length; i++) {
+            Scenario scenario = scenarios[i];
+            models[i] = new SubSolverRunnable(dataRegistry, iter, i,
+                scenario.getProbability(), reschedules, scenario.getPrimaryDelays(),
+                pathCaches[i]);
+        }
+
+        bendersData = actorManager.solveModels(models);
+        actorManager.end();
     }
 
     void solveParallel() throws OptException {
