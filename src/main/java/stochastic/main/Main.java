@@ -22,43 +22,13 @@ public class Main {
 
     public static void main(String[] args) {
         try {
-            Options options = new Options();
-            options.addOption("batch", false,
-                    "batch run (single run otherwise)");
-            options.addOption("c", true,
-                    "column gen strategy (enum/all/best/first)");
-            options.addOption("d", true,
-                    "distribution (exp/tnorm/lnorm");
-            options.addOption("f", true,
-                    "flight pick (all/hub/rush)");
-            options.addOption("generateDelays", false,
-                "generate primary delays, write to file and exit");
-            options.addOption("mean", true, "distribution mean");
-            options.addOption("model", true, "model (naive/dep/benders/all)");
-            options.addOption("n", true,
-                    "instance name");
-            options.addOption("parseDelays", false,
-                "parse primary delays from files");
-            options.addOption("path", true, "instance path");
-            options.addOption("r", true, "reschedule budget fraction");
-            options.addOption("type", true,
-                    "type (quality/time/budget/mean/excess)");
-            options.addOption("test", false,
-                    "test run");
-            options.addOption("training", false,
-                    "training run");
-            options.addOption("h", false, "help (show options and exit)");
-
-            CommandLineParser parser = new DefaultParser();
-            CommandLine cmd = parser.parse(options, args);
-
-            if (cmd.hasOption('h')) {
-                HelpFormatter helpFormatter = new HelpFormatter();
-                helpFormatter.printHelp("stochastic.jar/stochastic_uber.jar", options);
+            CommandLine cmd = addOptions(args);
+            if (cmd == null)
                 return;
-            }
 
-            String name = cmd.hasOption('n') ? cmd.getOptionValue('n') : "instance1";
+            final String name = cmd.hasOption('n')
+                ? cmd.getOptionValue('n')
+                : "instance1";
             String instancePath = cmd.hasOption("path")
                 ? cmd.getOptionValue("path")
                 : ("data/" + name);
@@ -75,8 +45,51 @@ public class Main {
                     cmd.hasOption("test"));
             else
                 singleRun();
-        } catch (ParseException | OptException ex) {
+        } catch (OptException ex) {
             logger.error(ex);
+        }
+    }
+
+    private static CommandLine addOptions(String[] args) throws OptException {
+        Options options = new Options();
+        options.addOption("batch", false,
+            "batch run (single run otherwise)");
+        options.addOption("c", true,
+            "column gen strategy (enum/all/best/first)");
+        options.addOption("d", true,
+            "distribution (exp/tnorm/lnorm");
+        options.addOption("f", true,
+            "flight pick (all/hub/rush)");
+        options.addOption("generateDelays", false,
+            "generate primary delays, write to file and exit");
+        options.addOption("mean", true, "distribution mean");
+        options.addOption("model", true, "model (naive/dep/benders/all)");
+        options.addOption("n", true,
+            "instance name");
+        options.addOption("parseDelays", false,
+            "parse primary delays from files");
+        options.addOption("path", true, "instance path");
+        options.addOption("r", true, "reschedule budget fraction");
+        options.addOption("type", true,
+            "type (quality/time/budget/mean/excess)");
+        options.addOption("test", false,
+            "test run");
+        options.addOption("training", false,
+            "training run");
+        options.addOption("h", false, "help (show options and exit)");
+
+        CommandLineParser parser = new DefaultParser();
+        try {
+            CommandLine cmd = parser.parse(options, args);
+            if (cmd.hasOption('h')) {
+                HelpFormatter helpFormatter = new HelpFormatter();
+                helpFormatter.printHelp("stochastic.jar/stochastic_uber.jar", options);
+                return null;
+            }
+            return cmd;
+        } catch (ParseException ex) {
+            logger.error(ex);
+            throw new OptException("error parsing CLI args");
         }
     }
 
