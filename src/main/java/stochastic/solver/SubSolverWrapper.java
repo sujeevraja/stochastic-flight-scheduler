@@ -52,13 +52,13 @@ class SubSolverWrapper {
         }
     }
 
-    void solveParallelNew() throws OptException {
+    void solveParallel() throws OptException {
         ActorManager actorManager = new ActorManager();
-        Scenario[] scenarios = dataRegistry.getDelayScenarios();
-
-        actorManager.initBendersData(bendersData, scenarios.length);
         actorManager.createActors(Parameters.getNumThreadsForSecondStage(),
             !Parameters.isDebugVerbose());
+
+        Scenario[] scenarios = dataRegistry.getDelayScenarios();
+        actorManager.initBendersData(bendersData, scenarios.length);
 
         SubSolverRunnable[] models = new SubSolverRunnable[scenarios.length];
         for (int i = 0; i < scenarios.length; i++) {
@@ -70,33 +70,6 @@ class SubSolverWrapper {
 
         bendersData = actorManager.solveModels(models);
         actorManager.end();
-    }
-
-    void solveParallel() throws OptException {
-        // TODO This function will not work as we have not initialized CPLEX in the
-        //  SubSolverRunnable objects. Replace this function with an actor based logic to
-        //  make CPLEX object sharing safe.
-        try {
-            Scenario[] scenarios = dataRegistry.getDelayScenarios();
-            ExecutorService exSrv = Executors.newFixedThreadPool(
-                Parameters.getNumThreadsForSecondStage());
-
-            for (int i = 0; i < scenarios.length; i++) {
-                Scenario scenario = scenarios[i];
-                SubSolverRunnable subSolverRunnable = new SubSolverRunnable(dataRegistry, iter, i,
-                        scenario.getProbability(), reschedules, scenario.getPrimaryDelays(),
-                    pathCaches[i]);
-                subSolverRunnable.setBendersData(bendersData);
-                exSrv.execute(subSolverRunnable); // this calls SubSolverRunnable.run()
-            }
-            exSrv.shutdown();
-
-            while (!exSrv.isTerminated())
-                Thread.sleep(100);
-        } catch (InterruptedException ie) {
-            logger.error(ie.getStackTrace());
-            throw new OptException("error in SolveParallel");
-        }
     }
 
     BendersData getBendersData() {

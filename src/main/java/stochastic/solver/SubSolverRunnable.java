@@ -13,7 +13,6 @@ import stochastic.registry.Parameters;
 import stochastic.utility.Constants;
 import stochastic.utility.Enums;
 import stochastic.utility.OptException;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -25,6 +24,7 @@ public class SubSolverRunnable implements Runnable {
     private IloCplex cplex;
     private int iter;
     private int scenarioNum;
+    private int cutNum;
     private double probability;
     private int[] reschedules;
     private int[] randomDelays;
@@ -36,11 +36,19 @@ public class SubSolverRunnable implements Runnable {
     private boolean solveForQuality = false;
     private DelaySolution delaySolution; // used only when checking Benders solution quality
 
+    // Data used to populate Benders cut.
+    private double alpha;
+    private double objValue;
+    private double[] dualsDelay;
+    private Double dualRisk;
+
+
     public SubSolverRunnable(DataRegistry dataRegistry, int iter, int scenarioNum, double probability,
                              int[] reschedules, int[] randomDelays, PathCache pathCache) {
         this.dataRegistry = dataRegistry;
         this.iter = iter;
         this.scenarioNum = scenarioNum;
+        this.cutNum = Parameters.isBendersMultiCut() ? scenarioNum : 0;
         this.probability = probability;
         this.reschedules = reschedules;
         this.randomDelays = randomDelays;
@@ -136,13 +144,13 @@ public class SubSolverRunnable implements Runnable {
                 buildDelaySolution(ss, randomDelays, tailPathsMap);
             } else {
                 ss.collectDuals();
-                double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(),
+                alpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(),
                         ss.getDualsBound(), ss.getDualRisk());
 
-                final int cutNum = Parameters.isBendersMultiCut() ? scenarioNum : 0;
-                updateAlpha(cutNum, scenAlpha);
-                updateBeta(cutNum, ss.getDualsDelay(), ss.getDualRisk());
-                updateUpperBound(ss.getObjValue());
+                // final int cutNum = Parameters.isBendersMultiCut() ? scenarioNum : 0;
+                dualsDelay = ss.getDualsDelay();
+                dualRisk = Parameters.isExpectedExcess() ? ss.getDualRisk() : null;
+                objValue = ss.getObjValue();
             }
 
             logger.info("Total number of paths: " + allPaths.size());
@@ -268,13 +276,13 @@ public class SubSolverRunnable implements Runnable {
             ss.end();
         } else {
             // Update master problem data
-            double scenAlpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(),
+            alpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(),
                     ss.getDualsDelay(), ss.getDualsBound(), ss.getDualRisk());
 
-            final int cutNum = Parameters.isBendersMultiCut() ? scenarioNum : 0;
-            updateAlpha(cutNum, scenAlpha);
-            updateBeta(cutNum, ss.getDualsDelay(), ss.getDualRisk());
-            updateUpperBound(ss.getObjValue());
+            // final int cutNum = Parameters.isBendersMultiCut() ? scenarioNum : 0;
+            dualsDelay = ss.getDualsDelay();
+            dualRisk = Parameters.isExpectedExcess() ? ss.getDualRisk() : null;
+            objValue = ss.getObjValue();
 
             // cache best paths for each tail
             ss.collectSolution();
@@ -385,26 +393,36 @@ public class SubSolverRunnable implements Runnable {
         return scenAlpha;
     }
 
-    private synchronized void updateAlpha(int cutNum, double scenAlpha) {
-        BendersCut aggregatedCut = bendersData.getCut(cutNum);
-        aggregatedCut.setAlpha(aggregatedCut.getAlpha() + (scenAlpha * probability));
+    public int getIter() {
+        return iter;
     }
 
-    private synchronized void updateBeta(int cutNum, double[] dualsDelay, double dualRisk) {
-        ArrayList<Leg> legs = dataRegistry.getLegs();
-        double[] beta = bendersData.getCut(cutNum).getBeta();
-
-        for (int j = 0; j < legs.size(); j++) {
-            if (Math.abs(dualsDelay[j]) >= Constants.EPS)
-                beta[j] += (-dualsDelay[j] * probability);
-
-            if (Parameters.isExpectedExcess() && Math.abs(dualRisk) >= Constants.EPS)
-                beta[j] += (dualRisk * probability);
-        }
+    public int getScenarioNum() {
+        return scenarioNum;
     }
 
-    private synchronized void updateUpperBound(double objValue) {
-        bendersData.setUpperBound(bendersData.getUpperBound() + (objValue * probability));
+    public int getCutNum() {
+        return cutNum;
+    }
+
+    public double getAlpha() {
+        return alpha;
+    }
+
+    public double getObjValue() {
+        return objValue;
+    }
+
+    public double getProbability() {
+        return probability;
+    }
+
+    public double[] getDualsDelay() {
+        return dualsDelay;
+    }
+
+    public Double getDualRisk() {
+        return dualRisk;
     }
 }
 

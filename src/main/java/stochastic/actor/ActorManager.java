@@ -26,9 +26,11 @@ public class ActorManager {
     }
 
     public final void createActors(int numThreads, boolean disableOutput) {
+        bendersDataHolder = actorSystem.actorOf(BendersDataHolder.props(),
+            "benders-data-holder");
         router = actorSystem.actorOf(
-            new RoundRobinPool(numThreads).props(SubModelActor.props(disableOutput)));
-        bendersDataHolder = actorSystem.actorOf(BendersDataHolder.props());
+            new RoundRobinPool(numThreads).props(
+                SubModelActor.props(bendersDataHolder, disableOutput)));
     }
 
     public final void initBendersData(BendersData bendersData, int numScenarios)
@@ -41,7 +43,7 @@ public class ActorManager {
         for (SubSolverRunnable model : models)
             router.tell(new SubModelActor.SolveModel(model), ActorRef.noSender());
 
-        boolean done = false;
+        Boolean done = false;
         while (!done) {
             try {
                 Thread.sleep(100);

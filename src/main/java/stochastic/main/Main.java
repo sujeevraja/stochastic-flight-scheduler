@@ -131,8 +131,8 @@ public class Main {
     private static void singleRun() throws OptException {
         logger.info("Started optimization...");
 
-        // String path = "data/20171115022840-v2";
-        String path = "data/instance1";
+        String path = "data/20171115022840-v2";
+        // String path = "data/instance1";
         Parameters.setInstancePath(path);
 
         setDefaultParameters();
@@ -173,7 +173,7 @@ public class Main {
         Parameters.setSetCplexNames(false);
 
         // Multi-threading parameters
-        Parameters.setRunSecondStageInParallel(false);
+        Parameters.setRunSecondStageInParallel(true);
         Parameters.setNumThreadsForSecondStage(2);
 
         // Solution quality parameters

@@ -145,6 +145,7 @@ public class BendersSolver {
 
         if (Parameters.isRunSecondStageInParallel())
             ssWrapper.solveParallel();
+            // ssWrapper.solveParallel();
         else
             ssWrapper.solveSequential(subCplex);
 

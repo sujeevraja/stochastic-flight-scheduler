@@ -1,6 +1,7 @@
 package stochastic.actor;
 
 import akka.actor.AbstractActor;
+import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
@@ -10,29 +11,27 @@ import stochastic.solver.SubSolverRunnable;
 
 public class SubModelActor extends AbstractActor {
     private LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
+    private ActorRef bendersDataHolder;
     private IloCplex cplex;
 
-    private SubModelActor(boolean disableOutput) throws IloException {
+    private SubModelActor(ActorRef bendersDataHolder, boolean disableOutput) throws IloException {
+        this.bendersDataHolder = bendersDataHolder;
         cplex = new IloCplex();
         if (disableOutput)
             cplex.setOut(null);
     }
 
-    static Props props(boolean disableOutput) {
+    static Props props(ActorRef bendersDataHolder, boolean disableOutput) {
         return Props.create(SubModelActor.class,
-            () -> new SubModelActor(disableOutput));
+            () -> new SubModelActor(bendersDataHolder, disableOutput));
     }
 
     // SubModelActor messages
-    public static class SolveModel {
+    static class SolveModel {
         private SubSolverRunnable subSolverRunnable;
 
-        public SolveModel(SubSolverRunnable subSolverRunnable) {
+        SolveModel(SubSolverRunnable subSolverRunnable) {
             this.subSolverRunnable = subSolverRunnable;
-        }
-
-        public SubSolverRunnable getSubSolverRunnable() {
-            return subSolverRunnable;
         }
     }
 
@@ -49,12 +48,23 @@ public class SubModelActor extends AbstractActor {
     }
 
     private void handle(SolveModel solveModel) {
-        log.debug("received solveModel message");
-        SubSolverRunnable subSolverRunnable = solveModel.getSubSolverRunnable();
+        SubSolverRunnable subSolverRunnable = solveModel.subSolverRunnable;
+        log.info("starting to solve sub model for iteration " +
+            subSolverRunnable.getIter() + " scenario " + subSolverRunnable.getScenarioNum());
+
         subSolverRunnable.setCplex(cplex);
-        // subSolverRunnable.setBendersData(bendersData);
         subSolverRunnable.run();
-        // getSender().tell("reply from SubModelActor", getSelf());
+        BendersDataHolder.UpdateCut updateCut = new BendersDataHolder.UpdateCut(
+            subSolverRunnable.getCutNum(),
+            subSolverRunnable.getAlpha(),
+            subSolverRunnable.getObjValue(),
+            subSolverRunnable.getProbability(),
+            subSolverRunnable.getDualsDelay(),
+            subSolverRunnable.getDualRisk());
+
+        log.info("finished solving sub model for iteration " + subSolverRunnable.getIter() +
+            " scenario " + subSolverRunnable.getScenarioNum());
+        bendersDataHolder.tell(updateCut, getSelf());
     }
 }
 
