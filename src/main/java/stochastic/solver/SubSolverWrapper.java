@@ -33,12 +33,19 @@ class SubSolverWrapper {
         Scenario[] scenarios = dataRegistry.getDelayScenarios();
         for (int i = 0; i < scenarios.length; i++) {
             Scenario scenario = scenarios[i];
-            SubSolverRunnable subSolverRunnable = new SubSolverRunnable(dataRegistry, iter, i,
-                    scenario.getProbability(), reschedules, scenario.getPrimaryDelays(),
+            final double probability = scenario.getProbability();
+            SubSolverRunnable ssr = new SubSolverRunnable(dataRegistry, iter, i,
+                    probability, reschedules, scenario.getPrimaryDelays(),
                 pathCaches[i]);
-            subSolverRunnable.setCplex(cplex);
-            subSolverRunnable.setBendersData(bendersData);
-            subSolverRunnable.run();
+            ssr.setCplex(cplex);
+            ssr.setBendersData(bendersData);
+            ssr.run();
+
+            bendersData.updateAlpha(ssr.getCutNum(), ssr.getAlpha(), probability);
+            bendersData.updateBeta(ssr.getCutNum(), ssr.getDualsDelay(), probability,
+                ssr.getDualRisk());
+            bendersData.setUpperBound(bendersData.getUpperBound() +
+                (ssr.getObjValue()* probability));
         }
         return bendersData;
     }

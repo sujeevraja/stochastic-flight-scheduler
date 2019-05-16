@@ -32,10 +32,9 @@ public class BendersData {
         return cuts.get(cutIndex);
     }
 
-
-    public void updateAlpha(int cutNum, double scenAlpha, double probability) {
+    public void updateAlpha(int cutNum, double alpha, double probability) {
         BendersCut cut = cuts.get(cutNum);
-        cut.setAlpha(cut.getAlpha() + (scenAlpha * probability));
+        cut.setAlpha(cut.getAlpha() + (alpha * probability));
     }
 
     public void updateBeta(int cutNum, double[] dualsDelay, double probability,

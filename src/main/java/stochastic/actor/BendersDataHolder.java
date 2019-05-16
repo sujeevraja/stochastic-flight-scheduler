@@ -66,6 +66,7 @@ public class BendersDataHolder extends AbstractActor {
     private void handle(InitBendersData initBendersData) {
         this.bendersData = initBendersData.bendersData;
         this.numScenarios = initBendersData.numScenarios;
+        numScenariosProcessed = 0;
         getSender().tell(true, getSelf());
     }
 
