@@ -73,7 +73,7 @@ public class Main {
         options.addOption("path", true, "instance path");
         options.addOption("r", true, "reschedule budget fraction");
         options.addOption("type", true,
-            "type (quality/time/budget/mean/excess)");
+            "type (budget/excess/mean/parallel/quality/time)");
         options.addOption("test", false,
             "test run");
         options.addOption("training", false,
@@ -110,12 +110,6 @@ public class Main {
             throws OptException {
         BatchRunner batchRunner = new BatchRunner(name);
         switch (runType) {
-            case "quality":
-                batchRunner.runForQuality();
-                break;
-            case "time":
-                batchRunner.runForTimeComparison();
-                break;
             case "budget":
                 if (runTraining)
                     batchRunner.trainingRun();
@@ -124,6 +118,15 @@ public class Main {
                 break;
             case "mean":
                 batchRunner.runForMeanComparison();
+                break;
+            case "parallel":
+                batchRunner.runForMultiThreadingComparison();
+                break;
+            case "quality":
+                batchRunner.runForQuality();
+                break;
+            case "time":
+                batchRunner.runForTimeComparison();
                 break;
             default:
                 throw new OptException("unknown run type: " + runType);
