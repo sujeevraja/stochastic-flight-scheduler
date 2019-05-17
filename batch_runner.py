@@ -15,6 +15,7 @@ class Config(object):
     def __init__(self):
         self.run_budget_set = False
         self.run_mean_set = False
+        self.run_parallel_set = False
         self.run_quality_set = False
         self.run_time_comparison_set = False
         self.jar_path = "build/libs/stochastic_uber.jar"
@@ -59,6 +60,7 @@ class Controller(object):
 
         if not (self.config.run_budget_set or
                 self.config.run_mean_set or
+                self.config.run_parallel_set or
                 self.config.run_quality_set or
                 self.config.run_time_comparison_set):
             raise ScriptException("no batch run chosen, nothing to do.")
@@ -67,6 +69,8 @@ class Controller(object):
             self._run_budget_set()
         if self.config.run_mean_set:
             self._run_mean_set()
+        if self.config.run_parallel_set:
+            self._run_parallel_set()
         if self.config.run_quality_set:
             self._run_quality_set()
         if self.config.run_time_comparison_set:
@@ -97,7 +101,6 @@ class Controller(object):
 
                 self._generate_test_results(cmd)
                 log.info(f'generated test results for {name}, {bf}')
-
         log.info("completed budget comparison runs.")
 
     def _generate_delays(self, orig_cmd):
@@ -136,6 +139,34 @@ class Controller(object):
                     log.info('finished mean run for {}, {}, {}'.format(
                         name, distribution, mean))
         log.info("completed mean comparison runs.")
+
+    def _run_parallel_set(self):
+        log.info("starting multi-threading comparison runs...")
+        for name, path in zip(self.config.names, self.config.paths):
+            for _ in range(2):
+                cmd = [c for c in self._base_cmd]
+                cmd.extend([
+                    "-batch",
+                    "-path", path,
+                    "-model", "benders",
+                    "-n", name,
+                    "-type", "parallel", ])
+
+                self._generate_delays(cmd)
+
+                for num_threads in range(1, 4):
+                    run_cmd = [c for c in cmd]
+                    run_cmd.append("-parseDelays")
+                    if num_threads > 1:
+                        run_cmd.extend([
+                            "-parallel", str(num_threads)])
+
+                    subprocess.check_call(run_cmd)
+                    log.info(
+                        f'finished threading run for {name}, {num_threads}')
+
+        self._clean_delay_files()
+        log.info("completed budget comparison runs.")
 
     def _run_quality_set(self):
         log.info("starting quality runs...")
@@ -221,6 +252,12 @@ class Controller(object):
 
         return None
 
+    def _clean_delay_files(self):
+        sln_path = os.path.join(os.getcwd(), 'solution')
+        for f in os.listdir(sln_path):
+            if f.startswith("primary_delay") and f.endswith(".csv"):
+                os.remove(os.path.join(sln_path, f))
+
 
 def handle_command_line():
     parser = argparse.ArgumentParser()
@@ -234,6 +271,8 @@ def handle_command_line():
                         action="store_true")
     parser.add_argument("-m", "--mean", help="run mean set",
                         action="store_true")
+    parser.add_argument("-p", "--parallel", help="run parallel run set",
+                        action="store_true")
     parser.add_argument("-q", "--quality", help="run quality set",
                         action="store_true")
     parser.add_argument("-t", "--time", help="run time comparison set",
@@ -245,11 +284,13 @@ def handle_command_line():
     if args.all:
         config.run_budget_set = True
         config.run_mean_set = True
+        config.run_parallel_set = True
         config.run_quality_set = True
         config.run_time_comparison_set = True
     else:
         config.run_budget_set = args.budget
         config.run_mean_set = args.mean
+        config.run_parallel_set = args.parallel
         config.run_quality_set = args.quality
         config.run_time_comparison_set = args.time
 
