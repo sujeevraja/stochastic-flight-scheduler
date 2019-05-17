@@ -66,6 +66,8 @@ public class Main {
         options.addOption("model", true, "model (naive/dep/benders/all)");
         options.addOption("n", true,
             "instance name");
+        options.addOption("parallel", true,
+            "number of parallel runs for second stage");
         options.addOption("parseDelays", false,
             "parse primary delays from files");
         options.addOption("path", true, "instance path");
@@ -173,8 +175,8 @@ public class Main {
         Parameters.setSetCplexNames(false);
 
         // Multi-threading parameters
-        Parameters.setRunSecondStageInParallel(true);
-        Parameters.setNumThreadsForSecondStage(2);
+        Parameters.setRunSecondStageInParallel(false);
+        Parameters.setNumThreadsForSecondStage(1);
 
         // Solution quality parameters
         Parameters.setCheckSolutionQuality(true);
@@ -229,28 +231,6 @@ public class Main {
     }
 
     private static void updateParameters(CommandLine cmd) throws OptException {
-        if (cmd.hasOption("model")) {
-            final String model = cmd.getOptionValue("model").toLowerCase();
-            switch (model) {
-                case "benders":
-                    Parameters.setModel(Enums.Model.BENDERS);
-                    break;
-                case "dep":
-                    Parameters.setModel(Enums.Model.DEP);
-                    break;
-                case "naive":
-                    Parameters.setModel(Enums.Model.NAIVE);
-                    break;
-                case "all":
-                    Parameters.setModel(Enums.Model.ALL);
-                    break;
-                default:
-                    throw new OptException("unknown model type, use benders/dep/naive/all");
-            }
-        }
-        else
-            logger.info("model not provided, defaulting to Benders");
-
         if (cmd.hasOption('c')) {
             final String columnGen = cmd.getOptionValue('c');
             switch (columnGen) {
@@ -309,12 +289,37 @@ public class Main {
             final double mean = Double.parseDouble(cmd.getOptionValue("mean"));
             Parameters.setDistributionMean(mean);
         }
+        if (cmd.hasOption("model")) {
+            final String model = cmd.getOptionValue("model").toLowerCase();
+            switch (model) {
+                case "benders":
+                    Parameters.setModel(Enums.Model.BENDERS);
+                    break;
+                case "dep":
+                    Parameters.setModel(Enums.Model.DEP);
+                    break;
+                case "naive":
+                    Parameters.setModel(Enums.Model.NAIVE);
+                    break;
+                case "all":
+                    Parameters.setModel(Enums.Model.ALL);
+                    break;
+                default:
+                    throw new OptException("unknown model type, use benders/dep/naive/all");
+            }
+        }
+        else
+            logger.info("model not provided, defaulting to Benders");
+        if (cmd.hasOption("parallel")) {
+            Parameters.setRunSecondStageInParallel(true);
+            Parameters.setNumThreadsForSecondStage(
+                Integer.parseInt(cmd.getOptionValue("parallel")));
+        }
+        if (cmd.hasOption("parseDelays"))
+            Parameters.setParsePrimaryDelaysFromFiles(true);
         if (cmd.hasOption('r')) {
             final double budgetFraction = Double.parseDouble(cmd.getOptionValue('r'));
             Parameters.setRescheduleBudgetFraction(budgetFraction);
-        }
-        if (cmd.hasOption("parseDelays")) {
-            Parameters.setParsePrimaryDelaysFromFiles(true);
         }
     }
 }
