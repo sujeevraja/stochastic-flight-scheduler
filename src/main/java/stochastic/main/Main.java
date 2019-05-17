@@ -22,43 +22,13 @@ public class Main {
 
     public static void main(String[] args) {
         try {
-            Options options = new Options();
-            options.addOption("batch", false,
-                    "batch run (single run otherwise)");
-            options.addOption("c", true,
-                    "column gen strategy (enum/all/best/first)");
-            options.addOption("d", true,
-                    "distribution (exp/tnorm/lnorm");
-            options.addOption("f", true,
-                    "flight pick (all/hub/rush)");
-            options.addOption("generateDelays", false,
-                "generate primary delays, write to file and exit");
-            options.addOption("mean", true, "distribution mean");
-            options.addOption("model", true, "model (naive/dep/benders/all)");
-            options.addOption("n", true,
-                    "instance name");
-            options.addOption("parseDelays", false,
-                "parse primary delays from files");
-            options.addOption("path", true, "instance path");
-            options.addOption("r", true, "reschedule budget fraction");
-            options.addOption("type", true,
-                    "type (quality/time/budget/mean/excess)");
-            options.addOption("test", false,
-                    "test run");
-            options.addOption("training", false,
-                    "training run");
-            options.addOption("h", false, "help (show options and exit)");
-
-            CommandLineParser parser = new DefaultParser();
-            CommandLine cmd = parser.parse(options, args);
-
-            if (cmd.hasOption('h')) {
-                HelpFormatter helpFormatter = new HelpFormatter();
-                helpFormatter.printHelp("stochastic.jar/stochastic_uber.jar", options);
+            CommandLine cmd = addOptions(args);
+            if (cmd == null)
                 return;
-            }
 
-            String name = cmd.hasOption('n') ? cmd.getOptionValue('n') : "instance1";
+            final String name = cmd.hasOption('n')
+                ? cmd.getOptionValue('n')
+                : "instance1";
             String instancePath = cmd.hasOption("path")
                 ? cmd.getOptionValue("path")
                 : ("data/" + name);
@@ -75,8 +45,53 @@ public class Main {
                     cmd.hasOption("test"));
             else
                 singleRun();
-        } catch (ParseException | OptException ex) {
+        } catch (OptException ex) {
             logger.error(ex);
+        }
+    }
+
+    private static CommandLine addOptions(String[] args) throws OptException {
+        Options options = new Options();
+        options.addOption("batch", false,
+            "batch run (single run otherwise)");
+        options.addOption("c", true,
+            "column gen strategy (enum/all/best/first)");
+        options.addOption("d", true,
+            "distribution (exp/tnorm/lnorm");
+        options.addOption("f", true,
+            "flight pick (all/hub/rush)");
+        options.addOption("generateDelays", false,
+            "generate primary delays, write to file and exit");
+        options.addOption("mean", true, "distribution mean");
+        options.addOption("model", true, "model (naive/dep/benders/all)");
+        options.addOption("n", true,
+            "instance name");
+        options.addOption("parallel", true,
+            "number of parallel runs for second stage");
+        options.addOption("parseDelays", false,
+            "parse primary delays from files");
+        options.addOption("path", true, "instance path");
+        options.addOption("r", true, "reschedule budget fraction");
+        options.addOption("type", true,
+            "type (quality/time/budget/mean/excess)");
+        options.addOption("test", false,
+            "test run");
+        options.addOption("training", false,
+            "training run");
+        options.addOption("h", false, "help (show options and exit)");
+
+        CommandLineParser parser = new DefaultParser();
+        try {
+            CommandLine cmd = parser.parse(options, args);
+            if (cmd.hasOption('h')) {
+                HelpFormatter helpFormatter = new HelpFormatter();
+                helpFormatter.printHelp("stochastic.jar/stochastic_uber.jar", options);
+                return null;
+            }
+            return cmd;
+        } catch (ParseException ex) {
+            logger.error(ex);
+            throw new OptException("error parsing CLI args");
         }
     }
 
@@ -118,8 +133,8 @@ public class Main {
     private static void singleRun() throws OptException {
         logger.info("Started optimization...");
 
-        // String path = "data/20171115022840-v2";
-        String path = "data/instance1";
+        String path = "data/20171115022840-v2";
+        // String path = "data/instance1";
         Parameters.setInstancePath(path);
 
         setDefaultParameters();
@@ -130,7 +145,7 @@ public class Main {
         controller.setDelayGenerator();
         controller.buildScenarios();
         controller.solve();
-        controller.processSolution();
+        // controller.processSolution();
 
         logger.info("completed optimization.");
     }
@@ -161,7 +176,7 @@ public class Main {
 
         // Multi-threading parameters
         Parameters.setRunSecondStageInParallel(false);
-        Parameters.setNumThreadsForSecondStage(2);
+        Parameters.setNumThreadsForSecondStage(1);
 
         // Solution quality parameters
         Parameters.setCheckSolutionQuality(true);
@@ -216,28 +231,6 @@ public class Main {
     }
 
     private static void updateParameters(CommandLine cmd) throws OptException {
-        if (cmd.hasOption("model")) {
-            final String model = cmd.getOptionValue("model").toLowerCase();
-            switch (model) {
-                case "benders":
-                    Parameters.setModel(Enums.Model.BENDERS);
-                    break;
-                case "dep":
-                    Parameters.setModel(Enums.Model.DEP);
-                    break;
-                case "naive":
-                    Parameters.setModel(Enums.Model.NAIVE);
-                    break;
-                case "all":
-                    Parameters.setModel(Enums.Model.ALL);
-                    break;
-                default:
-                    throw new OptException("unknown model type, use benders/dep/naive/all");
-            }
-        }
-        else
-            logger.info("model not provided, defaulting to Benders");
-
         if (cmd.hasOption('c')) {
             final String columnGen = cmd.getOptionValue('c');
             switch (columnGen) {
@@ -296,12 +289,37 @@ public class Main {
             final double mean = Double.parseDouble(cmd.getOptionValue("mean"));
             Parameters.setDistributionMean(mean);
         }
+        if (cmd.hasOption("model")) {
+            final String model = cmd.getOptionValue("model").toLowerCase();
+            switch (model) {
+                case "benders":
+                    Parameters.setModel(Enums.Model.BENDERS);
+                    break;
+                case "dep":
+                    Parameters.setModel(Enums.Model.DEP);
+                    break;
+                case "naive":
+                    Parameters.setModel(Enums.Model.NAIVE);
+                    break;
+                case "all":
+                    Parameters.setModel(Enums.Model.ALL);
+                    break;
+                default:
+                    throw new OptException("unknown model type, use benders/dep/naive/all");
+            }
+        }
+        else
+            logger.info("model not provided, defaulting to Benders");
+        if (cmd.hasOption("parallel")) {
+            Parameters.setRunSecondStageInParallel(true);
+            Parameters.setNumThreadsForSecondStage(
+                Integer.parseInt(cmd.getOptionValue("parallel")));
+        }
+        if (cmd.hasOption("parseDelays"))
+            Parameters.setParsePrimaryDelaysFromFiles(true);
         if (cmd.hasOption('r')) {
             final double budgetFraction = Double.parseDouble(cmd.getOptionValue('r'));
             Parameters.setRescheduleBudgetFraction(budgetFraction);
-        }
-        if (cmd.hasOption("parseDelays")) {
-            Parameters.setParsePrimaryDelaysFromFiles(true);
         }
     }
 }

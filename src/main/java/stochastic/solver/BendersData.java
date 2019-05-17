@@ -1,8 +1,10 @@
 package stochastic.solver;
 
+import stochastic.utility.Constants;
+
 import java.util.ArrayList;
 
-class BendersData {
+public class BendersData {
     /**
      * BendersData objects store cuts and updated upper bounds from second stage solutions.
      */
@@ -14,11 +16,11 @@ class BendersData {
         cuts = new ArrayList<>();
     }
 
-    void setUpperBound(double upperBound) {
+    public void setUpperBound(double upperBound) {
         this.upperBound = upperBound;
     }
 
-    double getUpperBound() {
+    public double getUpperBound() {
         return upperBound;
     }
 
@@ -28,5 +30,22 @@ class BendersData {
 
     BendersCut getCut(int cutIndex) {
         return cuts.get(cutIndex);
+    }
+
+    public void updateAlpha(int cutNum, double alpha, double probability) {
+        BendersCut cut = cuts.get(cutNum);
+        cut.setAlpha(cut.getAlpha() + (alpha * probability));
+    }
+
+    public void updateBeta(int cutNum, double[] dualsDelay, double probability,
+                           Double dualRisk) {
+        double[] beta = cuts.get(cutNum).getBeta();
+        for (int j = 0; j < dualsDelay.length; j++) {
+            if (Math.abs(dualsDelay[j]) >= Constants.EPS)
+                beta[j] += (-dualsDelay[j] * probability);
+
+            if (dualRisk != null && Math.abs(dualRisk) >= Constants.EPS)
+                beta[j] += (dualRisk * probability);
+        }
     }
 }
