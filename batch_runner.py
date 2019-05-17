@@ -21,11 +21,11 @@ class Config(object):
         self.jar_path = "build/libs/stochastic_uber.jar"
         self.cplex_lib_path = None
 
-        # self.names = ["s{}".format(i) for i in range(1, 6)]
-        # self.paths = ["data/paper/{}".format(n) for n in self.names]
+        self.names = ["s{}".format(i) for i in range(1, 6)]
+        self.paths = ["data/paper/{}".format(n) for n in self.names]
         # self.names = ["instance1", "instance2"]
-        self.names = ["instance1"]
-        self.paths = ["data/{}".format(n) for n in self.names]
+        # self.names = ["instance1"]
+        # self.paths = ["data/{}".format(n) for n in self.names]
 
 
 class ScriptException(Exception):
@@ -143,7 +143,7 @@ class Controller(object):
     def _run_parallel_set(self):
         log.info("starting multi-threading comparison runs...")
         for name, path in zip(self.config.names, self.config.paths):
-            for _ in range(2):
+            for _ in range(5):
                 cmd = [c for c in self._base_cmd]
                 cmd.extend([
                     "-batch",
@@ -154,7 +154,7 @@ class Controller(object):
 
                 self._generate_delays(cmd)
 
-                for num_threads in range(1, 4):
+                for num_threads in range(1, 17):
                     run_cmd = [c for c in cmd]
                     run_cmd.append("-parseDelays")
                     if num_threads > 1:
