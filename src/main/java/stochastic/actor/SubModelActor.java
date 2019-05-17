@@ -3,14 +3,11 @@ package stochastic.actor;
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
 import ilog.concert.IloException;
 import ilog.cplex.IloCplex;
 import stochastic.solver.SubSolverRunnable;
 
 public class SubModelActor extends AbstractActor {
-    private LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
     private ActorRef bendersDataHolder;
     private IloCplex cplex;
 
@@ -44,14 +41,12 @@ public class SubModelActor extends AbstractActor {
 
     @Override
     public void postStop() {
-        log.info("sub model actor stopped");
+        cplex.end();
+        cplex = null;
     }
 
     private void handle(SolveModel solveModel) {
         SubSolverRunnable subSolverRunnable = solveModel.subSolverRunnable;
-        log.info("starting to solve sub model for iteration " +
-            subSolverRunnable.getIter() + " scenario " + subSolverRunnable.getScenarioNum());
-
         subSolverRunnable.setCplex(cplex);
         subSolverRunnable.run();
         BendersDataHolder.UpdateCut updateCut = new BendersDataHolder.UpdateCut(
@@ -61,9 +56,6 @@ public class SubModelActor extends AbstractActor {
             subSolverRunnable.getProbability(),
             subSolverRunnable.getDualsDelay(),
             subSolverRunnable.getDualRisk());
-
-        log.info("finished solving sub model for iteration " + subSolverRunnable.getIter() +
-            " scenario " + subSolverRunnable.getScenarioNum());
         bendersDataHolder.tell(updateCut, getSelf());
     }
 }

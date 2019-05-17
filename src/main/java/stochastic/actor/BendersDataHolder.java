@@ -2,12 +2,9 @@ package stochastic.actor;
 
 import akka.actor.AbstractActor;
 import akka.actor.Props;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
 import stochastic.solver.BendersData;
 
 public class BendersDataHolder extends AbstractActor {
-    private LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
     private BendersData bendersData;
     private int numScenarios;
     private int numScenariosProcessed;
@@ -77,7 +74,6 @@ public class BendersDataHolder extends AbstractActor {
         bendersData.setUpperBound(bendersData.getUpperBound() +
             (updateCut.objValue * updateCut.probability));
         ++numScenariosProcessed;
-        log.info("finished updating cut for scenario " + updateCut.cutNum);
     }
 
     private void replyToDoneQuestion() {
