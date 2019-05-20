@@ -103,12 +103,14 @@ class Controller(object):
                 log.info(f'generated test results for {name}, {bf}')
         log.info("completed budget comparison runs.")
 
-    def _generate_delays(self, orig_cmd):
+    @staticmethod
+    def _generate_delays(orig_cmd):
         cmd = [c for c in orig_cmd]
         cmd.append("-generateDelays")
         subprocess.check_call(cmd)
 
-    def _generate_reschedule_solution(self, orig_cmd, model):
+    @staticmethod
+    def _generate_reschedule_solution(orig_cmd, model):
         cmd = [c for c in orig_cmd]
         cmd.extend([
             "-model", model,
@@ -116,7 +118,8 @@ class Controller(object):
             "-training"])
         subprocess.check_call(cmd)
 
-    def _generate_test_results(self, orig_cmd):
+    @staticmethod
+    def _generate_test_results(orig_cmd):
         cmd = [c for c in orig_cmd]
         cmd.append("-test")
         subprocess.check_call(cmd)

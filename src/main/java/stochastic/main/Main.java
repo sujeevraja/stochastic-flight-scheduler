@@ -178,12 +178,12 @@ public class Main {
         Parameters.setSetCplexNames(false);
 
         // Multi-threading parameters
-        Parameters.setRunSecondStageInParallel(false);
-        Parameters.setNumThreadsForSecondStage(1);
+        Parameters.setRunSecondStageInParallel(true);
+        Parameters.setNumThreadsForSecondStage(30);
 
         // Solution quality parameters
         Parameters.setCheckSolutionQuality(true);
-        Parameters.setNumTestScenarios(10);
+        Parameters.setNumTestScenarios(100);
 
         // Expected excess parameters
         Parameters.setExpectedExcess(false);
