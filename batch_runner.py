@@ -154,7 +154,7 @@ class Controller(object):
 
                 self._generate_delays(cmd)
 
-                for num_threads in range(1, 17):
+                for num_threads in [1, 10, 20, 30]:
                     run_cmd = [c for c in cmd]
                     run_cmd.append("-parseDelays")
                     if num_threads > 1:
@@ -238,7 +238,7 @@ class Controller(object):
             log.info("located cplex library path.")
 
     def _guess_cplex_library_path(self):
-        gp_path = os.path.join(os.environ["HOME"], ".gradle",
+        gp_path = os.path.join(os.path.expanduser("~"), ".gradle",
                                "gradle.properties")
         if not os.path.isfile(gp_path):
             log.warn("gradle.properties not available at {}".format(gp_path))
