@@ -52,7 +52,7 @@ class Controller(object):
         self._base_cmd = [
             "java",
             "-Xms32m",
-            "-Xmx4g",
+            "-Xmx32g",
             "-Djava.library.path={}".format(
                 self.config.cplex_lib_path),
             "-jar",
@@ -103,12 +103,14 @@ class Controller(object):
                 log.info(f'generated test results for {name}, {bf}')
         log.info("completed budget comparison runs.")
 
-    def _generate_delays(self, orig_cmd):
+    @staticmethod
+    def _generate_delays(orig_cmd):
         cmd = [c for c in orig_cmd]
         cmd.append("-generateDelays")
         subprocess.check_call(cmd)
 
-    def _generate_reschedule_solution(self, orig_cmd, model):
+    @staticmethod
+    def _generate_reschedule_solution(orig_cmd, model):
         cmd = [c for c in orig_cmd]
         cmd.extend([
             "-model", model,
@@ -116,7 +118,8 @@ class Controller(object):
             "-training"])
         subprocess.check_call(cmd)
 
-    def _generate_test_results(self, orig_cmd):
+    @staticmethod
+    def _generate_test_results(orig_cmd):
         cmd = [c for c in orig_cmd]
         cmd.append("-test")
         subprocess.check_call(cmd)
@@ -154,7 +157,7 @@ class Controller(object):
 
                 self._generate_delays(cmd)
 
-                for num_threads in range(1, 17):
+                for num_threads in [1, 10, 20, 30]:
                     run_cmd = [c for c in cmd]
                     run_cmd.append("-parseDelays")
                     if num_threads > 1:
@@ -238,7 +241,7 @@ class Controller(object):
             log.info("located cplex library path.")
 
     def _guess_cplex_library_path(self):
-        gp_path = os.path.join(os.environ["HOME"], ".gradle",
+        gp_path = os.path.join(os.path.expanduser("~"), ".gradle",
                                "gradle.properties")
         if not os.path.isfile(gp_path):
             log.warn("gradle.properties not available at {}".format(gp_path))
