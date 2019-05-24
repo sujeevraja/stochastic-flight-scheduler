@@ -52,7 +52,7 @@ class Controller(object):
         self._base_cmd = [
             "java",
             "-Xms32m",
-            "-Xmx4g",
+            "-Xmx32g",
             "-Djava.library.path={}".format(
                 self.config.cplex_lib_path),
             "-jar",
