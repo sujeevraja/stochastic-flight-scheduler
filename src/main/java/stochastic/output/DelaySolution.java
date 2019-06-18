@@ -69,7 +69,7 @@ public class DelaySolution {
         testKPISet.setKpi(Enums.TestKPI.delaySolutionTimeInSec, solutionTimeInSeconds);
     }
 
-    public TestKPISet getTestKPISet() {
+    TestKPISet getTestKPISet() {
         return testKPISet;
     }
 

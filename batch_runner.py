@@ -96,11 +96,12 @@ class Controller(object):
 
                 for model in self._models:
                     self._generate_reschedule_solution(cmd, model)
-                    log.info(
-                        f'finished budget run for {model}, {name}, {bf}')
+                    log.info(f'finished budget run for {model}, {name}, {bf}')
 
                 self._generate_test_results(cmd)
                 log.info(f'generated test results for {name}, {bf}')
+
+        self._clean_delay_files()
         log.info("completed budget comparison runs.")
 
     @staticmethod
