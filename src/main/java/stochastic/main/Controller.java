@@ -461,7 +461,7 @@ class Controller {
         }
     }
 
-    ArrayList<RescheduleSolution> getAllRescheduleSolutions() {
+    private ArrayList<RescheduleSolution> getAllRescheduleSolutions() {
         ArrayList<RescheduleSolution> rescheduleSolutions = new ArrayList<>();
         RescheduleSolution original = new RescheduleSolution("original", 0, null);
         original.setOriginalSchedule(true);

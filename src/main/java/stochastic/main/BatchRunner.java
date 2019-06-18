@@ -322,7 +322,8 @@ class BatchRunner {
 
             if (addTestHeaders) {
                 ArrayList<String> testHeaders = new ArrayList<>(Arrays.asList(
-                        "instance", "budget fraction", "approach"));
+                        "instance", "budget fraction", "approach", "rescheduleCost", "twoStageObjective",
+                        "decrease (%)"));
 
                 for (Enums.TestKPI kpi : Enums.TestKPI.values()) {
                     testHeaders.add(kpi.name());
@@ -348,14 +349,26 @@ class BatchRunner {
             TestKPISet baseKPISet = testKPISets[0];
 
             // write test results
+            Double baseObj = null;
             for (int j = 0; j < testKPISets.length; ++j) {
+                TestKPISet testKPISet = testKPISets[j];
+                final double rescheduleCost = rescheduleSolutions.get(j).getRescheduleCost();
+                final double delayCost = testKPISet.getKpi(Enums.TestKPI.delayCost);
+                final double twoStageObj = rescheduleCost + delayCost;
+                if (baseObj == null)
+                    baseObj = twoStageObj;
+
                 row = new ArrayList<>(Arrays.asList(
                         instanceName,
                         Double.toString(Parameters.getRescheduleBudgetFraction()),
-                        rescheduleSolutions.get(j).getName()
-                ));
+                        rescheduleSolutions.get(j).getName(),
+                        Double.toString(rescheduleCost),
+                        Double.toString(twoStageObj)));
 
-                TestKPISet testKPISet = testKPISets[j];
+                double twoStageObjDecrease = 0.0;
+                if (j > 0) twoStageObjDecrease = ((baseObj - twoStageObj) / baseObj) * 100.0;
+                row.add(Double.toString(twoStageObjDecrease));
+
                 TestKPISet percentDecreaseSet = j > 0
                         ? TestKPISet.getPercentageDecrease(baseKPISet, testKPISet)
                         : null;
