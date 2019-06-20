@@ -56,8 +56,9 @@ public class QualityChecker {
     }
 
     public void generateTestDelays() {
-        testScenarios = dataRegistry.getDelayGenerator().generateScenarios(
-            Parameters.getNumTestScenarios());
+        // testScenarios = dataRegistry.getDelayGenerator().generateScenarios(
+        //    Parameters.getNumTestScenarios());
+        testScenarios = dataRegistry.getDelayScenarios();
     }
 
     public TestKPISet[] collectAverageTestStatsForBatchRun(
