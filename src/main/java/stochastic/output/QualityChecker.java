@@ -34,10 +34,11 @@ public class QualityChecker {
     private int[] zeroReschedules;
     private Scenario[] testScenarios;
 
-    public QualityChecker(DataRegistry dataRegistry) {
+    public QualityChecker(DataRegistry dataRegistry, Scenario[] testScenarios) {
         this.dataRegistry = dataRegistry;
         zeroReschedules = new int[dataRegistry.getLegs().size()];
         Arrays.fill(zeroReschedules, 0);
+        this.testScenarios = testScenarios;
     }
 
     private void initCplex() throws OptException {
@@ -53,12 +54,6 @@ public class QualityChecker {
     private void endCplex() {
         cplex.end();
         cplex = null;
-    }
-
-    public void generateTestDelays() {
-        // testScenarios = dataRegistry.getDelayGenerator().generateScenarios(
-        //    Parameters.getNumTestScenarios());
-        testScenarios = dataRegistry.getDelayScenarios();
     }
 
     public TestKPISet[] collectAverageTestStatsForBatchRun(

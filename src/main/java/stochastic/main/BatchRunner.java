@@ -2,6 +2,7 @@ package stochastic.main;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import stochastic.delay.Scenario;
 import stochastic.output.QualityChecker;
 import stochastic.output.RescheduleSolution;
 import stochastic.output.TestKPISet;
@@ -11,7 +12,6 @@ import stochastic.utility.Enums;
 import stochastic.utility.OptException;
 
 import java.io.*;
-import java.nio.Buffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -339,12 +339,21 @@ class BatchRunner {
             // solve models
             Controller controller = new Controller();
             controller.readData();
-            controller.setDelayGenerator();
+
+            Scenario[] testScenarios;
+            if (Parameters.isParsePrimaryDelaysFromFiles()) {
+                controller.buildScenarios();
+                testScenarios = controller.getDataRegistry().getDelayScenarios();
+            }
+            else {
+                controller.setDelayGenerator();
+                testScenarios = controller.getDataRegistry().getDelayGenerator().generateScenarios(
+                    Parameters.getNumTestScenarios());
+            }
             ArrayList<RescheduleSolution> rescheduleSolutions =
                     controller.collectRescheduleSolutionsFromFiles();
 
-            QualityChecker qc = new QualityChecker(controller.getDataRegistry());
-            qc.generateTestDelays();
+            QualityChecker qc = new QualityChecker(controller.getDataRegistry(), testScenarios);
             TestKPISet[] testKPISets = qc.collectAverageTestStatsForBatchRun(rescheduleSolutions);
             TestKPISet baseKPISet = testKPISets[0];
 
