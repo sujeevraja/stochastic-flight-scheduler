@@ -2,6 +2,7 @@ package stochastic.main;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import stochastic.delay.Scenario;
 import stochastic.output.QualityChecker;
 import stochastic.output.RescheduleSolution;
 import stochastic.output.TestKPISet;
@@ -11,7 +12,6 @@ import stochastic.utility.Enums;
 import stochastic.utility.OptException;
 
 import java.io.*;
-import java.nio.Buffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -336,15 +336,28 @@ class BatchRunner {
             row.add(instanceName);
             row.add(Double.toString(Parameters.getRescheduleBudgetFraction()));
 
-            // solve models
+            // read model data
             Controller controller = new Controller();
             controller.readData();
-            controller.setDelayGenerator();
-            ArrayList<RescheduleSolution> rescheduleSolutions =
-                    controller.collectRescheduleSolutionsFromFiles();
 
-            QualityChecker qc = new QualityChecker(controller.getDataRegistry());
-            qc.generateTestDelays();
+            // read all reschedule solutions
+            ArrayList<RescheduleSolution> rescheduleSolutions =
+                controller.collectRescheduleSolutionsFromFiles();
+
+            // prepare test scenarios
+            Scenario[] testScenarios;
+            if (Parameters.isParsePrimaryDelaysFromFiles()) {
+                controller.buildScenarios();
+                testScenarios = controller.getDataRegistry().getDelayScenarios();
+            }
+            else {
+                controller.setDelayGenerator();
+                testScenarios = controller.getDataRegistry().getDelayGenerator().generateScenarios(
+                    Parameters.getNumTestScenarios());
+            }
+
+            // prepare test results
+            QualityChecker qc = new QualityChecker(controller.getDataRegistry(), testScenarios);
             TestKPISet[] testKPISets = qc.collectAverageTestStatsForBatchRun(rescheduleSolutions);
             TestKPISet baseKPISet = testKPISets[0];
 

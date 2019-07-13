@@ -201,7 +201,7 @@ public class SubModelBuilder {
                 boundConstraints[i][j] = cplex.addLe(y[i][j], 1);
                 if (Parameters.isSetCplexNames())
                     boundConstraints[i][j].setName(
-                            prefix + "bound_" + tails.get(i).getId() + "_j");
+                            prefix + "bound_" + tails.get(i).getId() + "_" + j);
             }
         }
     }

@@ -38,7 +38,7 @@ class ScriptException(Exception):
         return repr(self.value)
 
 
-class Controller(object):
+class Controller:
     """class that manages the functionality of the entire script."""
 
     def __init__(self, config):
@@ -122,7 +122,7 @@ class Controller(object):
     @staticmethod
     def _generate_test_results(orig_cmd):
         cmd = [c for c in orig_cmd]
-        cmd.append("-test")
+        cmd.extend(["-parseDelays", "-test"])
         subprocess.check_call(cmd)
 
     def _run_mean_set(self):

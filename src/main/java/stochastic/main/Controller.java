@@ -64,6 +64,7 @@ class Controller {
 
         // Read leg data and remove unnecessary legs
         String instancePath = Parameters.getInstancePath();
+        logger.debug("instance path: " + instancePath);
         ArrayList<Leg> legs = new ScheduleDAO(instancePath + "/Schedule.xml").getLegs();
         storeLegs(legs);
         // limitNumTails();
@@ -451,8 +452,9 @@ class Controller {
             kpiManager.writeOutput();
 
             if (Parameters.isCheckSolutionQuality()) {
-                QualityChecker qc = new QualityChecker(dataRegistry);
-                qc.generateTestDelays();
+                Scenario[] testScenarios = dataRegistry.getDelayGenerator().generateScenarios(
+                    Parameters.getNumTestScenarios());
+                QualityChecker qc = new QualityChecker(dataRegistry, testScenarios);
                 qc.compareSolutions(rescheduleSolutions);
             }
         } catch (IOException ex) {
