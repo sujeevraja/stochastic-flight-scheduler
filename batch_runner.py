@@ -38,7 +38,7 @@ class ScriptException(Exception):
         return repr(self.value)
 
 
-class Controller(object):
+class Controller:
     """class that manages the functionality of the entire script."""
 
     def __init__(self, config):

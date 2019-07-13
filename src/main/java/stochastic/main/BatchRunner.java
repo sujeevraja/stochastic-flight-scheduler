@@ -336,10 +336,15 @@ class BatchRunner {
             row.add(instanceName);
             row.add(Double.toString(Parameters.getRescheduleBudgetFraction()));
 
-            // solve models
+            // read model data
             Controller controller = new Controller();
             controller.readData();
 
+            // read all reschedule solutions
+            ArrayList<RescheduleSolution> rescheduleSolutions =
+                controller.collectRescheduleSolutionsFromFiles();
+
+            // prepare test scenarios
             Scenario[] testScenarios;
             if (Parameters.isParsePrimaryDelaysFromFiles()) {
                 controller.buildScenarios();
@@ -350,9 +355,8 @@ class BatchRunner {
                 testScenarios = controller.getDataRegistry().getDelayGenerator().generateScenarios(
                     Parameters.getNumTestScenarios());
             }
-            ArrayList<RescheduleSolution> rescheduleSolutions =
-                    controller.collectRescheduleSolutionsFromFiles();
 
+            // prepare test results
             QualityChecker qc = new QualityChecker(controller.getDataRegistry(), testScenarios);
             TestKPISet[] testKPISets = qc.collectAverageTestStatsForBatchRun(rescheduleSolutions);
             TestKPISet baseKPISet = testKPISets[0];

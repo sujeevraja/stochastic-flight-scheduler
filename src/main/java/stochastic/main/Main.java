@@ -136,12 +136,11 @@ public class Main {
     private static void singleRun() throws OptException {
         logger.info("Started optimization...");
 
-        String path = "data/20171115022840-v2";
-        // String path = "data/instance1";
-        Parameters.setInstancePath(path);
-
-        setDefaultParameters();
-        writeDefaultParameters();
+        if (Parameters.getInstancePath() == null) {
+            // String path = "data/instance1";
+            String path = "data/20171115022840-v2";
+            Parameters.setInstancePath(path);
+        }
 
         Controller controller = new Controller();
         controller.readData();
