@@ -104,6 +104,26 @@ class Controller:
         self._clean_delay_files()
         log.info("completed budget comparison runs.")
 
+    def _run_mean_set(self):
+        log.info("starting mean comparison runs...")
+        for name, path in zip(self.config.names, self.config.paths):
+            for distribution in ['exp', 'tnorm', 'lnorm']:
+                for mean in ["15", "30", "45", "60"]:
+                    cmd = [c for c in self._base_cmd]
+                    cmd.extend([
+                        "-b",
+                        "-t",
+                        "mean",
+                        "-p", path,
+                        "-n", name,
+                        "-d", distribution,
+                        "-m", mean, ])
+                    subprocess.check_call(cmd)
+                    log.info('finished mean run for {}, {}, {}'.format(
+                        name, distribution, mean))
+        log.info("completed mean comparison runs.")
+
+
     @staticmethod
     def _generate_delays(orig_cmd):
         cmd = [c for c in orig_cmd]
@@ -124,25 +144,6 @@ class Controller:
         cmd = [c for c in orig_cmd]
         cmd.extend(["-parseDelays", "-test"])
         subprocess.check_call(cmd)
-
-    def _run_mean_set(self):
-        log.info("starting mean comparison runs...")
-        for name, path in zip(self.config.names, self.config.paths):
-            for distribution in ['exp', 'tnorm', 'lnorm']:
-                for mean in ["15", "30", "45", "60"]:
-                    cmd = [c for c in self._base_cmd]
-                    cmd.extend([
-                        "-b",
-                        "-t",
-                        "mean",
-                        "-p", path,
-                        "-n", name,
-                        "-d", distribution,
-                        "-m", mean, ])
-                    subprocess.check_call(cmd)
-                    log.info('finished mean run for {}, {}, {}'.format(
-                        name, distribution, mean))
-        log.info("completed mean comparison runs.")
 
     def _run_parallel_set(self):
         log.info("starting multi-threading comparison runs...")

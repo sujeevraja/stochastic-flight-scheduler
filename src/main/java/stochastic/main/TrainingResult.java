@@ -7,6 +7,9 @@ import java.util.List;
 
 class TrainingResult implements Serializable {
     private String instance;
+    private String distribution;
+    private Double distributionMean;
+    private Double distributionSd;
     private Double budgetFraction;
     private Double naiveRescheduleCost;
     private Double naiveSolutionTime;
@@ -21,6 +24,22 @@ class TrainingResult implements Serializable {
     private Integer bendersNumIterations;
 
     TrainingResult() {}
+
+    void setDistribution(String distribution) {
+        this.distribution = distribution;
+    }
+
+    void setDistributionMean(Double distributionMean) {
+        this.distributionMean = distributionMean;
+    }
+
+    void setDistributionSd(Double distributionSd) {
+        this.distributionSd = distributionSd;
+    }
+
+    void setBudgetFraction(Double budgetFraction) {
+        this.budgetFraction = budgetFraction;
+    }
 
     Double getBudgetFraction() {
         return budgetFraction;
@@ -58,10 +77,6 @@ class TrainingResult implements Serializable {
         this.bendersUpperBound = bendersUpperBound;
     }
 
-    void setBudgetFraction(Double budgetFraction) {
-        this.budgetFraction = budgetFraction;
-    }
-
     void setDepRescheduleCost(Double depRescheduleCost) {
         this.depRescheduleCost = depRescheduleCost;
     }
@@ -84,6 +99,9 @@ class TrainingResult implements Serializable {
 
     boolean allPopulated() {
         return instance != null
+            && distribution != null
+            && distributionMean != null
+            && distributionSd != null
             && budgetFraction != null
             && naiveRescheduleCost != null
             && naiveSolutionTime != null
@@ -101,6 +119,9 @@ class TrainingResult implements Serializable {
     List<String> getCsvRow() {
         return new ArrayList<>(Arrays.asList(
             instance,
+            distribution,
+            Double.toString(distributionMean),
+            Double.toString(distributionSd),
             Double.toString(budgetFraction),
             Double.toString(naiveRescheduleCost),
             Double.toString(naiveSolutionTime),

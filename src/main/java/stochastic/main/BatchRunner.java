@@ -228,6 +228,9 @@ class BatchRunner {
                     new FileWriter(trainingPath));
                 ArrayList<String> trainingHeaders = new ArrayList<>(Arrays.asList(
                         "instance",
+                        "distribution",
+                        "mean",
+                        "standard deviation",
                         "budget fraction",
                         "Naive model reschedule cost",
                         "Naive model solution time (seconds)",
@@ -256,6 +259,10 @@ class BatchRunner {
 
             if (trainingResult.getInstance() == null)
                 trainingResult.setInstance(instanceName);
+
+            trainingResult.setDistribution(Parameters.getDistributionType().toString());
+            trainingResult.setDistributionMean(Parameters.getDistributionMean());
+            trainingResult.setDistributionSd(Parameters.getDistributionSd());
 
             if (trainingResult.getBudgetFraction() == null)
                 trainingResult.setBudgetFraction(Parameters.getRescheduleBudgetFraction());
@@ -322,8 +329,8 @@ class BatchRunner {
 
             if (addTestHeaders) {
                 ArrayList<String> testHeaders = new ArrayList<>(Arrays.asList(
-                        "instance", "budget fraction", "approach", "rescheduleCost", "twoStageObjective",
-                        "decrease (%)"));
+                    "instance", "distribution", "mean", "standard deviation", "budget fraction",
+                    "approach", "rescheduleCost", "twoStageObjective", "decrease (%)"));
 
                 for (Enums.TestKPI kpi : Enums.TestKPI.values()) {
                     testHeaders.add(kpi.name());
@@ -334,6 +341,9 @@ class BatchRunner {
 
             ArrayList<String> row = new ArrayList<>();
             row.add(instanceName);
+            row.add(Parameters.getDistributionType().toString());
+            row.add(Double.toString(Parameters.getDistributionMean()));
+            row.add(Double.toString(Parameters.getDistributionSd()));
             row.add(Double.toString(Parameters.getRescheduleBudgetFraction()));
 
             // read model data
