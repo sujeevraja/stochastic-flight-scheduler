@@ -33,6 +33,7 @@ class ScriptException(Exception):
 
     def __init__(self, value):
         self.value = value
+        super().__init__(value)
 
     def __repr__(self):
         return repr(self.value)
@@ -91,15 +92,7 @@ class Controller:
                     "-n", name,
                     "-r", bf])
 
-                self._generate_delays(cmd)
-                log.info(f'generated delays for {name}, {bf}')
-
-                for model in self._models:
-                    self._generate_reschedule_solution(cmd, model)
-                    log.info(f'finished budget run for {model}, {name}, {bf}')
-
-                self._generate_test_results(cmd)
-                log.info(f'generated test results for {name}, {bf}')
+                self._generate_all_results(cmd)
 
         self._clean_delay_files()
         log.info("completed budget comparison runs.")
@@ -111,18 +104,28 @@ class Controller:
                 for mean in ["15", "30", "45", "60"]:
                     cmd = [c for c in self._base_cmd]
                     cmd.extend([
-                        "-b",
-                        "-t",
-                        "mean",
-                        "-p", path,
+                        "-batch",
+                        "-type", "mean",
+                        "-path", path,
                         "-n", name,
                         "-d", distribution,
-                        "-m", mean, ])
-                    subprocess.check_call(cmd)
-                    log.info('finished mean run for {}, {}, {}'.format(
-                        name, distribution, mean))
+                        "-mean", mean, ])
+
+                    self._generate_all_results(cmd)
+
+        self._clean_delay_files()
         log.info("completed mean comparison runs.")
 
+    def _generate_all_results(self, cmd):
+        self._generate_delays(cmd)
+        log.info(f'generated delays for {cmd}')
+
+        for model in self._models:
+            self._generate_reschedule_solution(cmd, model)
+            log.info(f'finished training run for {model}')
+
+        self._generate_test_results(cmd)
+        log.info(f'generated test results for {cmd}')
 
     @staticmethod
     def _generate_delays(orig_cmd):
@@ -242,7 +245,8 @@ class Controller:
         else:
             log.info("located cplex library path.")
 
-    def _guess_cplex_library_path(self):
+    @staticmethod
+    def _guess_cplex_library_path():
         gp_path = os.path.join(os.path.expanduser("~"), ".gradle",
                                "gradle.properties")
         if not os.path.isfile(gp_path):
@@ -257,10 +261,12 @@ class Controller:
 
         return None
 
-    def _clean_delay_files(self):
+    @staticmethod
+    def _clean_delay_files():
         sln_path = os.path.join(os.getcwd(), 'solution')
         for f in os.listdir(sln_path):
-            if f.startswith("primary_delay") and f.endswith(".csv"):
+            if (f.endswith(".csv")
+                    and (f.startswith("primary_delay") or f.startswith("reschedule_"))):
                 os.remove(os.path.join(sln_path, f))
 
 

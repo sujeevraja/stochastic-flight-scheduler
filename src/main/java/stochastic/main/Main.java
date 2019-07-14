@@ -111,13 +111,11 @@ public class Main {
         BatchRunner batchRunner = new BatchRunner(name);
         switch (runType) {
             case "budget":
+            case "mean":
                 if (runTraining)
                     batchRunner.trainingRun();
                 if (runTest)
                     batchRunner.testRun();
-                break;
-            case "mean":
-                batchRunner.runForMeanComparison();
                 break;
             case "parallel":
                 batchRunner.runForMultiThreadingComparison();

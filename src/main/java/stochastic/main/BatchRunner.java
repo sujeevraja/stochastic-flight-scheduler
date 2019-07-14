@@ -339,13 +339,6 @@ class BatchRunner {
                 CSVHelper.writeLine(testWriter, testHeaders);
             }
 
-            ArrayList<String> row = new ArrayList<>();
-            row.add(instanceName);
-            row.add(Parameters.getDistributionType().toString());
-            row.add(Double.toString(Parameters.getDistributionMean()));
-            row.add(Double.toString(Parameters.getDistributionSd()));
-            row.add(Double.toString(Parameters.getRescheduleBudgetFraction()));
-
             // read model data
             Controller controller = new Controller();
             controller.readData();
@@ -381,8 +374,11 @@ class BatchRunner {
                 if (baseObj == null)
                     baseObj = twoStageObj;
 
-                row = new ArrayList<>(Arrays.asList(
+                ArrayList<String> row = new ArrayList<>(Arrays.asList(
                         instanceName,
+                        Parameters.getDistributionType().toString(),
+                        Double.toString(Parameters.getDistributionMean()),
+                        Double.toString(Parameters.getDistributionSd()),
                         Double.toString(Parameters.getRescheduleBudgetFraction()),
                         rescheduleSolutions.get(j).getName(),
                         Double.toString(rescheduleCost),
@@ -411,126 +407,6 @@ class BatchRunner {
             logger.error(ex);
             throw new OptException("error writing to csv during test run");
         }
-    }
-
-    /**
-     * Performs a run to show the effect of changing distribution mean.
-     *
-     * @throws OptException when there is any issue with solving/writing.
-     */
-    void runForMeanComparison() throws OptException {
-        /*
-        try {
-            final String trainingPath = "solution/results_mean_training.csv";
-            final boolean addTrainingHeaders = !fileExists(trainingPath);
-            BufferedWriter trainingWriter = new BufferedWriter(
-                    new FileWriter(trainingPath, true));
-
-            if (addTrainingHeaders) {
-                ArrayList<String> trainingHeaders = new ArrayList<>(Arrays.asList(
-                        "instance",
-                        "distribution type",
-                        "distribution mean",
-                        "Naive model reschedule cost",
-                        "Naive model solution time (seconds)",
-                        "DEP reschedule cost",
-                        "DEP solution time (seconds)",
-                        "Benders reschedule cost",
-                        "Benders solution time (seconds)",
-                        "Benders lower bound",
-                        "Benders upper bound",
-                        "Benders gap",
-                        "Benders number of cuts",
-                        "Benders number of iterations"));
-                CSVHelper.writeLine(trainingWriter, trainingHeaders);
-            }
-
-            final String testPath = "solution/results_mean_test.csv";
-            final boolean addTestHeaders = !fileExists(testPath);
-            BufferedWriter testWriter = new BufferedWriter(
-                    new FileWriter(testPath, true));
-
-            if (addTestHeaders) {
-                ArrayList<String> testHeaders = new ArrayList<>(
-                        Arrays.asList("instance", "distribution", "mean", "approach"));
-
-                for (Enums.TestKPI kpi : Enums.TestKPI.values()) {
-                    testHeaders.add(kpi.name());
-                    testHeaders.add("decrease (%)");
-                }
-                CSVHelper.writeLine(testWriter, testHeaders);
-            }
-
-            ArrayList<String> row = new ArrayList<>();
-            row.add(instanceName);
-            row.add(Parameters.getDistributionType().name());
-            row.add(Double.toString(Parameters.getDistributionMean()));
-
-            // solve models
-            Controller controller = new Controller();
-            controller.readData();
-            controller.setDelayGenerator();
-            controller.buildScenarios();
-
-            controller.solveWithNaiveApproach();
-            row.add(Double.toString(controller.getNaiveModelRescheduleCost()));
-            row.add(Double.toString(controller.getNaiveModelSolutionTime()));
-
-            controller.solveWithDEP();
-            row.add(Double.toString(controller.getDepRescheduleCost()));
-            row.add(Double.toString(controller.getDepSolutionTime()));
-
-            controller.solveWithBenders();
-
-            // write training results
-            row.add(Double.toString(controller.getBendersRescheduleCost()));
-            row.add(Double.toString(controller.getBendersSolutionTime()));
-            row.add(Double.toString(controller.getBendersLowerBound()));
-            row.add(Double.toString(controller.getBendersUpperBound()));
-            row.add(Double.toString(controller.getBendersGap()));
-            row.add(Integer.toString(controller.getBendersNumCuts()));
-            row.add(Integer.toString(controller.getBendersNumIterations()));
-
-            CSVHelper.writeLine(trainingWriter, row);
-
-            // collect test solutions
-            QualityChecker qc = new QualityChecker(controller.getDataRegistry());
-            qc.generateTestDelays();
-            ArrayList<RescheduleSolution> rescheduleSolutions = controller.getAllRescheduleSolutions();
-            TestKPISet[] testKPISets = qc.collectAverageTestStatsForBatchRun(rescheduleSolutions);
-            TestKPISet baseKPISet = testKPISets[0];
-
-            // write test results
-            for (int j = 0; j < testKPISets.length; ++j) {
-                row = new ArrayList<>(Arrays.asList(
-                        instanceName,
-                        Parameters.getDistributionType().name(),
-                        Double.toString(Parameters.getDistributionMean()),
-                        rescheduleSolutions.get(j).getName()
-                ));
-
-                TestKPISet testKPISet = testKPISets[j];
-                TestKPISet percentDecreaseSet = j > 0
-                        ? TestKPISet.getPercentageDecrease(baseKPISet, testKPISet)
-                        : null;
-
-                for (Enums.TestKPI kpi : Enums.TestKPI.values()) {
-                    row.add(testKPISet.getKpi(kpi).toString());
-                    double decrease = percentDecreaseSet != null
-                            ? percentDecreaseSet.getKpi(kpi)
-                            : 0;
-                    row.add(Double.toString(decrease));
-                }
-                CSVHelper.writeLine(testWriter, row);
-            }
-
-            trainingWriter.close();
-            testWriter.close();
-        } catch (IOException ex) {
-            logger.error(ex);
-            throw new OptException("error writing to csv during budget comparison run");
-        }
-         */
     }
 
     void runForMultiThreadingComparison() throws OptException {
