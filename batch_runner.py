@@ -116,34 +116,6 @@ class Controller:
         self._clean_delay_files()
         log.info("completed mean comparison runs.")
 
-    def _run_parallel_set(self):
-        log.info("starting multi-threading comparison runs...")
-        for name, path in zip(self.config.names, self.config.paths):
-            for _ in range(5):
-                cmd = [c for c in self._base_cmd]
-                cmd.extend([
-                    "-batch",
-                    "-path", path,
-                    "-model", "benders",
-                    "-n", name,
-                    "-type", "parallel", ])
-
-                self._generate_delays(cmd)
-
-                for num_threads in [1, 10, 20, 30]:
-                    run_cmd = [c for c in cmd]
-                    run_cmd.append("-parseDelays")
-                    if num_threads > 1:
-                        run_cmd.extend([
-                            "-parallel", str(num_threads)])
-
-                    subprocess.check_call(run_cmd)
-                    log.info(
-                        f'finished threading run for {name}, {num_threads}')
-
-        self._clean_delay_files()
-        log.info("completed multi-threading comparison runs.")
-
     def _run_quality_set(self):
         log.info("starting quality runs...")
         for name, path in zip(self.config.names, self.config.paths):
@@ -163,27 +135,55 @@ class Controller:
         self._clean_delay_files()
         log.info("completed quality runs.")
 
+    def _run_parallel_set(self):
+        log.info("starting multi-threading comparison runs...")
+        for name, path in zip(self.config.names, self.config.paths):
+            for _ in range(5):
+                cmd = [c for c in self._base_cmd]
+                cmd.extend([
+                    "-batch",
+                    "-type", "parallel",
+                    "-path", path,
+                    "-n", name, ])
+
+                self._generate_delays(cmd)
+
+                for num_threads in [1, 10, 20, 30]:
+                    run_cmd = [c for c in cmd]
+                    run_cmd.extend([
+                        "-model", "benders",
+                        "-parseDelays",
+                        "-parallel", str(num_threads), ])
+
+                    subprocess.check_call(run_cmd)
+                    log.info(
+                        f'finished threading run for {name}, {num_threads}')
+
+        self._clean_delay_files()
+        log.info("completed multi-threading comparison runs.")
+
     def _run_time_comparison_set(self):
         log.info("starting time comparison runs...")
         for name, path in zip(self.config.names, self.config.paths):
-            cmd = [c for c in self._base_cmd]
-            cmd.extend([
-                "-batch",
-                "-type", "time",
-                "-path", path,
-                "-n", name, ])
+            for _ in range(5):
+                cmd = [c for c in self._base_cmd]
+                cmd.extend([
+                    "-batch",
+                    "-type", "time",
+                    "-path", path,
+                    "-n", name, ])
 
-            self._generate_delays(cmd)
+                self._generate_delays(cmd)
 
-            for cgen in ['enum', 'all', 'best', 'first']:
-                run_cmd = [c for c in cmd]
-                run_cmd.extend([
-                    "-parseDelays",
-                    "-model", "benders",
-                    "-c", cgen, ])
+                for cgen in ['enum', 'all', 'best', 'first']:
+                    run_cmd = [c for c in cmd]
+                    run_cmd.extend([
+                        "-parseDelays",
+                        "-model", "benders",
+                        "-c", cgen, ])
 
-                subprocess.check_call(run_cmd)
-                log.info(f"finished time comparison run for {run_cmd}")
+                    subprocess.check_call(run_cmd)
+                    log.info(f"finished time comparison run for {run_cmd}")
 
         self._clean_delay_files()
         log.info("completed time comparison runs.")

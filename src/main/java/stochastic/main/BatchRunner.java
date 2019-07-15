@@ -277,56 +277,6 @@ class BatchRunner {
         }
     }
 
-    void runForMultiThreadingComparison() throws OptException {
-        try {
-            final String resultPath = "solution/results_multi_threading.csv";
-            final boolean addHeaders = !fileExists(resultPath);
-            if (addHeaders) {
-                BufferedWriter trainingWriter = new BufferedWriter(
-                    new FileWriter(resultPath));
-                ArrayList<String> headers = new ArrayList<>(Arrays.asList(
-                        "instance",
-                        "threads",
-                        "Benders reschedule cost",
-                        "Benders solution time (seconds)",
-                        "Benders lower bound",
-                        "Benders upper bound",
-                        "Benders gap",
-                        "Benders number of cuts",
-                        "Benders number of iterations"));
-                CSVHelper.writeLine(trainingWriter, headers);
-                trainingWriter.close();
-            }
-
-            List<String> row = new ArrayList<>();
-            row.add(instanceName);
-            row.add(Integer.toString(Parameters.getNumThreadsForSecondStage()));
-
-            // solve models and write solutions
-            Controller controller = new Controller();
-            controller.readData();
-            controller.setDelayGenerator();
-            controller.buildScenarios();
-            controller.solve();
-
-            // collect solution KPIs
-            row.add(Double.toString(controller.getBendersRescheduleCost()));
-            row.add(Double.toString(controller.getBendersSolutionTime()));
-            row.add(Double.toString(controller.getBendersLowerBound()));
-            row.add(Double.toString(controller.getBendersUpperBound()));
-            row.add(Double.toString(controller.getBendersGap()));
-            row.add(Double.toString(controller.getBendersNumCuts()));
-            row.add(Integer.toString(controller.getBendersNumIterations()));
-
-            BufferedWriter bw = new BufferedWriter(new FileWriter(resultPath, true));
-            CSVHelper.writeLine(bw, row);
-            bw.close();
-        } catch (IOException ex) {
-            logger.error(ex);
-            throw new OptException("error writing to csv during multi-threading run");
-        }
-    }
-
     static boolean fileExists(String pathString) {
         Path path = Paths.get(pathString);
         return Files.exists(path);

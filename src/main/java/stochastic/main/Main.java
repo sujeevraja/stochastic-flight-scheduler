@@ -119,8 +119,6 @@ public class Main {
                     batchRunner.testRun();
                 break;
             case "parallel":
-                batchRunner.runForMultiThreadingComparison();
-                break;
             case "time":
                 batchRunner.bendersRun();
                 break;
@@ -309,9 +307,9 @@ public class Main {
         else
             logger.info("model not provided, defaulting to Benders");
         if (cmd.hasOption("parallel")) {
-            Parameters.setRunSecondStageInParallel(true);
-            Parameters.setNumThreadsForSecondStage(
-                Integer.parseInt(cmd.getOptionValue("parallel")));
+            final int numThreads = Integer.parseInt(cmd.getOptionValue("parallel"));
+            Parameters.setNumThreadsForSecondStage(numThreads);
+            Parameters.setRunSecondStageInParallel(numThreads > 1);
         }
         if (cmd.hasOption("parseDelays"))
             Parameters.setParsePrimaryDelaysFromFiles(true);
