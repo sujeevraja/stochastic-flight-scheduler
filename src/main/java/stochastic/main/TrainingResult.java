@@ -7,6 +7,7 @@ import java.util.List;
 
 class TrainingResult implements Serializable {
     private String instance;
+    private String strategy;
     private String distribution;
     private Double distributionMean;
     private Double distributionSd;
@@ -24,6 +25,14 @@ class TrainingResult implements Serializable {
     private Integer bendersNumIterations;
 
     TrainingResult() {}
+
+    String getInstance() {
+        return instance;
+    }
+
+    public void setStrategy(String strategy) {
+        this.strategy = strategy;
+    }
 
     void setDistribution(String distribution) {
         this.distribution = distribution;
@@ -43,10 +52,6 @@ class TrainingResult implements Serializable {
 
     Double getBudgetFraction() {
         return budgetFraction;
-    }
-
-    String getInstance() {
-        return instance;
     }
 
     void setBendersGap(Double bendersGap) {
@@ -99,6 +104,7 @@ class TrainingResult implements Serializable {
 
     boolean allPopulated() {
         return instance != null
+            && strategy != null
             && distribution != null
             && distributionMean != null
             && distributionSd != null
@@ -119,6 +125,7 @@ class TrainingResult implements Serializable {
     List<String> getCsvRow() {
         return new ArrayList<>(Arrays.asList(
             instance,
+            strategy,
             distribution,
             Double.toString(distributionMean),
             Double.toString(distributionSd),

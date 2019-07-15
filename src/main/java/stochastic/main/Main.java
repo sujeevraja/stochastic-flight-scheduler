@@ -112,6 +112,7 @@ public class Main {
         switch (runType) {
             case "budget":
             case "mean":
+            case "quality":
                 if (runTraining)
                     batchRunner.trainingRun();
                 if (runTest)
@@ -119,9 +120,6 @@ public class Main {
                 break;
             case "parallel":
                 batchRunner.runForMultiThreadingComparison();
-                break;
-            case "quality":
-                batchRunner.runForQuality();
                 break;
             case "time":
                 batchRunner.runForTimeComparison();

@@ -144,6 +144,25 @@ class Controller:
         self._clean_delay_files()
         log.info("completed multi-threading comparison runs.")
 
+    def _run_quality_set(self):
+        log.info("starting quality runs...")
+        for name, path in zip(self.config.names, self.config.paths):
+            for distribution in ['exp', 'tnorm', 'lnorm']:
+                for flight_pick in ['all', 'hub', 'rush']:
+                    cmd = [c for c in self._base_cmd]
+                    cmd.extend([
+                        "-batch",
+                        "-type", "quality",
+                        "-path", path,
+                        "-n", name,
+                        "-d", distribution,
+                        "-f", flight_pick, ])
+
+                    self._generate_all_results(cmd)
+
+        self._clean_delay_files()
+        log.info("completed quality runs.")
+
     def _generate_all_results(self, cmd):
         self._generate_delays(cmd)
         log.info(f'generated delays for {cmd}')
@@ -175,24 +194,6 @@ class Controller:
         cmd = [c for c in orig_cmd]
         cmd.extend(["-parseDelays", "-test"])
         subprocess.check_call(cmd)
-    def _run_quality_set(self):
-        log.info("starting quality runs...")
-        for name, path in zip(self.config.names, self.config.paths):
-            for distribution in ['exp', 'tnorm', 'lnorm']:
-                for flight_pick in ['all', 'hub', 'rush']:
-                    cmd = [c for c in self._base_cmd]
-                    cmd.extend([
-                        "-b",
-                        "-t",
-                        "quality",
-                        "-p", path,
-                        "-n", name,
-                        "-d", distribution,
-                        "-f", flight_pick, ])
-                    subprocess.check_call(cmd)
-                    log.info('finished quality run for {}, {}, {}'.format(
-                        name, distribution, flight_pick))
-        log.info("completed quality runs.")
 
     def _run_time_comparison_set(self):
         log.info("starting time comparison runs...")
