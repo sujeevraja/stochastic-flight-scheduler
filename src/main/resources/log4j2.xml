@@ -2,17 +2,8 @@
 <Configuration status="WARN">
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
-<!--
-            <PatternLayout pattern="[%t] %-5level %logger{36} - %msg%n"/>
--->
             <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} | %msg%n"/>
         </Console>
-        <File name="Log" fileName="logs/console.log" immediateFlush="false" append="true">
-<!--
-            <PatternLayout pattern="%d{yyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
--->
-            <PatternLayout pattern="[%t] %-5level %logger{36} | %msg%n"/>
-        </File>
         <File name="TimedLog" fileName="logs/console_timed.log" immediateFlush="false" append="true">
             <PatternLayout pattern="%d{yyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} | %msg%n"/>
         </File>
@@ -20,7 +11,6 @@
     <Loggers>
         <Root level="DEBUG">
             <AppenderRef ref="Console"/>
-            <AppenderRef ref="Log"/>
             <AppenderRef ref="TimedLog"/>
         </Root>
     </Loggers>
