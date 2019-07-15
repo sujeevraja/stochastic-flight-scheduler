@@ -41,8 +41,7 @@ public class Main {
             if (cmd.hasOption("generateDelays"))
                 writeDelaysAndExit();
             else if (cmd.hasOption("batch"))
-                batchRun(name, cmd.getOptionValue("type"), cmd.hasOption("training"),
-                    cmd.hasOption("test"));
+                batchRun(name, cmd.getOptionValue("type"));
             else
                 singleRun();
         } catch (OptException ex) {
@@ -73,11 +72,7 @@ public class Main {
         options.addOption("path", true, "instance path");
         options.addOption("r", true, "reschedule budget fraction");
         options.addOption("type", true,
-            "type (budget/excess/mean/parallel/quality/time)");
-        options.addOption("test", false,
-            "test run");
-        options.addOption("training", false,
-            "training run");
+            "type (training/test/time)");
         options.addOption("h", false, "help (show options and exit)");
 
         CommandLineParser parser = new DefaultParser();
@@ -106,21 +101,18 @@ public class Main {
         logger.info("completed primary delay generation.");
     }
 
-    private static void batchRun(String name, String runType, boolean runTraining, boolean runTest)
+    private static void batchRun(String name, String runType)
             throws OptException {
         BatchRunner batchRunner = new BatchRunner(name);
         switch (runType) {
-            case "budget":
-            case "mean":
-            case "quality":
-                if (runTraining)
-                    batchRunner.trainingRun();
-                if (runTest)
-                    batchRunner.testRun();
+            case "test":
+                batchRunner.testRun();
                 break;
-            case "parallel":
             case "time":
                 batchRunner.bendersRun();
+                break;
+            case "training":
+                batchRunner.trainingRun();
                 break;
             default:
                 throw new OptException("unknown run type: " + runType);

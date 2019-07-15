@@ -87,7 +87,6 @@ class Controller:
                 cmd = [c for c in self._base_cmd]
                 cmd.extend([
                     "-batch",
-                    "-type", "budget",
                     "-path", path,
                     "-n", name,
                     "-r", bf])
@@ -105,7 +104,6 @@ class Controller:
                     cmd = [c for c in self._base_cmd]
                     cmd.extend([
                         "-batch",
-                        "-type", "mean",
                         "-path", path,
                         "-n", name,
                         "-d", distribution,
@@ -124,7 +122,6 @@ class Controller:
                     cmd = [c for c in self._base_cmd]
                     cmd.extend([
                         "-batch",
-                        "-type", "quality",
                         "-path", path,
                         "-n", name,
                         "-d", distribution,
@@ -142,9 +139,9 @@ class Controller:
                 cmd = [c for c in self._base_cmd]
                 cmd.extend([
                     "-batch",
-                    "-type", "parallel",
                     "-path", path,
-                    "-n", name, ])
+                    "-n", name,
+                    "-type", "time"])
 
                 self._generate_delays(cmd)
 
@@ -169,9 +166,9 @@ class Controller:
                 cmd = [c for c in self._base_cmd]
                 cmd.extend([
                     "-batch",
-                    "-type", "time",
                     "-path", path,
-                    "-n", name, ])
+                    "-n", name,
+                    "-type", "time"])
 
                 self._generate_delays(cmd)
 
@@ -211,13 +208,15 @@ class Controller:
         cmd.extend([
             "-model", model,
             "-parseDelays",
-            "-training"])
+            "-type", "training"])
         subprocess.check_call(cmd)
 
     @staticmethod
     def _generate_test_results(orig_cmd):
         cmd = [c for c in orig_cmd]
-        cmd.extend(["-parseDelays", "-test"])
+        cmd.extend([
+            "-parseDelays",
+            "-type", "test"])
         subprocess.check_call(cmd)
 
     def _validate_setup(self):
