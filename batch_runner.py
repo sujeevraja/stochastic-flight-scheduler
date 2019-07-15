@@ -116,6 +116,34 @@ class Controller:
         self._clean_delay_files()
         log.info("completed mean comparison runs.")
 
+    def _run_parallel_set(self):
+        log.info("starting multi-threading comparison runs...")
+        for name, path in zip(self.config.names, self.config.paths):
+            for _ in range(5):
+                cmd = [c for c in self._base_cmd]
+                cmd.extend([
+                    "-batch",
+                    "-path", path,
+                    "-model", "benders",
+                    "-n", name,
+                    "-type", "parallel", ])
+
+                self._generate_delays(cmd)
+
+                for num_threads in [1, 10, 20, 30]:
+                    run_cmd = [c for c in cmd]
+                    run_cmd.append("-parseDelays")
+                    if num_threads > 1:
+                        run_cmd.extend([
+                            "-parallel", str(num_threads)])
+
+                    subprocess.check_call(run_cmd)
+                    log.info(
+                        f'finished threading run for {name}, {num_threads}')
+
+        self._clean_delay_files()
+        log.info("completed multi-threading comparison runs.")
+
     def _generate_all_results(self, cmd):
         self._generate_delays(cmd)
         log.info(f'generated delays for {cmd}')
@@ -147,35 +175,6 @@ class Controller:
         cmd = [c for c in orig_cmd]
         cmd.extend(["-parseDelays", "-test"])
         subprocess.check_call(cmd)
-
-    def _run_parallel_set(self):
-        log.info("starting multi-threading comparison runs...")
-        for name, path in zip(self.config.names, self.config.paths):
-            for _ in range(5):
-                cmd = [c for c in self._base_cmd]
-                cmd.extend([
-                    "-batch",
-                    "-path", path,
-                    "-model", "benders",
-                    "-n", name,
-                    "-type", "parallel", ])
-
-                self._generate_delays(cmd)
-
-                for num_threads in [1, 10, 20, 30]:
-                    run_cmd = [c for c in cmd]
-                    run_cmd.append("-parseDelays")
-                    if num_threads > 1:
-                        run_cmd.extend([
-                            "-parallel", str(num_threads)])
-
-                    subprocess.check_call(run_cmd)
-                    log.info(
-                        f'finished threading run for {name}, {num_threads}')
-
-        self._clean_delay_files()
-        log.info("completed budget comparison runs.")
-
     def _run_quality_set(self):
         log.info("starting quality runs...")
         for name, path in zip(self.config.names, self.config.paths):
