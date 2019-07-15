@@ -7,6 +7,10 @@ import java.util.List;
 
 class TrainingResult implements Serializable {
     private String instance;
+    private String strategy;
+    private String distribution;
+    private Double distributionMean;
+    private Double distributionSd;
     private Double budgetFraction;
     private Double naiveRescheduleCost;
     private Double naiveSolutionTime;
@@ -22,12 +26,32 @@ class TrainingResult implements Serializable {
 
     TrainingResult() {}
 
-    Double getBudgetFraction() {
-        return budgetFraction;
-    }
-
     String getInstance() {
         return instance;
+    }
+
+    public void setStrategy(String strategy) {
+        this.strategy = strategy;
+    }
+
+    void setDistribution(String distribution) {
+        this.distribution = distribution;
+    }
+
+    void setDistributionMean(Double distributionMean) {
+        this.distributionMean = distributionMean;
+    }
+
+    void setDistributionSd(Double distributionSd) {
+        this.distributionSd = distributionSd;
+    }
+
+    void setBudgetFraction(Double budgetFraction) {
+        this.budgetFraction = budgetFraction;
+    }
+
+    Double getBudgetFraction() {
+        return budgetFraction;
     }
 
     void setBendersGap(Double bendersGap) {
@@ -58,10 +82,6 @@ class TrainingResult implements Serializable {
         this.bendersUpperBound = bendersUpperBound;
     }
 
-    void setBudgetFraction(Double budgetFraction) {
-        this.budgetFraction = budgetFraction;
-    }
-
     void setDepRescheduleCost(Double depRescheduleCost) {
         this.depRescheduleCost = depRescheduleCost;
     }
@@ -84,6 +104,10 @@ class TrainingResult implements Serializable {
 
     boolean allPopulated() {
         return instance != null
+            && strategy != null
+            && distribution != null
+            && distributionMean != null
+            && distributionSd != null
             && budgetFraction != null
             && naiveRescheduleCost != null
             && naiveSolutionTime != null
@@ -101,6 +125,10 @@ class TrainingResult implements Serializable {
     List<String> getCsvRow() {
         return new ArrayList<>(Arrays.asList(
             instance,
+            strategy,
+            distribution,
+            Double.toString(distributionMean),
+            Double.toString(distributionSd),
             Double.toString(budgetFraction),
             Double.toString(naiveRescheduleCost),
             Double.toString(naiveSolutionTime),
