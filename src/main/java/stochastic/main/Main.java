@@ -122,7 +122,7 @@ public class Main {
                 batchRunner.runForMultiThreadingComparison();
                 break;
             case "time":
-                batchRunner.runForTimeComparison();
+                batchRunner.bendersRun();
                 break;
             default:
                 throw new OptException("unknown run type: " + runType);

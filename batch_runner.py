@@ -163,6 +163,31 @@ class Controller:
         self._clean_delay_files()
         log.info("completed quality runs.")
 
+    def _run_time_comparison_set(self):
+        log.info("starting time comparison runs...")
+        for name, path in zip(self.config.names, self.config.paths):
+            cmd = [c for c in self._base_cmd]
+            cmd.extend([
+                "-batch",
+                "-type", "time",
+                "-path", path,
+                "-n", name, ])
+
+            self._generate_delays(cmd)
+
+            for cgen in ['enum', 'all', 'best', 'first']:
+                run_cmd = [c for c in cmd]
+                run_cmd.extend([
+                    "-parseDelays",
+                    "-model", "benders",
+                    "-c", cgen, ])
+
+                subprocess.check_call(run_cmd)
+                log.info(f"finished time comparison run for {run_cmd}")
+
+        self._clean_delay_files()
+        log.info("completed time comparison runs.")
+
     def _generate_all_results(self, cmd):
         self._generate_delays(cmd)
         log.info(f'generated delays for {cmd}')
@@ -194,27 +219,6 @@ class Controller:
         cmd = [c for c in orig_cmd]
         cmd.extend(["-parseDelays", "-test"])
         subprocess.check_call(cmd)
-
-    def _run_time_comparison_set(self):
-        log.info("starting time comparison runs...")
-        for name, path in zip(self.config.names, self.config.paths):
-            for distribution in ['exp', 'tnorm', 'lnorm']:
-                for flight_pick in ['all', 'hub', 'rush']:
-                    for cgen in ['enum', 'all', 'best', 'first']:
-                        cmd = [c for c in self._base_cmd]
-                        cmd.extend([
-                            "-b",
-                            "-t",
-                            "time",
-                            "-p", path,
-                            "-n", name,
-                            "-c", cgen,
-                            "-d", distribution,
-                            "-f", flight_pick, ])
-                        subprocess.check_call(cmd)
-                        log.info('finished time run for {}, {}, {}, {}'.format(
-                            name, distribution, flight_pick, cgen))
-        log.info("completed time comparison runs.")
 
     def _validate_setup(self):
         if not os.path.isfile(self.config.jar_path):

@@ -30,66 +30,6 @@ class BatchRunner {
         this.instanceName = instanceName;
     }
 
-    /**
-     * Generates reschedule KPIs for Benders with full enumeration and 3 column gen strategies.
-     *
-     * @throws OptException when there is any issue with solving/writing.
-     */
-    void runForTimeComparison() throws OptException {
-        /*
-        try {
-            final String resultsPath = "solution/results_time_comparison.csv";
-            final boolean addHeaders = !fileExists(resultsPath);
-            BufferedWriter writer = new BufferedWriter(
-                    new FileWriter("solution/results_time_comparison.csv", true));
-
-            if (addHeaders) {
-                ArrayList<String> headers = new ArrayList<>(Arrays.asList(
-                        "instance",
-                        "distribution",
-                        "strategy",
-                        "column gen",
-                        "Benders reschedule cost",
-                        "Benders solution time (seconds)",
-                        "Benders lower bound",
-                        "Benders upper bound",
-                        "Benders gap",
-                        "Benders number of cuts",
-                        "Benders number of iterations"));
-                CSVHelper.writeLine(writer, headers);
-            }
-
-            ArrayList<String> row = new ArrayList<>(Arrays.asList(
-                    instanceName,
-                    Parameters.getDistributionType().name(),
-                    Parameters.getFlightPickStrategy().name(),
-                    Parameters.getColumnGenStrategy().name()));
-
-            // solve models
-            Controller controller = new Controller();
-            controller.readData();
-            controller.setDelayGenerator();
-            controller.buildScenarios();
-            controller.solveWithBenders();
-
-            // write results
-            row.add(Double.toString(controller.getBendersRescheduleCost()));
-            row.add(Double.toString(controller.getBendersSolutionTime()));
-            row.add(Double.toString(controller.getBendersLowerBound()));
-            row.add(Double.toString(controller.getBendersUpperBound()));
-            row.add(Double.toString(controller.getBendersGap()));
-            row.add(Integer.toString(controller.getBendersNumCuts()));
-            row.add(Integer.toString(controller.getBendersNumIterations()));
-
-            CSVHelper.writeLine(writer, row);
-            writer.close();
-        } catch (IOException ex) {
-            logger.error(ex);
-            throw new OptException("error writing to csv during time comparison run");
-        }
-         */
-    }
-
     void trainingRun() throws OptException {
         try {
             logger.info("starting training run...");
@@ -282,6 +222,58 @@ class BatchRunner {
         } catch (IOException ex) {
             logger.error(ex);
             throw new OptException("error writing to csv during test run");
+        }
+    }
+
+    void bendersRun() throws OptException {
+        try {
+            final String resultPath = "solution/results_benders.csv";
+            final boolean addHeaders = !fileExists(resultPath);
+            if (addHeaders) {
+                BufferedWriter trainingWriter = new BufferedWriter(
+                    new FileWriter(resultPath));
+                ArrayList<String> headers = new ArrayList<>(Arrays.asList(
+                        "instance",
+                        "column strategy",
+                        "threads",
+                        "Benders reschedule cost",
+                        "Benders solution time (seconds)",
+                        "Benders lower bound",
+                        "Benders upper bound",
+                        "Benders gap",
+                        "Benders number of cuts",
+                        "Benders number of iterations"));
+                CSVHelper.writeLine(trainingWriter, headers);
+                trainingWriter.close();
+            }
+
+            List<String> row = new ArrayList<>();
+            row.add(instanceName);
+            row.add(Parameters.getColumnGenStrategy().toString());
+            row.add(Integer.toString(Parameters.getNumThreadsForSecondStage()));
+
+            // solve models and write solutions
+            Controller controller = new Controller();
+            controller.readData();
+            controller.setDelayGenerator();
+            controller.buildScenarios();
+            controller.solve();
+
+            // collect solution KPIs
+            row.add(Double.toString(controller.getBendersRescheduleCost()));
+            row.add(Double.toString(controller.getBendersSolutionTime()));
+            row.add(Double.toString(controller.getBendersLowerBound()));
+            row.add(Double.toString(controller.getBendersUpperBound()));
+            row.add(Double.toString(controller.getBendersGap()));
+            row.add(Double.toString(controller.getBendersNumCuts()));
+            row.add(Integer.toString(controller.getBendersNumIterations()));
+
+            BufferedWriter bw = new BufferedWriter(new FileWriter(resultPath, true));
+            CSVHelper.writeLine(bw, row);
+            bw.close();
+        } catch (IOException ex) {
+            logger.error(ex);
+            throw new OptException("error writing to csv during multi-threading run");
         }
     }
 
