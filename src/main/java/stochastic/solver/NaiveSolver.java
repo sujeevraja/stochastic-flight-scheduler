@@ -63,6 +63,7 @@ public class NaiveSolver {
 
     private void solveModel() throws IloException {
         IloCplex cplex = new IloCplex();
+        cplex.setParam(IloCplex.Param.MIP.Tolerances.MIPGap, Constants.CPLEX_MIP_GAP);
         if (!Parameters.isDebugVerbose())
             cplex.setOut(null);
 

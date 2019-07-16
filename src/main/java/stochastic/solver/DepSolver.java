@@ -35,6 +35,7 @@ public class DepSolver {
         try {
             logger.info("starting DEP...");
             IloCplex cplex = new IloCplex();
+            cplex.setParam(IloCplex.Param.MIP.Tolerances.MIPGap, Constants.CPLEX_MIP_GAP);
             if (!Parameters.isDebugVerbose())
                 cplex.setOut(null);
 
