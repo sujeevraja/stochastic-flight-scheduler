@@ -8,6 +8,7 @@ import org.apache.logging.log4j.Logger;
 import stochastic.delay.Scenario;
 import stochastic.domain.Leg;
 import stochastic.domain.Tail;
+import stochastic.main.ModelStats;
 import stochastic.model.MasterModelBuilder;
 import stochastic.model.SubModelBuilder;
 import stochastic.network.Path;
@@ -27,9 +28,9 @@ public class DepSolver {
     private double objValue;
     private double solutionTimeInSeconds;
     private RescheduleSolution depSolution;
+    private ModelStats modelStats;
 
-    public DepSolver() {
-    }
+    public DepSolver() {}
 
     public void solve(DataRegistry dataRegistry) throws OptException {
         try {
@@ -76,6 +77,9 @@ public class DepSolver {
             if (Parameters.isDebugVerbose())
                 cplex.exportModel("logs/dep.lp");
 
+            // collect model stats
+            modelStats = new ModelStats(cplex.getNrows(), cplex.getNcols(), cplex.getNNZs());
+
             Instant start = Instant.now();
             cplex.solve();
             solutionTimeInSeconds = Duration.between(start, Instant.now()).toMillis() / 1000.0;
@@ -114,6 +118,10 @@ public class DepSolver {
             logger.error(ex);
             throw new OptException("cplex error solving DEP model");
         }
+    }
+
+    public ModelStats getModelStats() {
+        return modelStats;
     }
 
     public double getObjValue() {

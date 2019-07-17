@@ -7,6 +7,7 @@ import org.apache.logging.log4j.Logger;
 import stochastic.delay.Scenario;
 import stochastic.domain.Leg;
 import stochastic.domain.Tail;
+import stochastic.main.ModelStats;
 import stochastic.output.RescheduleSolution;
 import stochastic.registry.DataRegistry;
 import stochastic.registry.Parameters;
@@ -27,6 +28,7 @@ public class NaiveSolver {
     private final static Logger logger = LogManager.getLogger(NaiveSolver.class);
     private DataRegistry dataRegistry;
     private double[] expectedDelays;
+    private ModelStats modelStats;
     private RescheduleSolution finalRescheduleSolution;
     private double solutionTime;
 
@@ -36,6 +38,10 @@ public class NaiveSolver {
         final int numLegs = dataRegistry.getLegs().size();
         expectedDelays = new double[numLegs];
         Arrays.fill(expectedDelays, 0.0);
+    }
+
+    public ModelStats getModelStats() {
+        return modelStats;
     }
 
     public RescheduleSolution getFinalRescheduleSolution() {
@@ -135,6 +141,9 @@ public class NaiveSolver {
 
         if (Parameters.isDebugVerbose())
             cplex.exportModel("logs/naive_model.lp");
+
+        // store model stats
+        modelStats = new ModelStats(cplex.getNrows(), cplex.getNcols(), cplex.getNNZs());
 
         // Solve model and extract solution
         Instant start = Instant.now();

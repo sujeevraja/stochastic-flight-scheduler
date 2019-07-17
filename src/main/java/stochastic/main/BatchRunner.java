@@ -38,25 +38,7 @@ class BatchRunner {
             if (addTrainingHeaders) {
                 BufferedWriter trainingWriter = new BufferedWriter(
                     new FileWriter(trainingPath));
-                ArrayList<String> trainingHeaders = new ArrayList<>(Arrays.asList(
-                        "instance",
-                        "strategy",
-                        "distribution",
-                        "mean",
-                        "standard deviation",
-                        "budget fraction",
-                        "Naive model reschedule cost",
-                        "Naive model solution time (seconds)",
-                        "DEP reschedule cost",
-                        "DEP solution time (seconds)",
-                        "Benders reschedule cost",
-                        "Benders solution time (seconds)",
-                        "Benders lower bound",
-                        "Benders upper bound",
-                        "Benders gap",
-                        "Benders number of cuts",
-                        "Benders number of iterations"));
-                CSVHelper.writeLine(trainingWriter, trainingHeaders);
+                CSVHelper.writeLine(trainingWriter, TrainingResult.getCsvHeaders());
                 trainingWriter.close();
             }
 
@@ -92,10 +74,12 @@ class BatchRunner {
             // collect solution KPIs
             Enums.Model model = Parameters.getModel();
             if (model == Enums.Model.NAIVE || model == Enums.Model.ALL) {
+                trainingResult.setNaiveModelStats(controller.getNaiveModelStats());
                 trainingResult.setNaiveRescheduleCost(controller.getNaiveModelRescheduleCost());
                 trainingResult.setNaiveSolutionTime(controller.getNaiveModelSolutionTime());
             }
             if (model == Enums.Model.DEP || model == Enums.Model.ALL) {
+                trainingResult.setDepModelStats(controller.getDepModelStats());
                 trainingResult.setDepRescheduleCost(controller.getDepRescheduleCost());
                 trainingResult.setDepSolutionTime(controller.getDepSolutionTime());
             }

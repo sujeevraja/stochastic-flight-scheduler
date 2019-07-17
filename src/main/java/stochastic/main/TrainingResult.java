@@ -12,10 +12,15 @@ class TrainingResult implements Serializable {
     private Double distributionMean;
     private Double distributionSd;
     private Double budgetFraction;
+
+    private ModelStats naiveModelStats;
     private Double naiveRescheduleCost;
     private Double naiveSolutionTime;
+
+    private ModelStats depModelStats;
     private Double depRescheduleCost;
     private Double depSolutionTime;
+
     private Double bendersRescheduleCost;
     private Double bendersSolutionTime;
     private Double bendersLowerBound;
@@ -30,7 +35,7 @@ class TrainingResult implements Serializable {
         return instance;
     }
 
-    public void setStrategy(String strategy) {
+    void setStrategy(String strategy) {
         this.strategy = strategy;
     }
 
@@ -82,6 +87,10 @@ class TrainingResult implements Serializable {
         this.bendersUpperBound = bendersUpperBound;
     }
 
+    void setDepModelStats(ModelStats depModelStats) {
+        this.depModelStats = depModelStats;
+    }
+
     void setDepRescheduleCost(Double depRescheduleCost) {
         this.depRescheduleCost = depRescheduleCost;
     }
@@ -92,6 +101,10 @@ class TrainingResult implements Serializable {
 
     void setInstance(String instance) {
         this.instance = instance;
+    }
+
+    void setNaiveModelStats(ModelStats naiveModelStats) {
+        this.naiveModelStats = naiveModelStats;
     }
 
     void setNaiveRescheduleCost(Double naiveRescheduleCost) {
@@ -109,8 +122,10 @@ class TrainingResult implements Serializable {
             && distributionMean != null
             && distributionSd != null
             && budgetFraction != null
+            && naiveModelStats != null
             && naiveRescheduleCost != null
             && naiveSolutionTime != null
+            && depModelStats != null
             && depRescheduleCost != null
             && depSolutionTime != null
             && bendersRescheduleCost != null
@@ -122,6 +137,34 @@ class TrainingResult implements Serializable {
             && bendersNumIterations != null;
     }
 
+
+    static List<String> getCsvHeaders() {
+        return new ArrayList<>(Arrays.asList(
+                "instance",
+                "strategy",
+                "distribution",
+                "mean",
+                "standard deviation",
+                "budget fraction",
+                "Naive rows",
+                "Naive columns",
+                "Naive non-zeroes",
+                "Naive model reschedule cost",
+                "Naive model solution time (seconds)",
+                "DEP rows",
+                "DEP columns",
+                "DEP non-zeroes",
+                "DEP reschedule cost",
+                "DEP solution time (seconds)",
+                "Benders reschedule cost",
+                "Benders solution time (seconds)",
+                "Benders lower bound",
+                "Benders upper bound",
+                "Benders gap",
+                "Benders number of cuts",
+                "Benders number of iterations"));
+    }
+
     List<String> getCsvRow() {
         return new ArrayList<>(Arrays.asList(
             instance,
@@ -130,8 +173,14 @@ class TrainingResult implements Serializable {
             Double.toString(distributionMean),
             Double.toString(distributionSd),
             Double.toString(budgetFraction),
+            Integer.toString(naiveModelStats.getNumRows()),
+            Integer.toString(naiveModelStats.getNumColumns()),
+            Integer.toString(naiveModelStats.getNumNonZeroes()),
             Double.toString(naiveRescheduleCost),
             Double.toString(naiveSolutionTime),
+            Integer.toString(depModelStats.getNumRows()),
+            Integer.toString(depModelStats.getNumColumns()),
+            Integer.toString(depModelStats.getNumNonZeroes()),
             Double.toString(depRescheduleCost),
             Double.toString(depSolutionTime),
             Double.toString(bendersRescheduleCost),
