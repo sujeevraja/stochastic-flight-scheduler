@@ -38,6 +38,7 @@ public class MasterSolver {
         this.numScenarios = numScenarios;
 
         cplex = new IloCplex();
+        cplex.setParam(IloCplex.Param.MIP.Tolerances.MIPGap, Constants.CPLEX_MIP_GAP);
         if (!Parameters.isDebugVerbose())
             cplex.setOut(null);
 

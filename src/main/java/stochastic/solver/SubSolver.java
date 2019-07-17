@@ -10,6 +10,7 @@ import stochastic.domain.Tail;
 import stochastic.model.SubModelBuilder;
 import stochastic.network.Path;
 import stochastic.registry.Parameters;
+import stochastic.utility.Constants;
 import stochastic.utility.OptException;
 
 import java.util.ArrayList;
@@ -75,6 +76,7 @@ public class SubSolver {
 
     public void solve() throws OptException {
         try {
+            cplex.setParam(IloCplex.Param.MIP.Tolerances.MIPGap, Constants.CPLEX_MIP_GAP);
             cplex.setParam(IloCplex.Param.RootAlgorithm, IloCplex.Algorithm.Dual);
             cplex.setParam(IloCplex.Param.Preprocessing.Presolve, false);
 

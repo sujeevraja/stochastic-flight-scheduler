@@ -34,9 +34,11 @@ class Controller {
     private DataRegistry dataRegistry;
     private KpiManager kpiManager;
 
+    private ModelStats naiveModelStats;
     private RescheduleSolution naiveModelSolution;
     private double naiveModelSolutionTime;
 
+    private ModelStats depModelStats;
     private RescheduleSolution depSolution;
     private double depObjective;
     private double depSolutionTime;
@@ -275,12 +277,17 @@ class Controller {
         try {
             NaiveSolver naiveSolver = new NaiveSolver(dataRegistry);
             naiveSolver.solve();
+            naiveModelStats = naiveSolver.getModelStats();
             naiveModelSolution = naiveSolver.getFinalRescheduleSolution();
             naiveModelSolutionTime = naiveSolver.getSolutionTime();
         } catch (IloException ex) {
             logger.error(ex);
             throw new OptException("exception solving naive model");
         }
+    }
+
+    final ModelStats getNaiveModelStats() {
+        return naiveModelStats;
     }
 
     final double getNaiveModelRescheduleCost() {
@@ -294,9 +301,14 @@ class Controller {
     private void solveWithDEP() throws OptException {
         DepSolver depSolver = new DepSolver();
         depSolver.solve(dataRegistry);
+        depModelStats = depSolver.getModelStats();
         depSolution = depSolver.getDepSolution();
         depObjective = depSolver.getObjValue();
         depSolutionTime = depSolver.getSolutionTimeInSeconds();
+    }
+
+    ModelStats getDepModelStats() {
+        return depModelStats;
     }
 
     final double getDepRescheduleCost() {
