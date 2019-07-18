@@ -6,11 +6,13 @@ public class ModelStats implements Serializable {
     private int numRows;
     private int numColumns;
     private int numNonZeroes;
+    private double objective;
 
-    public ModelStats(int numRows, int numColumns, int numNonZeroes) {
+    public ModelStats(int numRows, int numColumns, int numNonZeroes, double objective) {
         this.numRows = numRows;
         this.numColumns = numColumns;
         this.numNonZeroes = numNonZeroes;
+        this.objective = objective;
     }
 
     int getNumRows() {
@@ -23,5 +25,9 @@ public class ModelStats implements Serializable {
 
     int getNumNonZeroes() {
         return numNonZeroes;
+    }
+
+    double getObjective() {
+        return objective;
     }
 }

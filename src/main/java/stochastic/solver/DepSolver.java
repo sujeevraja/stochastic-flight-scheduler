@@ -77,16 +77,16 @@ public class DepSolver {
             if (Parameters.isDebugVerbose())
                 cplex.exportModel("logs/dep.lp");
 
-            // collect model stats
-            modelStats = new ModelStats(cplex.getNrows(), cplex.getNcols(), cplex.getNNZs());
-
             Instant start = Instant.now();
             cplex.solve();
             solutionTimeInSeconds = Duration.between(start, Instant.now()).toMillis() / 1000.0;
             logger.info("DEP solution time (seconds): " + solutionTimeInSeconds);
 
+            // collect model stats
             objValue = cplex.getObjValue();
             logger.info("DEP objective: " + objValue);
+            modelStats = new ModelStats(cplex.getNrows(), cplex.getNcols(), cplex.getNNZs(),
+                                        objValue);
 
             if (Parameters.isDebugVerbose())
                 cplex.writeSolution("logs/dep_solution.xml");
