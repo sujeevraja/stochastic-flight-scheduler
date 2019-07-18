@@ -142,9 +142,6 @@ public class NaiveSolver {
         if (Parameters.isDebugVerbose())
             cplex.exportModel("logs/naive_model.lp");
 
-        // store model stats
-        modelStats = new ModelStats(cplex.getNrows(), cplex.getNcols(), cplex.getNNZs());
-
         // Solve model and extract solution
         Instant start = Instant.now();
         cplex.solve();
@@ -153,8 +150,10 @@ public class NaiveSolver {
         if (Parameters.isDebugVerbose())
             cplex.writeSolution("logs/naive_solution.xml");
 
-        final double cplexObjValue = cplex.getObjValue();
-        logger.info("naive model CPLEX objective: " + cplexObjValue);
+        // store model stats
+        final double objValue = cplex.getObjValue();
+        logger.info("naive model CPLEX objective: " + objValue);
+        modelStats = new ModelStats(cplex.getNrows(), cplex.getNcols(), cplex.getNNZs(), objValue);
 
         double[] vValues = cplex.getValues(v);
         double excessDelayPenalty = 0.0;
@@ -176,12 +175,12 @@ public class NaiveSolver {
                 reschedules[i] = 0;
         }
 
-        logger.info("naive model obj - excess delay: " + (cplexObjValue - excessDelayPenalty));
+        logger.info("naive model obj - excess delay: " + (objValue - excessDelayPenalty));
         logger.info("naive model reschedule cost (for validation): " + rescheduleCost);
         logger.info("naive model solution time (seconds): " + solutionTime);
 
         finalRescheduleSolution = new RescheduleSolution("naive",
-                cplexObjValue - excessDelayPenalty, reschedules);
+                objValue - excessDelayPenalty, reschedules);
         cplex.clearModel();
         cplex.endModel();
         cplex.end();

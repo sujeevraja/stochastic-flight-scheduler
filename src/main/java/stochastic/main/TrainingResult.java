@@ -149,11 +149,13 @@ class TrainingResult implements Serializable {
                 "Naive rows",
                 "Naive columns",
                 "Naive non-zeroes",
+                "Naive objective",
                 "Naive model reschedule cost",
                 "Naive model solution time (seconds)",
                 "DEP rows",
                 "DEP columns",
                 "DEP non-zeroes",
+                "DEP objective",
                 "DEP reschedule cost",
                 "DEP solution time (seconds)",
                 "Benders reschedule cost",
@@ -166,21 +168,20 @@ class TrainingResult implements Serializable {
     }
 
     List<String> getCsvRow() {
-        return new ArrayList<>(Arrays.asList(
+        ArrayList<String> row = new ArrayList<>(Arrays.asList(
             instance,
             strategy,
             distribution,
             Double.toString(distributionMean),
             Double.toString(distributionSd),
-            Double.toString(budgetFraction),
-            Integer.toString(naiveModelStats.getNumRows()),
-            Integer.toString(naiveModelStats.getNumColumns()),
-            Integer.toString(naiveModelStats.getNumNonZeroes()),
-            Double.toString(naiveRescheduleCost),
-            Double.toString(naiveSolutionTime),
-            Integer.toString(depModelStats.getNumRows()),
-            Integer.toString(depModelStats.getNumColumns()),
-            Integer.toString(depModelStats.getNumNonZeroes()),
+            Double.toString(budgetFraction)));
+
+        row.addAll(naiveModelStats.getCsvRow());
+        row.add(Double.toString(naiveRescheduleCost));
+        row.add(Double.toString(naiveSolutionTime));
+
+        row.addAll(depModelStats.getCsvRow());
+        row.addAll(Arrays.asList(
             Double.toString(depRescheduleCost),
             Double.toString(depSolutionTime),
             Double.toString(bendersRescheduleCost),
@@ -190,5 +191,7 @@ class TrainingResult implements Serializable {
             Double.toString(bendersGap),
             Integer.toString(bendersNumCuts),
             Integer.toString(bendersNumIterations)));
+
+        return row;
     }
 }
