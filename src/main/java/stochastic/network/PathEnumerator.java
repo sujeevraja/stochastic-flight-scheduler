@@ -81,21 +81,15 @@ public class PathEnumerator {
         // dive to current node's neighbors
         if (adjacencyList.containsKey(legIndex)) {
             ArrayList<Integer> neighbors = adjacencyList.get(legIndex);
-
-            // the object returned by getArrTime() is immutable.
-            // So, the leg's original arrival time won't get affected here.
-            long arrivalTime = leg.getArrTime() + delayTimeInMin;
+            long arrivalTime = leg.getArrTime() + leg.getTurnTimeInMin() + delayTimeInMin;
 
             for (Integer neighborIndex : neighbors) {
                 if (onPath[neighborIndex])
                     continue;
 
+                long minDepTime = arrivalTime + delays[neighborIndex];
                 Leg neighborLeg = legs.get(neighborIndex);
-                long newDepTime = getNewDepTime(neighborLeg);
-                long minReqDepTime = arrivalTime + leg.getTurnTimeInMin();
-                long depTimeOnPath = Math.max(newDepTime, minReqDepTime);
-
-                int neighborDelayTime = (int) (depTimeOnPath - neighborLeg.getDepTime());
+                int neighborDelayTime = Math.max((int) (minDepTime - neighborLeg.getDepTime()), 0);
                 depthFirstSearch(neighborIndex, neighborDelayTime);
             }
         }
