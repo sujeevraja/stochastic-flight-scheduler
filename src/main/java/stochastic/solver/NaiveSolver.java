@@ -94,6 +94,7 @@ public class NaiveSolver {
         cplex.addMinimize(objExpr);
 
         // Add excess delay constraints
+        /*
         for (int i = 0; i < legs.size(); ++i) {
             if (expectedDelays[i] <= Constants.EPS)
                 continue;
@@ -105,6 +106,7 @@ public class NaiveSolver {
             if (Parameters.isSetCplexNames())
                 cons.setName("delay_reschedule_link_" + legs.get(i).getId());
         }
+         */
 
         // Add original routing constraints
         for (Tail tail : dataRegistry.getTails()) {
@@ -112,22 +114,46 @@ public class NaiveSolver {
             if (tailLegs.size() <= 1)
                 continue;
 
+            int propagatedDelay = 0;
             for (int i = 0; i < tailLegs.size() - 1; ++i) {
                 Leg currLeg = tailLegs.get(i);
                 Leg nextLeg = tailLegs.get(i + 1);
                 int currLegIndex = currLeg.getIndex();
                 int nextLegIndex = nextLeg.getIndex();
 
-                IloLinearNumExpr expr = cplex.linearNumExpr();
-                expr.addTerm(x[currLegIndex], 1);
-                expr.addTerm(x[nextLegIndex], -1);
+                // Add constraint to protect turn time in original connections.
+                {
+                    IloLinearNumExpr expr = cplex.linearNumExpr();
+                    expr.addTerm(x[currLegIndex], 1);
+                    expr.addTerm(x[nextLegIndex], -1);
 
-                int rhs = (int) (nextLeg.getDepTime() - currLeg.getArrTime());
-                rhs -= currLeg.getTurnTimeInMin();
-                IloRange cons = cplex.addLe(expr, (double) rhs);
-                if (Parameters.isSetCplexNames())
-                    cons.setName( "connect_" + currLeg.getId() + "_" + nextLeg.getId());
+                    int rhs = (int) (nextLeg.getDepTime() - currLeg.getArrTime());
+                    rhs -= currLeg.getTurnTimeInMin();
+                    IloRange cons = cplex.addLe(expr, (double) rhs);
+                    if (Parameters.isSetCplexNames())
+                        cons.setName("connect_" + currLeg.getId() + "_" + nextLeg.getId());
+                }
+
+                // Add constraint to link delays, reschedules and excess delays.
+                {
+                    IloLinearNumExpr linkExpr = cplex.linearNumExpr();
+                    linkExpr.addTerm(v[i], 1.0);
+                    linkExpr.addTerm(x[i], 1.0);
+                    IloRange linkCons = cplex.addGe(linkExpr, expectedDelays[i] + propagatedDelay);
+                    if (Parameters.isSetCplexNames())
+                        linkCons.setName("delay_reschedule_link_" + legs.get(i).getId());
+                    propagatedDelay += expectedDelays[i];
+                }
             }
+
+            // Add linking constraint for last leg on route.
+            int i = tailLegs.size() - 1;
+            IloLinearNumExpr linkExpr = cplex.linearNumExpr();
+            linkExpr.addTerm(v[i], 1.0);
+            linkExpr.addTerm(x[i], 1.0);
+            IloRange linkCons = cplex.addGe(linkExpr, expectedDelays[i] + propagatedDelay);
+            if (Parameters.isSetCplexNames())
+                linkCons.setName("delay_reschedule_link_" + legs.get(i).getId());
         }
 
         // Add budget constraint
