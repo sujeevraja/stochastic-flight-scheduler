@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 
+import static java.lang.Math.max;
+
 class PricingProblemSolver {
     /**
      * PricingProblemSolver uses label setting and partial path pruning to generate routes for the second-stage
@@ -211,18 +213,12 @@ class PricingProblemSolver {
      * @return extended Label object (will be a new object).
      */
     private Label extend(Label label, int legIndex) {
-        Leg nextLeg = legs.get(legIndex);
-        long nextLegDepTime = nextLeg.getDepTime() + delays[legIndex];
-
         Leg prevLeg = legs.get(label.getVertex());
-        long prevLegEndTime = (prevLeg.getArrTime() + label.getTotalDelay() +
-                               prevLeg.getTurnTimeInMin());
+        long minDepTime = (prevLeg.getArrTime() + prevLeg.getTurnTimeInMin() +
+            label.getTotalDelay() + delays[legIndex]);
 
-        if (nextLegDepTime < prevLegEndTime)
-            nextLegDepTime = prevLegEndTime;
-
-        int totalDelay = (int) (nextLegDepTime - nextLeg.getDepTime());
-
+        Leg nextLeg = legs.get(legIndex);
+        int totalDelay = max((int) (minDepTime - nextLeg.getDepTime()), 0);
         double reducedCost = label.getReducedCost() + getReducedCostForLeg(legIndex, totalDelay);
         return label.extend(nextLeg, totalDelay, reducedCost);
     }
