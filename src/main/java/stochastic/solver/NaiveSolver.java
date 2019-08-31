@@ -29,13 +29,20 @@ public class NaiveSolver {
      */
     private final static Logger logger = LogManager.getLogger(NaiveSolver.class);
     private DataRegistry dataRegistry;
+    private ArrayList<Leg> legs;
     private double[] expectedDelays;
     private ModelStats modelStats;
     private RescheduleSolution finalRescheduleSolution;
     private double solutionTime;
 
+    // CPLEX containers
+    private IloCplex cplex;
+    private IloNumVar[] x; // x[i] is a decision variable for reschedule amount of leg i.
+    private IloNumVar[] v; // v[i] is a decision variable for delay amount of leg i.
+
     public NaiveSolver(DataRegistry dataRegistry) {
         this.dataRegistry = dataRegistry;
+        this.legs = dataRegistry.getLegs();
 
         final int numLegs = dataRegistry.getLegs().size();
         expectedDelays = new double[numLegs];
@@ -70,16 +77,41 @@ public class NaiveSolver {
     }
 
     private void solveModel() throws IloException {
-        IloCplex cplex = new IloCplex();
+        cplex = new IloCplex();
         cplex.setParam(IloCplex.Param.MIP.Tolerances.MIPGap, Constants.CPLEX_MIP_GAP);
         if (!Parameters.isDebugVerbose())
             cplex.setOut(null);
 
         ArrayList<Leg> legs = dataRegistry.getLegs();
-        IloNumVar[] v = new IloNumVar[legs.size()];
-        IloNumVar[] x = new IloIntVar[legs.size()];
+        x = new IloIntVar[legs.size()];
+        v = new IloIntVar[legs.size()];
 
-        // Add objective
+        addObjective();
+        for (Tail tail : dataRegistry.getTails()) {
+            ArrayList<Leg> tailLegs = tail.getOrigSchedule();
+            if (tailLegs.size() > 1)
+                addOriginalRoutingConstraints(tailLegs);
+        }
+        addBudgetConstraint();
+
+        // Solve model and extract solution
+        if (Parameters.isDebugVerbose())
+            cplex.exportModel("logs/naive_model.lp");
+
+        Instant start = Instant.now();
+        cplex.solve();
+        solutionTime = Duration.between(start, Instant.now()).toMinutes() / 60.0;
+
+        if (Parameters.isDebugVerbose())
+            cplex.writeSolution("logs/naive_solution.xml");
+
+        storeSolution();
+        cplex.clearModel();
+        cplex.endModel();
+        cplex.end();
+    }
+
+    private void addObjective() throws IloException {
         IloLinearNumExpr objExpr = cplex.linearNumExpr();
         for (int j = 0; j < legs.size(); ++j) {
             Leg leg = legs.get(j);
@@ -94,95 +126,65 @@ public class NaiveSolver {
             objExpr.addTerm(x[j], leg.getRescheduleCostPerMin());
         }
         cplex.addMinimize(objExpr);
+    }
 
-        // Add excess delay constraints
-        /*
-        for (int i = 0; i < legs.size(); ++i) {
-            if (expectedDelays[i] <= Constants.EPS)
-                continue;
+    private void addOriginalRoutingConstraints(ArrayList<Leg> originalRoute) throws IloException {
+        double propagatedDelay = 0;
+        for (int i = 0; i < originalRoute.size(); ++i) {
+            Leg currLeg = originalRoute.get(i);
+            addPropagatedDelayConstraint(currLeg, propagatedDelay);
 
-            IloLinearNumExpr expr = cplex.linearNumExpr();
-            expr.addTerm(v[i], 1.0);
-            expr.addTerm(x[i], 1.0);
-            IloRange cons = cplex.addGe(expr, expectedDelays[i]);
-            if (Parameters.isSetCplexNames())
-                cons.setName("delay_reschedule_link_" + legs.get(i).getId());
-        }
-         */
-
-        // Add original routing constraints
-        for (Tail tail : dataRegistry.getTails()) {
-            ArrayList<Leg> tailLegs = tail.getOrigSchedule();
-            if (tailLegs.size() <= 1)
-                continue;
-
-            double propagatedDelay = 0;
-            for (int i = 0; i < tailLegs.size() - 1; ++i) {
-                Leg currLeg = tailLegs.get(i);
-                Leg nextLeg = tailLegs.get(i + 1);
-                int currLegIndex = currLeg.getIndex();
-                int nextLegIndex = nextLeg.getIndex();
-
-                int slack = max((int) (nextLeg.getDepTime() - currLeg.getArrTime()) - currLeg.getTurnTimeInMin(), 0);
-
-                // Add constraint to protect turn time in original connections.
-                {
-                    IloLinearNumExpr expr = cplex.linearNumExpr();
-                    expr.addTerm(x[currLegIndex], 1);
-                    expr.addTerm(x[nextLegIndex], -1);
-
-                    // int rhs = (int) (nextLeg.getDepTime() - currLeg.getArrTime());
-                    // rhs -= currLeg.getTurnTimeInMin();
-                    // IloRange cons = cplex.addLe(expr, (double) rhs);
-                    IloRange cons = cplex.addLe(expr, slack);
-                    if (Parameters.isSetCplexNames())
-                        cons.setName("connect_" + currLeg.getId() + "_" + nextLeg.getId());
-                }
-
-                // Add constraint to link delays, reschedules and excess delays.
-                {
-                    IloLinearNumExpr linkExpr = cplex.linearNumExpr();
-                    linkExpr.addTerm(v[i], 1.0);
-                    linkExpr.addTerm(x[i], 1.0);
-                    // IloRange linkCons = cplex.addGe(linkExpr, expectedDelays[i] + propagatedDelay);
-                    IloRange linkCons = cplex.addGe(linkExpr, propagatedDelay);
-                    if (Parameters.isSetCplexNames())
-                        linkCons.setName("delay_reschedule_link_" + legs.get(i).getId());
-                    propagatedDelay += max(expectedDelays[i] - slack, 0);
-                }
+            if (i < originalRoute.size() - 1) {
+                Leg nextLeg = originalRoute.get(i + 1);
+                int slack = (int) (nextLeg.getDepTime() - currLeg.getArrTime());
+                slack -= currLeg.getTurnTimeInMin();
+                addConnectivityConstraint(currLeg, nextLeg, slack);
+                propagatedDelay += max(expectedDelays[i] - slack, 0);
             }
-
-            // Add linking constraint for last leg on route.
-            int i = tailLegs.size() - 1;
-            IloLinearNumExpr linkExpr = cplex.linearNumExpr();
-            linkExpr.addTerm(v[i], 1.0);
-            linkExpr.addTerm(x[i], 1.0);
-            IloRange linkCons = cplex.addGe(linkExpr, expectedDelays[i] + propagatedDelay);
-            if (Parameters.isSetCplexNames())
-                linkCons.setName("delay_reschedule_link_" + legs.get(i).getId());
         }
+    }
 
-        // Add budget constraint
+    private void addBudgetConstraint() throws IloException {
         IloLinearNumExpr budgetExpr = cplex.linearNumExpr();
         for (int j = 0; j < legs.size(); ++j)
             budgetExpr.addTerm(x[j], 1);
 
-        IloRange cons = cplex.addLe(budgetExpr, (double) dataRegistry.getRescheduleTimeBudget());
+        IloRange cons = cplex.addLe(budgetExpr, dataRegistry.getRescheduleTimeBudget());
         if (Parameters.isSetCplexNames())
             cons.setName("reschedule_time_budget");
+    }
 
-        if (Parameters.isDebugVerbose())
-            cplex.exportModel("logs/naive_model.lp");
+    /**
+     * Adds constraints of the form x_i <= slack_{i,j} + x_j for each flight connection (i,j) in
+     * the original routing.
+     */
+    private void addConnectivityConstraint(
+            Leg currLeg, Leg nextLeg, int slack) throws IloException {
+        IloLinearNumExpr expr = cplex.linearNumExpr();
+        expr.addTerm(x[currLeg.getIndex()], 1);
+        expr.addTerm(x[nextLeg.getIndex()], -1);
+        IloRange cons = cplex.addLe(expr, slack);
+        if (Parameters.isSetCplexNames())
+            cons.setName("connect_" + currLeg.getId() + "_" + nextLeg.getId());
+    }
 
-        // Solve model and extract solution
-        Instant start = Instant.now();
-        cplex.solve();
-        solutionTime = Duration.between(start, Instant.now()).toMinutes() / 60.0;
+    /**
+     * Adds constraints of the form p_f - x_f <= v_f for each flight f where
+     *   p_f is the propagated delay based on average primary delays in the original routing.
+     *   x_f is the reschedule time.
+     *   v_f is the excess delay time to protect time connectivity.
+     */
+    private void addPropagatedDelayConstraint(Leg leg, double propagatedDelay) throws IloException {
+        int legIndex = leg.getIndex();
+        IloLinearNumExpr linkExpr = cplex.linearNumExpr();
+        linkExpr.addTerm(v[legIndex], 1.0);
+        linkExpr.addTerm(x[legIndex], 1.0);
+        IloRange linkCons = cplex.addGe(linkExpr, propagatedDelay);
+        if (Parameters.isSetCplexNames())
+            linkCons.setName("delay_reschedule_link_" + leg.getId());
+    }
 
-        if (Parameters.isDebugVerbose())
-            cplex.writeSolution("logs/naive_solution.xml");
-
-        // store model stats
+    private void storeSolution() throws IloException {
         final double objValue = cplex.getObjValue();
         logger.info("naive model CPLEX objective: " + objValue);
         modelStats = new ModelStats(cplex.getNrows(), cplex.getNcols(), cplex.getNNZs(), objValue);
@@ -212,9 +214,6 @@ public class NaiveSolver {
         logger.info("naive model solution time (seconds): " + solutionTime);
 
         finalRescheduleSolution = new RescheduleSolution("naive",
-                objValue - excessDelayPenalty, reschedules);
-        cplex.clearModel();
-        cplex.endModel();
-        cplex.end();
+            objValue - excessDelayPenalty, reschedules);
     }
 }
