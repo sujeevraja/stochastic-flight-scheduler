@@ -464,8 +464,9 @@ class Controller {
             kpiManager.writeOutput();
 
             if (Parameters.isCheckSolutionQuality()) {
-                Scenario[] testScenarios = dataRegistry.getDelayGenerator().generateScenarios(
-                    Parameters.getNumTestScenarios());
+                // Scenario[] testScenarios = dataRegistry.getDelayGenerator().generateScenarios(
+                //    Parameters.getNumTestScenarios());
+                Scenario[] testScenarios = dataRegistry.getDelayScenarios();
                 QualityChecker qc = new QualityChecker(dataRegistry, testScenarios);
                 qc.compareSolutions(rescheduleSolutions);
             }

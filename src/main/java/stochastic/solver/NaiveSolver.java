@@ -18,6 +18,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import static java.lang.Math.max;
+
 public class NaiveSolver {
     /**
      * This class builds a naive rescheduling solution (i.e. solution to Benders first stage).
@@ -114,12 +116,14 @@ public class NaiveSolver {
             if (tailLegs.size() <= 1)
                 continue;
 
-            int propagatedDelay = 0;
+            double propagatedDelay = 0;
             for (int i = 0; i < tailLegs.size() - 1; ++i) {
                 Leg currLeg = tailLegs.get(i);
                 Leg nextLeg = tailLegs.get(i + 1);
                 int currLegIndex = currLeg.getIndex();
                 int nextLegIndex = nextLeg.getIndex();
+
+                int slack = max((int) (nextLeg.getDepTime() - currLeg.getArrTime()) - currLeg.getTurnTimeInMin(), 0);
 
                 // Add constraint to protect turn time in original connections.
                 {
@@ -127,9 +131,10 @@ public class NaiveSolver {
                     expr.addTerm(x[currLegIndex], 1);
                     expr.addTerm(x[nextLegIndex], -1);
 
-                    int rhs = (int) (nextLeg.getDepTime() - currLeg.getArrTime());
-                    rhs -= currLeg.getTurnTimeInMin();
-                    IloRange cons = cplex.addLe(expr, (double) rhs);
+                    // int rhs = (int) (nextLeg.getDepTime() - currLeg.getArrTime());
+                    // rhs -= currLeg.getTurnTimeInMin();
+                    // IloRange cons = cplex.addLe(expr, (double) rhs);
+                    IloRange cons = cplex.addLe(expr, slack);
                     if (Parameters.isSetCplexNames())
                         cons.setName("connect_" + currLeg.getId() + "_" + nextLeg.getId());
                 }
@@ -139,10 +144,11 @@ public class NaiveSolver {
                     IloLinearNumExpr linkExpr = cplex.linearNumExpr();
                     linkExpr.addTerm(v[i], 1.0);
                     linkExpr.addTerm(x[i], 1.0);
-                    IloRange linkCons = cplex.addGe(linkExpr, expectedDelays[i] + propagatedDelay);
+                    // IloRange linkCons = cplex.addGe(linkExpr, expectedDelays[i] + propagatedDelay);
+                    IloRange linkCons = cplex.addGe(linkExpr, propagatedDelay);
                     if (Parameters.isSetCplexNames())
                         linkCons.setName("delay_reschedule_link_" + legs.get(i).getId());
-                    propagatedDelay += expectedDelays[i];
+                    propagatedDelay += max(expectedDelays[i] - slack, 0);
                 }
             }
 

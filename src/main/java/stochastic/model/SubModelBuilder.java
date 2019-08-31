@@ -36,7 +36,7 @@ public class SubModelBuilder {
     private IloLinearNumExpr[] delayExprs;
     private double[] delayRHS;
 
-    public SubModelBuilder(int scenarioNum, ArrayList<Leg> legs, ArrayList<Tail> tails,
+    public SubModelBuilder(int scenarioNum, int[] randomDelays, ArrayList<Leg> legs, ArrayList<Tail> tails,
                            HashMap<Integer, ArrayList<Path>> paths, IloCplex cplex) throws IloException {
         prefix = "s" + scenarioNum + "_";
         this.legs = legs;
@@ -57,7 +57,9 @@ public class SubModelBuilder {
         legCoverExprs = new IloLinearNumExpr[numLegs];
         delayExprs = new IloLinearNumExpr[numLegs];
         delayRHS = new double[numLegs];
-        Arrays.fill(delayRHS, Constants.OTP_TIME_LIMIT_IN_MINUTES);
+        // Arrays.fill(delayRHS, Constants.OTP_TIME_LIMIT_IN_MINUTES);
+        for (int i = 0; i < numLegs; ++i)
+            delayRHS[i] = randomDelays[i];
 
         legCoverConstraints = new IloRange[numLegs]; // leg coverage
         onePathPerTailConstraints = new IloRange[numTails]; // tail coverage

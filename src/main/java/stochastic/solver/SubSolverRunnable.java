@@ -105,7 +105,7 @@ public class SubSolverRunnable implements Runnable {
             HashMap<Integer, ArrayList<Path>> tailPathsMap = SolverUtility.getPathsForFullEnum(allPaths,
                     dataRegistry.getTails());
 
-            SubSolver ss = new SubSolver(scenarioNum, dataRegistry.getTails(),
+            SubSolver ss = new SubSolver(scenarioNum, randomDelays, dataRegistry.getTails(),
                 dataRegistry.getLegs(), reschedules);
 
             ss.setCplex(cplex);
@@ -164,7 +164,7 @@ public class SubSolverRunnable implements Runnable {
     }
 
     private void solveWithLabeling() throws IloException, OptException {
-        SubSolver ss = new SubSolver(scenarioNum, dataRegistry.getTails(), dataRegistry.getLegs(),
+        SubSolver ss = new SubSolver(scenarioNum, randomDelays, dataRegistry.getTails(), dataRegistry.getLegs(),
             reschedules);
         ss.setCplex(cplex);
 
@@ -378,7 +378,8 @@ public class SubSolverRunnable implements Runnable {
 
         for (int j = 0; j < legs.size(); j++)
             if (Math.abs(dualsDelay[j]) >= Constants.EPS)
-                scenAlpha += (dualsDelay[j] * Constants.OTP_TIME_LIMIT_IN_MINUTES);
+                scenAlpha += (dualsDelay[j] * randomDelays[j]);
+                // scenAlpha += (dualsDelay[j] * Constants.OTP_TIME_LIMIT_IN_MINUTES);
 
         for (double[] dualBnd : dualsBnd)
             if (dualBnd != null)
