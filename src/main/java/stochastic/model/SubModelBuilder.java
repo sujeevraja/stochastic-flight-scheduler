@@ -57,7 +57,6 @@ public class SubModelBuilder {
         legCoverExprs = new IloLinearNumExpr[numLegs];
         delayExprs = new IloLinearNumExpr[numLegs];
         delayRHS = new double[numLegs];
-        // Arrays.fill(delayRHS, Constants.OTP_TIME_LIMIT_IN_MINUTES);
         for (int i = 0; i < numLegs; ++i)
             delayRHS[i] = randomDelays[i];
 

@@ -6,7 +6,7 @@ import stochastic.domain.Tail;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class PathEnumerator {
+class PathEnumerator {
     /**
      * Class used to enumerate all paths for a particular tail.
      */
@@ -20,16 +20,15 @@ public class PathEnumerator {
     private ArrayList<Integer> currentPath;
     private boolean[] onPath;
 
-    // delayTimes[i]: arrival time of legs[i] on currentPath - original start time of legs[i].
-    // This time has 2 lower bounds: the planned reschedule time from first stage, and the random delay generated
-    // for the second stage scenario.
+    /**
+     * delayTimes[i] the delay of legs[i] on the current path stored in "currentPath". It is the
+     * sum of delay propagated to it by upstream legs and its own random primary delay.
+     */
     private ArrayList<Integer> delayTimes;
 
-    public PathEnumerator() {
-        super();
-    }
-
-    PathEnumerator(Tail tail, ArrayList<Leg> legs, int[] delays, HashMap<Integer, ArrayList<Integer>> adjacencyList) {
+    PathEnumerator(
+        Tail tail, ArrayList<Leg> legs, int[] delays,
+        HashMap<Integer, ArrayList<Integer>> adjacencyList) {
         this.tail = tail;
         this.legs = legs;
         this.delays = delays;
@@ -60,14 +59,16 @@ public class PathEnumerator {
         return paths;
     }
 
+    /**
+     * Uses DFS to recursively build and store paths including delay times on each path.
+     * Delay incurred by a leg when added to a path is the sum of
+     * - delay propagated to it by the previous leg
+     * - its own random primary delay
+     *
+     * @param legIndex index of leg in "legs" member to add to the current path
+     * @param delayTimeInMin delay time incurred by leg when added to the current path
+     */
     private void depthFirstSearch(Integer legIndex, Integer delayTimeInMin) {
-        // This function uses DFS to recursively build and store paths and delay times of each event on the path.
-        // delayTimeInMin is the total delay time of the leg on the current path i.e. difference between the updated
-        // departure time and the original departure time. It has 3 lower bounds:
-        // - first stage delay (from chosen reschedule duration).
-        // - random delay (chosen from random scenario of second stage).
-        // - minimum delay required for the current leg to connect to the last leg of the current path.
-
         // add index to current path
         currentPath.add(legIndex);
         onPath[legIndex] = true;

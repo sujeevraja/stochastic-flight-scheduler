@@ -66,7 +66,8 @@ public class SolverUtility {
         return initialPaths;
     }
 
-    static HashMap<Integer, ArrayList<Path>> getPathsForFullEnum(ArrayList<Path> paths, ArrayList<Tail> tails) {
+    static HashMap<Integer, ArrayList<Path>> getPathsForFullEnum(
+        ArrayList<Path> paths, ArrayList<Tail> tails) {
         HashMap<Integer, ArrayList<Path>> tailPathsMap = new HashMap<>();
         for (Tail t : tails)
             tailPathsMap.put(t.getId(), new ArrayList<>(Collections.singletonList(new Path(t))));

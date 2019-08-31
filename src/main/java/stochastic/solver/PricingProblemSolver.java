@@ -112,14 +112,16 @@ class PricingProblemSolver {
     /**
      * Runs the forward label setting algorithm to solve the pricing problem for the second-stage.
      * <p>
-     * Using the labels created in "initSourceLabels", this algorithm builds and adds feasible extensions for each
-     * unprcessed label until no more extensions are possible. A label is said to be unprocessed if we have not checked
-     * it for feasible extension. It is processed when we have built all of its possible feasible extensions. This is
-     * marked using the "processed" flag in the Label object. The initial labels and feasible extensions are stored in
-     * the "labels" member. Along the way, this also creates a set of * non-dominated labels that can connect to the
-     * tail's sink port (stored in "sinkLabels"). The non-dominated sink-labels can be used to build and provide paths
-     * with negative reduced cost. These paths can then in turn be * added to the Restricted Master Problem (RMP) of
-     * the second-stage. We will reach optimality if we cannot find any sink label with a negative reduced cost.
+     * Using the labels created in "initSourceLabels", this algorithm builds and adds feasible
+     * extensions for each unprocessed label until no more extensions are possible. A label is
+     * said to be unprocessed if we have not checked it for feasible extension. It is processed
+     * when we have built all of its possible feasible extensions. This is marked using the
+     * "processed" flag in the Label object. The initial labels and feasible extensions are stored
+     * in the "labels" member. Along the way, this also creates a set of * non-dominated labels
+     * that can connect to the tail's sink port (stored in "sinkLabels"). The non-dominated
+     * sink-labels can be used to build and provide paths with negative reduced cost. These paths
+     * can then in turn be added to the Restricted Master Problem (RMP) of the second-stage.
+     * We will reach optimality if we cannot find any sink label with a negative reduced cost.
      */
     private void runLabelSettingAlgorithm() {
         while (!unprocessedLabels.isEmpty()) {
@@ -227,7 +229,7 @@ class PricingProblemSolver {
      * Returns true if label is dominated by any element of labels, false otherwise.
      *
      * @param label  The label we want to add to labels if it is not dominated.
-     * @param labels The labels that we have alredy created/processed.
+     * @param labels The labels that we have already created/processed.
      * @return true if label can be added to labels, false otherwise.
      */
     private boolean canAddTo(Label label, ArrayList<Label> labels) {

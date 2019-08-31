@@ -84,11 +84,12 @@ public class BendersSolver {
         Instant start = Instant.now();
 
         masterSolver = new MasterSolver(dataRegistry.getLegs(), dataRegistry.getTails(),
-                dataRegistry.getRescheduleTimeBudget(), dataRegistry.getDelayScenarios().length);
+            dataRegistry.getRescheduleTimeBudget(), dataRegistry.getDelayScenarios().length);
         masterSolver.constructFirstStage();
         masterSolver.addTheta();
         if (warmStartSolution != null)
-            masterSolver.setInitialSolution(warmStartSolution.getRescheduleCost(), warmStartSolution.getReschedules());
+            masterSolver.setInitialSolution(warmStartSolution.getRescheduleCost(),
+                warmStartSolution.getReschedules());
         else
             masterSolver.initInitialSolution();
 
@@ -138,16 +139,18 @@ public class BendersSolver {
         Scenario[] scenarios = dataRegistry.getDelayScenarios();
         for (int i = 0; i < scenarios.length; ++i) {
             secondStageCaches[i] = new PathCache();
-            HashMap<Integer, ArrayList<Path>> origpaths = SolverUtility.getOriginalPaths(dataRegistry.getIdTailMap(),
-                    dataRegistry.getTailOrigPathMap(), scenarios[i].getPrimaryDelays());
-            secondStageCaches[i].setCachedPaths(origpaths);
+            HashMap<Integer, ArrayList<Path>> originalPaths = SolverUtility.getOriginalPaths(
+                dataRegistry.getIdTailMap(), dataRegistry.getTailOrigPathMap(),
+                scenarios[i].getPrimaryDelays());
+            secondStageCaches[i].setCachedPaths(originalPaths);
         }
     }
 
     private void runBendersIteration() throws IloException, IOException, OptException {
         ++iteration;
-        SubSolverWrapper ssWrapper = new SubSolverWrapper(dataRegistry, masterSolver.getReschedules(), iteration,
-                masterSolver.getRescheduleCost(), secondStageCaches);
+        SubSolverWrapper ssWrapper = new SubSolverWrapper(dataRegistry,
+            masterSolver.getReschedules(), iteration, masterSolver.getRescheduleCost(),
+            secondStageCaches);
 
         BendersData bendersData = Parameters.isRunSecondStageInParallel()
             ? ssWrapper.solveParallel()
@@ -226,7 +229,7 @@ public class BendersSolver {
 
     private void storeFinalSolution() {
         finalRescheduleSolution = new RescheduleSolution("benders",
-                masterSolver.getRescheduleCost(), masterSolver.getReschedules());
+            masterSolver.getRescheduleCost(), masterSolver.getReschedules());
     }
 
     private void writeCsvHeaders() throws IOException {
@@ -257,7 +260,8 @@ public class BendersSolver {
         CSVHelper.writeLine(slnWriter, row);
     }
 
-    private void writeBendersCut(int iter, int cutIndex, double[] beta, double alpha) throws IOException {
+    private void writeBendersCut(int iter, int cutIndex, double[] beta, double alpha)
+        throws IOException {
         ArrayList<Leg> legs = dataRegistry.getLegs();
 
         ArrayList<String> row = new ArrayList<>();
