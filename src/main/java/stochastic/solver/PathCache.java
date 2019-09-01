@@ -10,7 +10,7 @@ import java.util.Map;
 public class PathCache {
     /**
      * PathCache objects are used to store paths to use as initial solutions for second stage problems. These caches
-     * are udpated with the solution of every Benders iteration and provide the updated paths to the next iteration.
+     * are updated with the solution of every Benders iteration and provide the updated paths to the next iteration.
      */
     private HashMap<Integer, ArrayList<Path>> cachedPaths; // includes on-plan paths and empty paths
 

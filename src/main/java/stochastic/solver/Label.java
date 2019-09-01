@@ -10,6 +10,9 @@ class Label implements Comparable<Label> {
     private Leg leg;
     private int vertex;
     private Label predecessor;
+    /**
+     * Sum of primary and propagated delay on incident leg, i.e. last leg on partial path.
+     */
     private int totalDelay;
     private double reducedCost;
 

@@ -1,7 +1,10 @@
 package stochastic.network;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import stochastic.domain.Leg;
 import stochastic.domain.Tail;
+import stochastic.utility.OptException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -10,6 +13,7 @@ class PathEnumerator {
     /**
      * Class used to enumerate all paths for a particular tail.
      */
+    private final static Logger logger = LogManager.getLogger(PathEnumerator.class);
     private Tail tail;
     private ArrayList<Leg> legs;
     private int[] delays;
@@ -42,19 +46,15 @@ class PathEnumerator {
             onPath[i] = false;
     }
 
-    ArrayList<Path> generatePaths() {
+    ArrayList<Path> generatePaths() throws OptException {
         for (int i = 0; i < legs.size(); ++i) {
             Leg leg = legs.get(i);
 
             if (!tail.getSourcePort().equals(leg.getDepPort()))
                 continue;
 
-            // add initial (1st-stage/random) delay.
-            long newDepTime = getNewDepTime(leg);
-
             // generate paths starting from leg.
-            int delayTime = (int) (newDepTime - leg.getDepTime());
-            depthFirstSearch(i, delayTime);
+            depthFirstSearch(i, delays[leg.getIndex()]);
         }
         return paths;
     }
@@ -68,7 +68,7 @@ class PathEnumerator {
      * @param legIndex index of leg in "legs" member to add to the current path
      * @param delayTimeInMin delay time incurred by leg when added to the current path
      */
-    private void depthFirstSearch(Integer legIndex, Integer delayTimeInMin) {
+    private void depthFirstSearch(Integer legIndex, Integer delayTimeInMin) throws OptException {
         // add index to current path
         currentPath.add(legIndex);
         onPath[legIndex] = true;
@@ -82,16 +82,18 @@ class PathEnumerator {
         // dive to current node's neighbors
         if (adjacencyList.containsKey(legIndex)) {
             ArrayList<Integer> neighbors = adjacencyList.get(legIndex);
-            long arrivalTime = leg.getArrTime() + leg.getTurnTimeInMin() + delayTimeInMin;
-
             for (Integer neighborIndex : neighbors) {
                 if (onPath[neighborIndex])
                     continue;
 
-                long minDepTime = arrivalTime + delays[neighborIndex];
                 Leg neighborLeg = legs.get(neighborIndex);
-                int neighborDelayTime = Math.max((int) (minDepTime - neighborLeg.getDepTime()), 0);
-                depthFirstSearch(neighborIndex, neighborDelayTime);
+
+                int slack = (int) (neighborLeg.getDepTime() - leg.getArrTime());
+                slack -= leg.getTurnTimeInMin();
+
+                final int propagatedDelay = Math.max(0, delayTimeInMin - slack);
+                final int totalDelay = propagatedDelay + delays[neighborIndex];
+                depthFirstSearch(neighborIndex, totalDelay);
             }
         }
 
@@ -100,16 +102,19 @@ class PathEnumerator {
         onPath[legIndex] = false;
     }
 
-    private void storeCurrentPath() {
+    private void storeCurrentPath() throws OptException {
         Path path = new Path(tail);
         for (int i = 0; i < currentPath.size(); ++i) {
             Leg leg = legs.get(currentPath.get(i));
             path.addLeg(leg, delayTimes.get(i));
+            if (delayTimes.get(i) < delays[leg.getIndex()]) {
+                logger.error(path);
+                logger.error(leg);
+                logger.error("primary delay: " + delays[leg.getIndex()]);
+                logger.error("total delay: " + delayTimes.get(i));
+                throw new OptException("total delay less than primary delay");
+            }
         }
         paths.add(path);
-    }
-
-    private long getNewDepTime(Leg leg) {
-        return leg.getDepTime() + delays[leg.getIndex()];
     }
 }

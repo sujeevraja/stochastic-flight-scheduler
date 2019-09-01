@@ -139,7 +139,9 @@ public class NaiveSolver {
                 int slack = (int) (nextLeg.getDepTime() - currLeg.getArrTime());
                 slack -= currLeg.getTurnTimeInMin();
                 addConnectivityConstraint(currLeg, nextLeg, slack);
-                propagatedDelay += max(expectedDelays[i] - slack, 0);
+                propagatedDelay = max(
+                    propagatedDelay + expectedDelays[currLeg.getIndex()] - slack,
+                    0);
             }
         }
     }

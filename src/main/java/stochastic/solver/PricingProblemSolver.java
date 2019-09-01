@@ -12,8 +12,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 
-import static java.lang.Math.max;
-
 class PricingProblemSolver {
     /**
      * PricingProblemSolver uses label setting and partial path pruning to generate routes for the second-stage
@@ -147,7 +145,6 @@ class PricingProblemSolver {
                 continue;
 
             final int totalDelay = delays[i];
-
             double reducedCost = getReducedCostForLeg(i, totalDelay);
             Label label = new Label(leg, null, totalDelay, reducedCost);
 
@@ -216,12 +213,15 @@ class PricingProblemSolver {
      */
     private Label extend(Label label, int legIndex) {
         Leg prevLeg = legs.get(label.getVertex());
-        long minDepTime = (prevLeg.getArrTime() + prevLeg.getTurnTimeInMin() +
-            label.getTotalDelay() + delays[legIndex]);
-
         Leg nextLeg = legs.get(legIndex);
-        int totalDelay = max((int) (minDepTime - nextLeg.getDepTime()), 0);
-        double reducedCost = label.getReducedCost() + getReducedCostForLeg(legIndex, totalDelay);
+
+        final int slack = ((int) (nextLeg.getDepTime() - prevLeg.getArrTime()) -
+            prevLeg.getTurnTimeInMin());
+        final int propagatedDelay = Math.max(label.getTotalDelay() - slack, 0);
+        final int totalDelay = propagatedDelay + delays[legIndex];
+        final double reducedCost = (label.getReducedCost() +
+            getReducedCostForLeg(legIndex, totalDelay));
+
         return label.extend(nextLeg, totalDelay, reducedCost);
     }
 
@@ -243,17 +243,18 @@ class PricingProblemSolver {
     /**
      * Calculates the reduced cost of the given leg using the provided delay value.
      *
+     * Reduced cost for flight f = - \beta_f - (a_{rf} * \gamma_f)
+     *
      * @param legIndex   position of leg in legs list.
      * @param totalDelay delay time of leg (includes primary and propagated delays).
      * @return reduced cost of leg.
      */
     private double getReducedCostForLeg(int legIndex, int totalDelay) {
-        // reduced cost for flight f = - \beta_f - (a_{rf} * \gamma_f)
         return -(legCoverDuals[legIndex] + (totalDelay * delayLinkDuals[legIndex]));
     }
 
     private boolean limitReached() {
         return columnGenStrategy == Enums.ColumnGenStrategy.FIRST_PATHS &&
-                sinkLabels.size() > Parameters.getNumReducedCostPaths();
+            sinkLabels.size() >= Parameters.getNumReducedCostPaths();
     }
 }

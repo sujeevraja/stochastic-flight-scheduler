@@ -37,7 +37,6 @@ class SubSolverWrapper {
                 probability, reschedules, scenario.getPrimaryDelays(),
                 pathCaches[i]);
             ssr.setCplex(cplex);
-            ssr.setBendersData(bendersData);
             ssr.run();
 
             bendersData.updateAlpha(ssr.getCutNum(), ssr.getAlpha(), probability);

@@ -159,6 +159,7 @@ class BatchRunner {
             }
 
             // prepare test results
+            Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.FULL_ENUMERATION);
             QualityChecker qc = new QualityChecker(controller.getDataRegistry(), testScenarios);
             TestKPISet[] testKPISets = qc.collectAverageTestStatsForBatchRun(rescheduleSolutions);
             TestKPISet baseKPISet = testKPISets[0];

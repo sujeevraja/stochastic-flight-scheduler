@@ -32,7 +32,6 @@ public class SubSolverRunnable implements Runnable {
     private PathCache pathCache;
 
     private String filePrefix;
-    private BendersData bendersData;
 
     private boolean solveForQuality = false;
     private DelaySolution delaySolution; // used only when checking Benders solution quality
@@ -63,10 +62,6 @@ public class SubSolverRunnable implements Runnable {
 
     public void setFilePrefix(String filePrefix) {
         this.filePrefix = filePrefix;
-    }
-
-    void setBendersData(BendersData bendersData) {
-        this.bendersData = bendersData;
     }
 
     public void setSolveForQuality(boolean solveForQuality) {
@@ -329,9 +324,10 @@ public class SubSolverRunnable implements Runnable {
 
             ArrayList<Integer> pathDelays = path.getDelayTimesInMin();
             for (int i = 0; i < pathLegs.size(); ++i) {
-                int index = pathLegs.get(i).getIndex();
+                final int index = pathLegs.get(i).getIndex();
                 totalDelays[index] = pathDelays.get(i);
-                propagatedDelays[index] = totalDelays[index] - primaryDelays[index];
+                final int propagatedDelay = totalDelays[index] - primaryDelays[index];
+                propagatedDelays[index] = propagatedDelay;
             }
         }
 
