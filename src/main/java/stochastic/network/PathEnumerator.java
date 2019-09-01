@@ -1,15 +1,19 @@
 package stochastic.network;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import stochastic.domain.Leg;
 import stochastic.domain.Tail;
+import stochastic.utility.OptException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class PathEnumerator {
+class PathEnumerator {
     /**
      * Class used to enumerate all paths for a particular tail.
      */
+    private final static Logger logger = LogManager.getLogger(PathEnumerator.class);
     private Tail tail;
     private ArrayList<Leg> legs;
     private int[] delays;
@@ -20,16 +24,15 @@ public class PathEnumerator {
     private ArrayList<Integer> currentPath;
     private boolean[] onPath;
 
-    // delayTimes[i]: arrival time of legs[i] on currentPath - original start time of legs[i].
-    // This time has 2 lower bounds: the planned reschedule time from first stage, and the random delay generated
-    // for the second stage scenario.
+    /**
+     * delayTimes[i] the delay of legs[i] on the current path stored in "currentPath". It is the
+     * sum of delay propagated to it by upstream legs and its own random primary delay.
+     */
     private ArrayList<Integer> delayTimes;
 
-    public PathEnumerator() {
-        super();
-    }
-
-    PathEnumerator(Tail tail, ArrayList<Leg> legs, int[] delays, HashMap<Integer, ArrayList<Integer>> adjacencyList) {
+    PathEnumerator(
+        Tail tail, ArrayList<Leg> legs, int[] delays,
+        HashMap<Integer, ArrayList<Integer>> adjacencyList) {
         this.tail = tail;
         this.legs = legs;
         this.delays = delays;
@@ -43,31 +46,29 @@ public class PathEnumerator {
             onPath[i] = false;
     }
 
-    ArrayList<Path> generatePaths() {
+    ArrayList<Path> generatePaths() throws OptException {
         for (int i = 0; i < legs.size(); ++i) {
             Leg leg = legs.get(i);
 
             if (!tail.getSourcePort().equals(leg.getDepPort()))
                 continue;
 
-            // add initial (1st-stage/random) delay.
-            long newDepTime = getNewDepTime(leg);
-
             // generate paths starting from leg.
-            int delayTime = (int) (newDepTime - leg.getDepTime());
-            depthFirstSearch(i, delayTime);
+            depthFirstSearch(i, delays[leg.getIndex()]);
         }
         return paths;
     }
 
-    private void depthFirstSearch(Integer legIndex, Integer delayTimeInMin) {
-        // This function uses DFS to recursively build and store paths and delay times of each event on the path.
-        // delayTimeInMin is the total delay time of the leg on the current path i.e. difference between the updated
-        // departure time and the original departure time. It has 3 lower bounds:
-        // - first stage delay (from chosen reschedule duration).
-        // - random delay (chosen from random scenario of second stage).
-        // - minimum delay required for the current leg to connect to the last leg of the current path.
-
+    /**
+     * Uses DFS to recursively build and store paths including delay times on each path.
+     * Delay incurred by a leg when added to a path is the sum of
+     * - delay propagated to it by the previous leg
+     * - its own random primary delay
+     *
+     * @param legIndex index of leg in "legs" member to add to the current path
+     * @param delayTimeInMin delay time incurred by leg when added to the current path
+     */
+    private void depthFirstSearch(Integer legIndex, Integer delayTimeInMin) throws OptException {
         // add index to current path
         currentPath.add(legIndex);
         onPath[legIndex] = true;
@@ -81,22 +82,17 @@ public class PathEnumerator {
         // dive to current node's neighbors
         if (adjacencyList.containsKey(legIndex)) {
             ArrayList<Integer> neighbors = adjacencyList.get(legIndex);
-
-            // the object returned by getArrTime() is immutable.
-            // So, the leg's original arrival time won't get affected here.
-            long arrivalTime = leg.getArrTime() + delayTimeInMin;
-
             for (Integer neighborIndex : neighbors) {
                 if (onPath[neighborIndex])
                     continue;
 
                 Leg neighborLeg = legs.get(neighborIndex);
-                long newDepTime = getNewDepTime(neighborLeg);
-                long minReqDepTime = arrivalTime + leg.getTurnTimeInMin();
-                long depTimeOnPath = Math.max(newDepTime, minReqDepTime);
 
-                int neighborDelayTime = (int) (depTimeOnPath - neighborLeg.getDepTime());
-                depthFirstSearch(neighborIndex, neighborDelayTime);
+                final int slack = ((int) (neighborLeg.getDepTime() - leg.getArrTime()) -
+                    leg.getTurnTimeInMin());
+                final int propagatedDelay = Math.max(0, delayTimeInMin - slack);
+                final int totalDelay = propagatedDelay + delays[neighborIndex];
+                depthFirstSearch(neighborIndex, totalDelay);
             }
         }
 
@@ -105,16 +101,19 @@ public class PathEnumerator {
         onPath[legIndex] = false;
     }
 
-    private void storeCurrentPath() {
+    private void storeCurrentPath() throws OptException {
         Path path = new Path(tail);
         for (int i = 0; i < currentPath.size(); ++i) {
             Leg leg = legs.get(currentPath.get(i));
             path.addLeg(leg, delayTimes.get(i));
+            if (delayTimes.get(i) < delays[leg.getIndex()]) {
+                logger.error(path);
+                logger.error(leg);
+                logger.error("primary delay: " + delays[leg.getIndex()]);
+                logger.error("total delay: " + delayTimes.get(i));
+                throw new OptException("total delay less than primary delay");
+            }
         }
         paths.add(path);
-    }
-
-    private long getNewDepTime(Leg leg) {
-        return leg.getDepTime() + delays[leg.getIndex()];
     }
 }

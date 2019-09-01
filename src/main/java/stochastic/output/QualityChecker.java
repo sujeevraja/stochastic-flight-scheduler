@@ -234,25 +234,14 @@ public class QualityChecker {
                 leg.reschedule(reschedules[leg.getIndex()]);
         }
 
-        // update primary delays using reschedules.
-        int[] adjustedDelays;
-        if (reschedules != null) {
-            adjustedDelays = new int[dataRegistry.getLegs().size()];
-            int[] primaryDelays = scen.getPrimaryDelays();
-            for (int i = 0; i < primaryDelays.length; ++i) {
-                adjustedDelays[i] = Math.max(primaryDelays[i] - reschedules[i], 0);
-            }
-        } else {
-            adjustedDelays = scen.getPrimaryDelays();
-        }
-
         // solve routing MIP and collect solution
+        int[] delays = scen.getPrimaryDelays();
         PathCache pathCache = new PathCache();
         pathCache.setCachedPaths(SolverUtility.getOriginalPaths(dataRegistry.getIdTailMap(),
-                dataRegistry.getTailOrigPathMap(), adjustedDelays));
+                dataRegistry.getTailOrigPathMap(), delays));
 
         SubSolverRunnable ssr = new SubSolverRunnable(dataRegistry, 0, scenarioNum,
-            scen.getProbability(), zeroReschedules, adjustedDelays, pathCache);
+            scen.getProbability(), zeroReschedules, delays, pathCache);
         ssr.setCplex(cplex);
         ssr.setFilePrefix(slnName);
         ssr.setSolveForQuality(true);

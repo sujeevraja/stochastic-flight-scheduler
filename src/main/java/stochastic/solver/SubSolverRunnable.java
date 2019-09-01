@@ -13,6 +13,7 @@ import stochastic.registry.Parameters;
 import stochastic.utility.Constants;
 import stochastic.utility.Enums;
 import stochastic.utility.OptException;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -31,7 +32,6 @@ public class SubSolverRunnable implements Runnable {
     private PathCache pathCache;
 
     private String filePrefix;
-    private BendersData bendersData;
 
     private boolean solveForQuality = false;
     private DelaySolution delaySolution; // used only when checking Benders solution quality
@@ -62,10 +62,6 @@ public class SubSolverRunnable implements Runnable {
 
     public void setFilePrefix(String filePrefix) {
         this.filePrefix = filePrefix;
-    }
-
-    void setBendersData(BendersData bendersData) {
-        this.bendersData = bendersData;
     }
 
     public void setSolveForQuality(boolean solveForQuality) {
@@ -99,13 +95,13 @@ public class SubSolverRunnable implements Runnable {
         try {
             // Enumerate all paths for each tail.
             ArrayList<Path> allPaths = dataRegistry.getNetwork().enumeratePathsForTails(
-                    dataRegistry.getTails(), randomDelays);
+                dataRegistry.getTails(), randomDelays);
 
             // Store paths for each tail separately. Also add empty paths for each tail.
-            HashMap<Integer, ArrayList<Path>> tailPathsMap = SolverUtility.getPathsForFullEnum(allPaths,
-                    dataRegistry.getTails());
+            HashMap<Integer, ArrayList<Path>> tailPathsMap = SolverUtility.getPathsForFullEnum(
+                allPaths, dataRegistry.getTails());
 
-            SubSolver ss = new SubSolver(scenarioNum, dataRegistry.getTails(),
+            SubSolver ss = new SubSolver(scenarioNum, randomDelays, dataRegistry.getTails(),
                 dataRegistry.getLegs(), reschedules);
 
             ss.setCplex(cplex);
@@ -145,7 +141,7 @@ public class SubSolverRunnable implements Runnable {
             } else {
                 ss.collectDuals();
                 alpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(),
-                        ss.getDualsBound(), ss.getDualRisk());
+                    ss.getDualsBound(), ss.getDualRisk());
 
                 // final int cutNum = Parameters.isBendersMultiCut() ? scenarioNum : 0;
                 dualsDelay = ss.getDualsDelay();
@@ -154,18 +150,18 @@ public class SubSolverRunnable implements Runnable {
             }
 
             logger.info("Total number of paths: " + allPaths.size());
-            logger.info("Iter " + iter + ": subproblem objective value: " + ss.getObjValue());
+            logger.info("Iter " + iter + ": sub-problem objective value: " + ss.getObjValue());
             ss.end();
         } catch (OptException oe) {
-            logger.error("submodel run for scenario " + scenarioNum + " failed.");
+            logger.error("sub-model run for scenario " + scenarioNum + " failed.");
             logger.error(oe);
             System.exit(Constants.ERROR_CODE);
         }
     }
 
     private void solveWithLabeling() throws IloException, OptException {
-        SubSolver ss = new SubSolver(scenarioNum, dataRegistry.getTails(), dataRegistry.getLegs(),
-            reschedules);
+        SubSolver ss = new SubSolver(scenarioNum, randomDelays, dataRegistry.getTails(),
+            dataRegistry.getLegs(), reschedules);
         ss.setCplex(cplex);
 
         // Load on-plan paths with propagated delays.
@@ -204,8 +200,8 @@ public class SubSolverRunnable implements Runnable {
             if (Parameters.isDebugVerbose())
                 ss.writeCplexSolution(name + ".xml");
 
-            // Collect paths with negative reduced cost from the labeling algorithm. Optimality is reached when
-            // there are no new negative reduced cost paths available for any tail.
+            // Collect paths with negative reduced cost from the labeling algorithm. Optimality is
+            // reached when there are no new negative reduced cost paths available for any tail.
             ArrayList<Tail> tails = dataRegistry.getTails();
             double[] tailDuals = ss.getDualsTail();
             optimal = true;
@@ -213,17 +209,19 @@ public class SubSolverRunnable implements Runnable {
             for (int i = 0; i < tails.size(); ++i) {
                 Tail tail = tails.get(i);
 
-                PricingProblemSolver lpg = new PricingProblemSolver(tail, legs, dataRegistry.getNetwork(),
-                        randomDelays, tailDuals[i], ss.getDualsLeg(), ss.getDualsDelay());
+                PricingProblemSolver pps = new PricingProblemSolver(tail, legs,
+                    dataRegistry.getNetwork(), randomDelays, tailDuals[i], ss.getDualsLeg(),
+                    ss.getDualsDelay());
 
-                // Build sink labels for paths that have already been generated and add them to the labeling
-                // path generator.
+                // Build sink labels for paths that have already been generated and add them to the
+                // labeling path generator.
                 ArrayList<Path> existingPaths = pathsAll.get(tail.getId());
 
-                // Note: it is possible for a path already in existingPaths to be generated again and be present
-                // in tailPaths, causing duplicates. However, we found empirically that the number of duplicates
-                // is not big enough to impact CPLEX run-times. So, we ignore duplicate checking here.
-                ArrayList<Path> tailPaths = lpg.generatePathsForTail();
+                // Note: it is possible for a path already in existingPaths to be generated again
+                // and be present in tailPaths, causing duplicates. However, we found empirically
+                // that the number of duplicates is not big enough to impact CPLEX run-times. So,
+                // we ignore duplicate checking here.
+                ArrayList<Path> tailPaths = pps.generatePathsForTail();
                 if (!tailPaths.isEmpty()) {
                     if (optimal)
                         optimal = false;
@@ -253,7 +251,7 @@ public class SubSolverRunnable implements Runnable {
             numPaths += entry.getValue().size();
 
         logger.info("Total number of paths: " + numPaths);
-        logger.info("Iter " + iter + ": subproblem objective value: " + ss.getObjValue());
+        logger.info("Iter " + iter + ": sub-problem objective value: " + ss.getObjValue());
 
         if (solveForQuality) {
             // Solve problem with all columns as MIP to collect objective value.
@@ -277,7 +275,7 @@ public class SubSolverRunnable implements Runnable {
         } else {
             // Update master problem data
             alpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(),
-                    ss.getDualsDelay(), ss.getDualsBound(), ss.getDualRisk());
+                ss.getDualsDelay(), ss.getDualsBound(), ss.getDualRisk());
 
             // final int cutNum = Parameters.isBendersMultiCut() ? scenarioNum : 0;
             dualsDelay = ss.getDualsDelay();
@@ -326,17 +324,19 @@ public class SubSolverRunnable implements Runnable {
 
             ArrayList<Integer> pathDelays = path.getDelayTimesInMin();
             for (int i = 0; i < pathLegs.size(); ++i) {
-                int index = pathLegs.get(i).getIndex();
+                final int index = pathLegs.get(i).getIndex();
                 totalDelays[index] = pathDelays.get(i);
-                propagatedDelays[index] = totalDelays[index] - primaryDelays[index];
+                final int propagatedDelay = totalDelays[index] - primaryDelays[index];
+                propagatedDelays[index] = propagatedDelay;
             }
         }
 
-        delaySolution = new DelaySolution(ss.getObjValue(), primaryDelays, totalDelays, propagatedDelays,
-                ss.getdValues());
+        delaySolution = new DelaySolution(ss.getObjValue(), primaryDelays, totalDelays,
+            propagatedDelays, ss.getdValues());
     }
 
-    private HashMap<Integer, Path> getBestPaths(double[][] yValues, HashMap<Integer, ArrayList<Path>> allPaths) {
+    private HashMap<Integer, Path> getBestPaths(
+        double[][] yValues, HashMap<Integer, ArrayList<Path>> allPaths) {
         HashMap<Integer, Path> bestPaths = new HashMap<>();
 
         for (Tail tail : dataRegistry.getTails()) {
@@ -378,7 +378,7 @@ public class SubSolverRunnable implements Runnable {
 
         for (int j = 0; j < legs.size(); j++)
             if (Math.abs(dualsDelay[j]) >= Constants.EPS)
-                scenAlpha += (dualsDelay[j] * Constants.OTP_TIME_LIMIT_IN_MINUTES);
+                scenAlpha += (dualsDelay[j] * randomDelays[j]);
 
         for (double[] dualBnd : dualsBnd)
             if (dualBnd != null)
@@ -391,14 +391,6 @@ public class SubSolverRunnable implements Runnable {
                 scenAlpha += (dualRisk * Parameters.getExcessTarget());
 
         return scenAlpha;
-    }
-
-    public int getIter() {
-        return iter;
-    }
-
-    public int getScenarioNum() {
-        return scenarioNum;
     }
 
     public int getCutNum() {

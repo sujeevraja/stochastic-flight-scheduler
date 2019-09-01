@@ -215,7 +215,7 @@ class Controller:
     def _generate_test_results(orig_cmd):
         cmd = [c for c in orig_cmd]
         cmd.extend([
-            "-parseDelays",
+            # "-parseDelays",
             "-type", "test"])
         subprocess.check_call(cmd)
 

@@ -25,7 +25,6 @@ class SubSolverWrapper {
         this.iter = iter;
         this.uBound = uBound;
         this.pathCaches = pathCaches;
-
     }
 
     BendersData solveSequential(IloCplex cplex) {
@@ -35,17 +34,16 @@ class SubSolverWrapper {
             Scenario scenario = scenarios[i];
             final double probability = scenario.getProbability();
             SubSolverRunnable ssr = new SubSolverRunnable(dataRegistry, iter, i,
-                    probability, reschedules, scenario.getPrimaryDelays(),
+                probability, reschedules, scenario.getPrimaryDelays(),
                 pathCaches[i]);
             ssr.setCplex(cplex);
-            ssr.setBendersData(bendersData);
             ssr.run();
 
             bendersData.updateAlpha(ssr.getCutNum(), ssr.getAlpha(), probability);
             bendersData.updateBeta(ssr.getCutNum(), ssr.getDualsDelay(), probability,
                 ssr.getDualRisk());
             bendersData.setUpperBound(bendersData.getUpperBound() +
-                (ssr.getObjValue()* probability));
+                (ssr.getObjValue() * probability));
         }
         return bendersData;
     }

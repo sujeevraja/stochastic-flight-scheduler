@@ -110,14 +110,16 @@ class PricingProblemSolver {
     /**
      * Runs the forward label setting algorithm to solve the pricing problem for the second-stage.
      * <p>
-     * Using the labels created in "initSourceLabels", this algorithm builds and adds feasible extensions for each
-     * unprcessed label until no more extensions are possible. A label is said to be unprocessed if we have not checked
-     * it for feasible extension. It is processed when we have built all of its possible feasible extensions. This is
-     * marked using the "processed" flag in the Label object. The initial labels and feasible extensions are stored in
-     * the "labels" member. Along the way, this also creates a set of * non-dominated labels that can connect to the
-     * tail's sink port (stored in "sinkLabels"). The non-dominated sink-labels can be used to build and provide paths
-     * with negative reduced cost. These paths can then in turn be * added to the Restricted Master Problem (RMP) of
-     * the second-stage. We will reach optimality if we cannot find any sink label with a negative reduced cost.
+     * Using the labels created in "initSourceLabels", this algorithm builds and adds feasible
+     * extensions for each unprocessed label until no more extensions are possible. A label is
+     * said to be unprocessed if we have not checked it for feasible extension. It is processed
+     * when we have built all of its possible feasible extensions. This is marked using the
+     * "processed" flag in the Label object. The initial labels and feasible extensions are stored
+     * in the "labels" member. Along the way, this also creates a set of * non-dominated labels
+     * that can connect to the tail's sink port (stored in "sinkLabels"). The non-dominated
+     * sink-labels can be used to build and provide paths with negative reduced cost. These paths
+     * can then in turn be added to the Restricted Master Problem (RMP) of the second-stage.
+     * We will reach optimality if we cannot find any sink label with a negative reduced cost.
      */
     private void runLabelSettingAlgorithm() {
         while (!unprocessedLabels.isEmpty()) {
@@ -143,7 +145,6 @@ class PricingProblemSolver {
                 continue;
 
             final int totalDelay = delays[i];
-
             double reducedCost = getReducedCostForLeg(i, totalDelay);
             Label label = new Label(leg, null, totalDelay, reducedCost);
 
@@ -211,19 +212,16 @@ class PricingProblemSolver {
      * @return extended Label object (will be a new object).
      */
     private Label extend(Label label, int legIndex) {
-        Leg nextLeg = legs.get(legIndex);
-        long nextLegDepTime = nextLeg.getDepTime() + delays[legIndex];
-
         Leg prevLeg = legs.get(label.getVertex());
-        long prevLegEndTime = (prevLeg.getArrTime() + label.getTotalDelay() +
-                               prevLeg.getTurnTimeInMin());
+        Leg nextLeg = legs.get(legIndex);
 
-        if (nextLegDepTime < prevLegEndTime)
-            nextLegDepTime = prevLegEndTime;
+        final int slack = ((int) (nextLeg.getDepTime() - prevLeg.getArrTime()) -
+            prevLeg.getTurnTimeInMin());
+        final int propagatedDelay = Math.max(label.getTotalDelay() - slack, 0);
+        final int totalDelay = propagatedDelay + delays[legIndex];
+        final double reducedCost = (label.getReducedCost() +
+            getReducedCostForLeg(legIndex, totalDelay));
 
-        int totalDelay = (int) (nextLegDepTime - nextLeg.getDepTime());
-
-        double reducedCost = label.getReducedCost() + getReducedCostForLeg(legIndex, totalDelay);
         return label.extend(nextLeg, totalDelay, reducedCost);
     }
 
@@ -231,7 +229,7 @@ class PricingProblemSolver {
      * Returns true if label is dominated by any element of labels, false otherwise.
      *
      * @param label  The label we want to add to labels if it is not dominated.
-     * @param labels The labels that we have alredy created/processed.
+     * @param labels The labels that we have already created/processed.
      * @return true if label can be added to labels, false otherwise.
      */
     private boolean canAddTo(Label label, ArrayList<Label> labels) {
@@ -245,17 +243,18 @@ class PricingProblemSolver {
     /**
      * Calculates the reduced cost of the given leg using the provided delay value.
      *
+     * Reduced cost for flight f = - \beta_f - (a_{rf} * \gamma_f)
+     *
      * @param legIndex   position of leg in legs list.
      * @param totalDelay delay time of leg (includes primary and propagated delays).
      * @return reduced cost of leg.
      */
     private double getReducedCostForLeg(int legIndex, int totalDelay) {
-        // reduced cost for flight f = - \beta_f - (a_{rf} * \gamma_f)
         return -(legCoverDuals[legIndex] + (totalDelay * delayLinkDuals[legIndex]));
     }
 
     private boolean limitReached() {
         return columnGenStrategy == Enums.ColumnGenStrategy.FIRST_PATHS &&
-                sinkLabels.size() > Parameters.getNumReducedCostPaths();
+            sinkLabels.size() >= Parameters.getNumReducedCostPaths();
     }
 }

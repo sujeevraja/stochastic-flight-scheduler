@@ -464,8 +464,15 @@ class Controller {
             kpiManager.writeOutput();
 
             if (Parameters.isCheckSolutionQuality()) {
+                // Scenario[] testScenarios = dataRegistry.getDelayScenarios();
                 Scenario[] testScenarios = dataRegistry.getDelayGenerator().generateScenarios(
                     Parameters.getNumTestScenarios());
+
+                // The labeling algorithm only solves the root node LP. Getting the true MIP
+                // solution with labeling needs a proper branch and bound setup. So, we force the
+                // use of full enumeration here.
+                Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.FULL_ENUMERATION);
+
                 QualityChecker qc = new QualityChecker(dataRegistry, testScenarios);
                 qc.compareSolutions(rescheduleSolutions);
             }
