@@ -464,6 +464,7 @@ class Controller {
             kpiManager.writeOutput();
 
             if (Parameters.isCheckSolutionQuality()) {
+                // Scenario[] testScenarios = dataRegistry.getDelayScenarios();
                 Scenario[] testScenarios = dataRegistry.getDelayGenerator().generateScenarios(
                     Parameters.getNumTestScenarios());
 
@@ -472,7 +473,6 @@ class Controller {
                 // use of full enumeration here.
                 Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.FULL_ENUMERATION);
 
-                // Scenario[] testScenarios = dataRegistry.getDelayScenarios();
                 QualityChecker qc = new QualityChecker(dataRegistry, testScenarios);
                 qc.compareSolutions(rescheduleSolutions);
             }

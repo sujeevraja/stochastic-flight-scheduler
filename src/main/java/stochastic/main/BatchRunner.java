@@ -6,6 +6,7 @@ import stochastic.delay.Scenario;
 import stochastic.output.QualityChecker;
 import stochastic.output.RescheduleSolution;
 import stochastic.output.TestKPISet;
+import stochastic.registry.DataRegistry;
 import stochastic.registry.Parameters;
 import stochastic.utility.CSVHelper;
 import stochastic.utility.Enums;
@@ -147,14 +148,15 @@ class BatchRunner {
                 controller.collectRescheduleSolutionsFromFiles();
 
             // prepare test scenarios
+            DataRegistry dataRegistry = controller.getDataRegistry();
             Scenario[] testScenarios;
             if (Parameters.isParsePrimaryDelaysFromFiles()) {
                 controller.buildScenarios();
-                testScenarios = controller.getDataRegistry().getDelayScenarios();
+                testScenarios = dataRegistry.getDelayScenarios();
             }
             else {
                 controller.setDelayGenerator();
-                testScenarios = controller.getDataRegistry().getDelayGenerator().generateScenarios(
+                testScenarios = dataRegistry.getDelayGenerator().generateScenarios(
                     Parameters.getNumTestScenarios());
             }
 

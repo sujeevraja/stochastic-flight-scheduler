@@ -88,9 +88,8 @@ class PathEnumerator {
 
                 Leg neighborLeg = legs.get(neighborIndex);
 
-                int slack = (int) (neighborLeg.getDepTime() - leg.getArrTime());
-                slack -= leg.getTurnTimeInMin();
-
+                final int slack = ((int) (neighborLeg.getDepTime() - leg.getArrTime()) -
+                    leg.getTurnTimeInMin());
                 final int propagatedDelay = Math.max(0, delayTimeInMin - slack);
                 final int totalDelay = propagatedDelay + delays[neighborIndex];
                 depthFirstSearch(neighborIndex, totalDelay);
