@@ -44,7 +44,7 @@ public class QualityChecker {
     private void initCplex() throws OptException {
         try {
             this.cplex = new IloCplex();
-            if (!Parameters.isDebugVerbose())
+            if (Parameters.disableCplexOutput())
                 cplex.setOut(null);
         } catch (IloException ex) {
             throw new OptException("error initializing CPLEX for quality checks");
@@ -185,12 +185,10 @@ public class QualityChecker {
         final double numTestScenarios = testScenarios.length;
         for (int i = 0; i < rescheduleSolutions.size(); ++i) {
             Map<Enums.TestKPI, Double> averageSet = averageKpis.get(i);
-            for (Map.Entry<Enums.TestKPI, Double> entry : averageSet.entrySet())
-                averageSet.put(entry.getKey(), entry.getValue() / numTestScenarios);
+            averageSet.replaceAll((k, v) -> v / numTestScenarios);
 
             Map<Enums.TestKPI, Double> decreaseSet = averageDecreases.get(i);
-            for (Map.Entry<Enums.TestKPI, Double> entry : decreaseSet.entrySet())
-                decreaseSet.put(entry.getKey(), entry.getValue() / numTestScenarios);
+            decreaseSet.replaceAll((k, v) -> v / numTestScenarios);
         }
 
         for (int i = 0; i < rescheduleSolutions.size(); ++i) {

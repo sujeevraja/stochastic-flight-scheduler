@@ -15,14 +15,14 @@ public class Path {
     private final static Logger logger = LogManager.getLogger(Path.class);
     private Tail tail;
     private ArrayList<Leg> legs;
-    private ArrayList<Integer> delayTimesInMin;
+    private ArrayList<Integer> propagatedDelays;
     private static int pathCounter = 0;
     private int index;
 
     public Path(Tail tail) {
         this.tail = tail;
         legs = new ArrayList<>();
-        delayTimesInMin = new ArrayList<>();
+        propagatedDelays = new ArrayList<>();
         index = pathCounter;
         pathCounter++;
     }
@@ -54,7 +54,7 @@ public class Path {
         if (delayTimeInMin == null)
             delayTimeInMin = 0;
 
-        delayTimesInMin.add(delayTimeInMin);
+        propagatedDelays.add(delayTimeInMin);
     }
 
     public Tail getTail() {
@@ -69,15 +69,7 @@ public class Path {
         return index;
     }
 
-    public ArrayList<Integer> getDelayTimesInMin() {
-        return delayTimesInMin;
-    }
-
-    public void print() {
-        logger.info("Path for tail " + tail.getId());
-        for (int i = 0; i < legs.size(); ++i) {
-            logger.info(legs.get(i));
-            logger.info("delay time in minutes: " + delayTimesInMin.get(i));
-        }
+    public ArrayList<Integer> getPropagatedDelays() {
+        return propagatedDelays;
     }
 }

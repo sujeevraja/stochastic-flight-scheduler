@@ -18,8 +18,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static java.lang.Math.max;
-
 public class NaiveSolver {
     /**
      * This class builds a naive rescheduling solution (i.e. solution to Benders first stage).
@@ -79,7 +77,7 @@ public class NaiveSolver {
     private void solveModel() throws IloException {
         cplex = new IloCplex();
         cplex.setParam(IloCplex.Param.MIP.Tolerances.MIPGap, Constants.CPLEX_MIP_GAP);
-        if (!Parameters.isDebugVerbose())
+        if (Parameters.disableCplexOutput())
             cplex.setOut(null);
 
         ArrayList<Leg> legs = dataRegistry.getLegs();
@@ -136,12 +134,10 @@ public class NaiveSolver {
 
             if (i < originalRoute.size() - 1) {
                 Leg nextLeg = originalRoute.get(i + 1);
-                int slack = (int) (nextLeg.getDepTime() - currLeg.getArrTime());
-                slack -= currLeg.getTurnTimeInMin();
+                final int slack = SolverUtility.getSlack(currLeg, nextLeg);
                 addConnectivityConstraint(currLeg, nextLeg, slack);
-                propagatedDelay = max(
-                    propagatedDelay + expectedDelays[currLeg.getIndex()] - slack,
-                    0);
+                propagatedDelay = SolverUtility.getPropagatedDelay(currLeg, nextLeg,
+                    propagatedDelay + expectedDelays[currLeg.getIndex()]);
             }
         }
     }

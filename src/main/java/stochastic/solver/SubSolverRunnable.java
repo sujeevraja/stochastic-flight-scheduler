@@ -82,11 +82,11 @@ public class SubSolverRunnable implements Runnable {
             logger.info("solved scenario " + scenarioNum);
         } catch (IloException ie) {
             logger.error(ie);
-            logger.error("CPLEX error solving subproblem");
+            logger.error("CPLEX error solving sub-problem");
             System.exit(Constants.ERROR_CODE);
         } catch (OptException oe) {
             logger.error(oe);
-            logger.error("algo error solving subproblem");
+            logger.error("algorithm error solving sub-problem");
             System.exit(Constants.ERROR_CODE);
         }
     }
@@ -101,7 +101,7 @@ public class SubSolverRunnable implements Runnable {
             HashMap<Integer, ArrayList<Path>> tailPathsMap = SolverUtility.getPathsForFullEnum(
                 allPaths, dataRegistry.getTails());
 
-            SubSolver ss = new SubSolver(scenarioNum, randomDelays, dataRegistry.getTails(),
+            SubSolver ss = new SubSolver(scenarioNum, dataRegistry.getTails(),
                 dataRegistry.getLegs(), reschedules);
 
             ss.setCplex(cplex);
@@ -114,7 +114,7 @@ public class SubSolverRunnable implements Runnable {
                 StringBuilder nameBuilder = new StringBuilder();
                 nameBuilder.append("logs/");
                 if (solveForQuality) {
-                    nameBuilder.append("qual");
+                    nameBuilder.append("quality");
                     if (filePrefix != null) {
                         nameBuilder.append("_");
                         nameBuilder.append(filePrefix);
@@ -140,8 +140,8 @@ public class SubSolverRunnable implements Runnable {
                 buildDelaySolution(ss, randomDelays, tailPathsMap);
             } else {
                 ss.collectDuals();
-                alpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsDelay(),
-                    ss.getDualsBound(), ss.getDualRisk());
+                alpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsBound(),
+                    ss.getDualRisk());
 
                 // final int cutNum = Parameters.isBendersMultiCut() ? scenarioNum : 0;
                 dualsDelay = ss.getDualsDelay();
@@ -160,8 +160,8 @@ public class SubSolverRunnable implements Runnable {
     }
 
     private void solveWithLabeling() throws IloException, OptException {
-        SubSolver ss = new SubSolver(scenarioNum, randomDelays, dataRegistry.getTails(),
-            dataRegistry.getLegs(), reschedules);
+        SubSolver ss = new SubSolver(scenarioNum, dataRegistry.getTails(), dataRegistry.getLegs(),
+            reschedules);
         ss.setCplex(cplex);
 
         // Load on-plan paths with propagated delays.
@@ -261,7 +261,7 @@ public class SubSolverRunnable implements Runnable {
             ss.solve();
 
             if (Parameters.isDebugVerbose()) {
-                String name = "logs/qual_";
+                String name = "logs/quality_";
                 if (filePrefix != null)
                     name += filePrefix + "_";
                 name += iter + "_sub_labeling_mip";
@@ -274,8 +274,8 @@ public class SubSolverRunnable implements Runnable {
             ss.end();
         } else {
             // Update master problem data
-            alpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(),
-                ss.getDualsDelay(), ss.getDualsBound(), ss.getDualRisk());
+            alpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsBound(),
+                ss.getDualRisk());
 
             // final int cutNum = Parameters.isBendersMultiCut() ? scenarioNum : 0;
             dualsDelay = ss.getDualsDelay();
@@ -322,12 +322,12 @@ public class SubSolverRunnable implements Runnable {
             if (pathLegs.isEmpty())
                 continue;
 
-            ArrayList<Integer> pathDelays = path.getDelayTimesInMin();
+            ArrayList<Integer> propagatedDelaysOnPath = path.getPropagatedDelays();
             for (int i = 0; i < pathLegs.size(); ++i) {
                 final int index = pathLegs.get(i).getIndex();
-                totalDelays[index] = pathDelays.get(i);
-                final int propagatedDelay = totalDelays[index] - primaryDelays[index];
-                propagatedDelays[index] = propagatedDelay;
+
+                propagatedDelays[index] = propagatedDelaysOnPath.get(i);
+                totalDelays[index] = propagatedDelays[index] + primaryDelays[index];
             }
         }
 
@@ -362,8 +362,8 @@ public class SubSolverRunnable implements Runnable {
         return bestPaths;
     }
 
-    private double calculateAlpha(double[] dualsLegs, double[] dualsTail, double[] dualsDelay,
-                                  double[][] dualsBnd, double dualRisk) {
+    private double calculateAlpha(double[] dualsLegs, double[] dualsTail, double[][] dualsBnd,
+                                  double dualRisk) {
         ArrayList<Leg> legs = dataRegistry.getLegs();
 
         double scenAlpha = 0;
@@ -375,10 +375,6 @@ public class SubSolverRunnable implements Runnable {
         for (int j = 0; j < dataRegistry.getTails().size(); j++)
             if (Math.abs(dualsTail[j]) >= Constants.EPS)
                 scenAlpha += dualsTail[j];
-
-        for (int j = 0; j < legs.size(); j++)
-            if (Math.abs(dualsDelay[j]) >= Constants.EPS)
-                scenAlpha += (dualsDelay[j] * randomDelays[j]);
 
         for (double[] dualBnd : dualsBnd)
             if (dualBnd != null)

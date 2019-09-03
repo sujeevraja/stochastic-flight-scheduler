@@ -32,6 +32,7 @@ public class Parameters {
 
     private static boolean debugVerbose; // generates additional logging, writes lP files and solutions.
     private static boolean setCplexNames; // adds names to model variables and constraints.
+    private static boolean showCplexOutput;
 
     private static boolean runSecondStageInParallel = false;
     private static int numThreadsForSecondStage = 1;
@@ -187,6 +188,14 @@ public class Parameters {
 
     public static boolean isSetCplexNames() {
         return setCplexNames;
+    }
+
+    public static void setShowCplexOutput(boolean showCplexOutput) {
+        Parameters.showCplexOutput = showCplexOutput;
+    }
+
+    public static boolean disableCplexOutput() {
+        return !showCplexOutput;
     }
 
     public static void setRunSecondStageInParallel(boolean runSecondStageInParallel) {

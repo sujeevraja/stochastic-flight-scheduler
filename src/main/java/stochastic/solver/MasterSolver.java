@@ -39,7 +39,7 @@ public class MasterSolver {
 
         cplex = new IloCplex();
         cplex.setParam(IloCplex.Param.MIP.Tolerances.MIPGap, Constants.CPLEX_MIP_GAP);
-        if (!Parameters.isDebugVerbose())
+        if (Parameters.disableCplexOutput())
             cplex.setOut(null);
 
         masterModelBuilder = new MasterModelBuilder(legs, tails, budget, cplex);

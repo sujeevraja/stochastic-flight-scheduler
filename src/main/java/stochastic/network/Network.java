@@ -4,7 +4,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import stochastic.domain.Leg;
 import stochastic.domain.Tail;
-import stochastic.utility.OptException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,8 +38,7 @@ public class Network {
         logger.info("total number of paths: " + totalNumPaths);
     }
 
-    public ArrayList<Path> enumeratePathsForTails(ArrayList<Tail> tails, int[] delays)
-        throws OptException {
+    public ArrayList<Path> enumeratePathsForTails(ArrayList<Tail> tails, int[] delays) {
         ArrayList<Path> paths = new ArrayList<>();
         for (Tail tail : tails) {
             PathEnumerator pe = new PathEnumerator(tail, legs, delays, adjacencyList);

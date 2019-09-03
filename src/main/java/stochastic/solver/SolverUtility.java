@@ -12,8 +12,7 @@ import java.util.Map;
 public class SolverUtility {
     /**
      * Generates a map that contains two paths for each tail: an empty path with no legs and a path
-     * that has the original plan with leg delays adjusted to be the maximum of primary and
-     * propagated delays.
+     * that has the original plan with propagated delays based on the given primary delays.
      *
      * @param tailHashMap     map to retrieve tails using tail ids.
      * @param originalPathMap map with original path of each tail (indexed by id).
@@ -43,18 +42,17 @@ public class SolverUtility {
             ArrayList<Leg> pathLegs = origPath.getLegs();
 
             int propagatedDelay = 0;
+            int prevPrimaryDelay = 0;
+            Leg prevLeg = null;
             for (int i = 0; i < pathLegs.size(); ++i) {
                 Leg leg = pathLegs.get(i);
-                final int primaryDelay = primaryDelays[leg.getIndex()];
-                pathWithDelays.addLeg(leg, propagatedDelay + primaryDelay);
-
-                // Compute delay propagation to next leg on path.
-                if (i < pathLegs.size() - 1) {
-                    Leg nextLeg = pathLegs.get(i + 1);
-                    int slack = (int) (nextLeg.getDepTime() - leg.getArrTime());
-                    slack -= leg.getTurnTimeInMin();
-                    propagatedDelay = Math.max(propagatedDelay + primaryDelay - slack, 0);
+                if (i > 0) {
+                    propagatedDelay = SolverUtility.getPropagatedDelay(prevLeg, leg,
+                        propagatedDelay + prevPrimaryDelay);
                 }
+                pathWithDelays.addLeg(leg, propagatedDelay);
+                prevLeg = leg;
+                prevPrimaryDelay = primaryDelays[leg.getIndex()];
             }
 
             ArrayList<Path> tailPaths = new ArrayList<>();
@@ -76,5 +74,20 @@ public class SolverUtility {
             tailPathsMap.get(p.getTail().getId()).add(p);
 
         return tailPathsMap;
+    }
+
+    static int getSlack(Leg incomingLeg, Leg outgoingLeg) {
+        int slack = (int) (outgoingLeg.getDepTime() - incomingLeg.getArrTime());
+        return slack - incomingLeg.getTurnTimeInMin();
+    }
+
+    public static int getPropagatedDelay(Leg incomingLeg, Leg outgoingLeg, int totalIncomingDelay) {
+        final int slack = getSlack(incomingLeg, outgoingLeg);
+        return Math.max(0, totalIncomingDelay - slack);
+    }
+
+    static double getPropagatedDelay(Leg incomingLeg, Leg outgoingLeg, double totalIncomingDelay) {
+        final int slack = getSlack(incomingLeg, outgoingLeg);
+        return Math.max(0.0, totalIncomingDelay - slack);
     }
 }

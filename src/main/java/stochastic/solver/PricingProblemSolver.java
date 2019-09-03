@@ -24,7 +24,7 @@ class PricingProblemSolver {
     private ArrayList<Leg> legs;
     private int numLegs;
     private Network network;
-    private int[] delays; // delays[i] = total departure delay of legs[i] (a_{rf} in paper)
+    private int[] primaryDelays; // delays[i] = total departure delay of legs[i] (a_{rf} in paper)
 
     // Dual values fromm latest solution of Second Stage Restricted Master Problem.
     private double tailDual; // \mu in paper, free
@@ -36,7 +36,7 @@ class PricingProblemSolver {
     private ArrayList<Label> sinkLabels; // labels ending at sink node.
     private PriorityQueue<Label> unprocessedLabels;
 
-    PricingProblemSolver(Tail tail, ArrayList<Leg> legs, Network network, int[] delays,
+    PricingProblemSolver(Tail tail, ArrayList<Leg> legs, Network network, int[] primaryDelays,
                          double tailDual, double[] legCoverDuals, double[] delayLinkDuals) {
         this.columnGenStrategy = Parameters.getColumnGenStrategy();
         this.numReducedCostPaths = Parameters.getNumReducedCostPaths();
@@ -45,7 +45,7 @@ class PricingProblemSolver {
         this.legs = legs;
         this.numLegs = legs.size();
         this.network = network;
-        this.delays = delays;
+        this.primaryDelays = primaryDelays;
 
         this.tailDual = tailDual;
         this.legCoverDuals = legCoverDuals;
@@ -96,7 +96,7 @@ class PricingProblemSolver {
 
         while (label != null) {
             pathLegs.add(label.getLeg());
-            pathDelays.add(label.getTotalDelay());
+            pathDelays.add(label.getPropagatedDelay());
             label = label.getPredecessor();
         }
 
@@ -135,8 +135,9 @@ class PricingProblemSolver {
     }
 
     /**
-     * Creates initial labels for flights that can connect to the given tail's source port. These labels will be used
-     * to build feasible extensions in "runLabelSettingAlgorithm()".
+     * Creates initial labels for flights that can connect to the given tail's source port.
+     *
+     * These labels will be used to build feasible extensions in "runLabelSettingAlgorithm()".
      */
     private void initSourceLabels() {
         for (int i = 0; i < numLegs; ++i) {
@@ -144,9 +145,8 @@ class PricingProblemSolver {
             if (!tail.getSourcePort().equals(leg.getDepPort()))
                 continue;
 
-            final int totalDelay = delays[i];
-            double reducedCost = getReducedCostForLeg(i, totalDelay);
-            Label label = new Label(leg, null, totalDelay, reducedCost);
+            double reducedCost = getReducedCostForLeg(i, 0);
+            Label label = new Label(leg, null, 0, reducedCost);
 
             ArrayList<Label> legLabels = labels.get(i);
             if (!canAddTo(label, legLabels))
@@ -214,15 +214,13 @@ class PricingProblemSolver {
     private Label extend(Label label, int legIndex) {
         Leg prevLeg = legs.get(label.getVertex());
         Leg nextLeg = legs.get(legIndex);
+        final int propagatedDelay = SolverUtility.getPropagatedDelay( prevLeg, nextLeg,
+            label.getPropagatedDelay() + primaryDelays[prevLeg.getIndex()]);
 
-        final int slack = ((int) (nextLeg.getDepTime() - prevLeg.getArrTime()) -
-            prevLeg.getTurnTimeInMin());
-        final int propagatedDelay = Math.max(label.getTotalDelay() - slack, 0);
-        final int totalDelay = propagatedDelay + delays[legIndex];
         final double reducedCost = (label.getReducedCost() +
-            getReducedCostForLeg(legIndex, totalDelay));
+            getReducedCostForLeg(legIndex, propagatedDelay));
 
-        return label.extend(nextLeg, totalDelay, reducedCost);
+        return label.extend(nextLeg, propagatedDelay, reducedCost);
     }
 
     /**
@@ -246,11 +244,11 @@ class PricingProblemSolver {
      * Reduced cost for flight f = - \beta_f - (a_{rf} * \gamma_f)
      *
      * @param legIndex   position of leg in legs list.
-     * @param totalDelay delay time of leg (includes primary and propagated delays).
+     * @param propagatedDelay delay time of leg (includes primary and propagated delays).
      * @return reduced cost of leg.
      */
-    private double getReducedCostForLeg(int legIndex, int totalDelay) {
-        return -(legCoverDuals[legIndex] + (totalDelay * delayLinkDuals[legIndex]));
+    private double getReducedCostForLeg(int legIndex, int propagatedDelay) {
+        return -(legCoverDuals[legIndex] + (propagatedDelay * delayLinkDuals[legIndex]));
     }
 
     private boolean limitReached() {

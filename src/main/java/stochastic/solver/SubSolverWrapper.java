@@ -79,7 +79,7 @@ class SubSolverWrapper {
     static void initActorManager() {
         actorManager = new ActorManager();
         actorManager.createActors(Parameters.getNumThreadsForSecondStage(),
-            !Parameters.isDebugVerbose());
+            Parameters.disableCplexOutput());
     }
 
     static void clearActorManager() {

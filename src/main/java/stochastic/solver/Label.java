@@ -13,14 +13,14 @@ class Label implements Comparable<Label> {
     /**
      * Sum of primary and propagated delay on incident leg, i.e. last leg on partial path.
      */
-    private int totalDelay;
+    private int propagatedDelay;
     private double reducedCost;
 
-    Label(Leg leg, Label predecessor, int totalDelay, double reducedCost) {
+    Label(Leg leg, Label predecessor, int propagatedDelay, double reducedCost) {
         this.leg = leg;
         this.vertex = leg.getIndex();
         this.predecessor = predecessor;
-        this.totalDelay = totalDelay;
+        this.propagatedDelay = propagatedDelay;
         this.reducedCost = reducedCost;
     }
 
@@ -28,7 +28,7 @@ class Label implements Comparable<Label> {
         this.leg = other.leg;
         this.vertex = other.vertex;
         this.predecessor = other.predecessor;
-        this.totalDelay = other.totalDelay;
+        this.propagatedDelay = other.propagatedDelay;
         this.reducedCost = other.reducedCost;
     }
 
@@ -49,8 +49,8 @@ class Label implements Comparable<Label> {
         return predecessor;
     }
 
-    int getTotalDelay() {
-        return totalDelay;
+    int getPropagatedDelay() {
+        return propagatedDelay;
     }
 
     void setReducedCost(double reducedCost) {
@@ -93,10 +93,10 @@ class Label implements Comparable<Label> {
             return false;
 
         boolean strict = reducedCost <= other.reducedCost - Constants.EPS;
-        if (totalDelay > other.totalDelay)
+        if (propagatedDelay > other.propagatedDelay)
             return false;
 
-        if (!strict && totalDelay < other.totalDelay)
+        if (!strict && propagatedDelay < other.propagatedDelay)
             strict = true;
 
         return strict;
@@ -107,14 +107,14 @@ class Label implements Comparable<Label> {
         extension.leg = nextLeg;
         extension.vertex = nextLeg.getIndex();
         extension.predecessor = this;
-        extension.totalDelay = totalDelay;
+        extension.propagatedDelay = totalDelay;
         extension.reducedCost = reducedCost;
         return extension;
     }
 
     /**
-     * "compareTo" is used only to populate a priority queue of unprocessed labels such that we always get the least
-     * reduced cost label.
+     * "compareTo" is used only to populate a priority queue of unprocessed labels such that we
+     * always get the least reduced cost label.
      *
      * @param other label to compare "this" with.
      * @return 1 if this has a lower reduced cost than other, 0 if equal and 1 otherwise.
