@@ -4,6 +4,7 @@ import stochastic.output.QualityChecker;
 import stochastic.output.RescheduleSolution;
 import stochastic.output.TestKPISet;
 import stochastic.registry.DataRegistry;
+import stochastic.registry.Parameters;
 import stochastic.utility.Enums;
 import stochastic.utility.OptException;
 
@@ -24,9 +25,13 @@ public class UpperBoundSolver {
     }
 
     public final double findUpperBound() throws OptException {
+        Enums.ColumnGenStrategy originalStrategy = Parameters.getColumnGenStrategy();
+        Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.FULL_ENUMERATION);
         QualityChecker qc = new QualityChecker(dataRegistry, dataRegistry.getDelayScenarios());
         TestKPISet averageKPISet = qc.collectAverageTestStatsForBatchRun(
             new ArrayList<>(Collections.singletonList(rescheduleSolution)))[0];
-        return rescheduleSolution.getRescheduleCost() + averageKPISet.getKpi(Enums.TestKPI.delayCost);
+        Parameters.setColumnGenStrategy(originalStrategy);
+        return rescheduleSolution.getRescheduleCost() + averageKPISet.getKpi(
+            Enums.TestKPI.delayCost);
     }
 }

@@ -243,6 +243,10 @@ class Controller {
                 bendersGlobalUpperBound) * 100.0;
             bendersNumIterations = bendersSolver.getIteration();
             bendersNumCuts = bendersSolver.getNumBendersCuts();
+
+            logger.debug("Benders global upper bound: " + bendersGlobalUpperBound);
+            logger.debug("Benders global optimality gap: " +
+                String.format("%.2f", bendersOptimalityGap) + " %");
         } catch (IloException ex) {
             logger.error(ex);
             throw new OptException("CPLEX error in Benders");
