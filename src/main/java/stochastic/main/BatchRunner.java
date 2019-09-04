@@ -89,7 +89,9 @@ class BatchRunner {
                 trainingResult.setBendersSolutionTime(controller.getBendersSolutionTime());
                 trainingResult.setBendersLowerBound(controller.getBendersLowerBound());
                 trainingResult.setBendersUpperBound(controller.getBendersUpperBound());
+                trainingResult.setBendersGlobalUpperBound(controller.getBendersGlobalUpperBound());
                 trainingResult.setBendersGap(controller.getBendersGap());
+                trainingResult.setBendersOptimalityGap(controller.getBendersOptimalityGap());
                 trainingResult.setBendersNumCuts(controller.getBendersNumCuts());
                 trainingResult.setBendersNumIterations(controller.getBendersNumIterations());
             }
@@ -227,7 +229,9 @@ class BatchRunner {
                         "Benders solution time (seconds)",
                         "Benders lower bound",
                         "Benders upper bound",
-                        "Benders gap",
+                        "Benders global upper bound",
+                        "Benders gap (%)",
+                        "Benders optimality gap (%)",
                         "Benders number of cuts",
                         "Benders number of iterations"));
                 CSVHelper.writeLine(trainingWriter, headers);
@@ -251,7 +255,9 @@ class BatchRunner {
             row.add(Double.toString(controller.getBendersSolutionTime()));
             row.add(Double.toString(controller.getBendersLowerBound()));
             row.add(Double.toString(controller.getBendersUpperBound()));
+            row.add(Double.toString(controller.getBendersGlobalUpperBound()));
             row.add(Double.toString(controller.getBendersGap()));
+            row.add(Double.toString(controller.getBendersOptimalityGap()));
             row.add(Double.toString(controller.getBendersNumCuts()));
             row.add(Integer.toString(controller.getBendersNumIterations()));
 

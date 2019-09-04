@@ -25,7 +25,9 @@ class TrainingResult implements Serializable {
     private Double bendersSolutionTime;
     private Double bendersLowerBound;
     private Double bendersUpperBound;
+    private Double bendersGlobalUpperBound;
     private Double bendersGap;
+    private Double bendersOptimalityGap;
     private Integer bendersNumCuts;
     private Integer bendersNumIterations;
 
@@ -87,6 +89,14 @@ class TrainingResult implements Serializable {
         this.bendersUpperBound = bendersUpperBound;
     }
 
+    void setBendersGlobalUpperBound(Double bendersGlobalUpperBound) {
+        this.bendersGlobalUpperBound = bendersGlobalUpperBound;
+    }
+
+    void setBendersOptimalityGap(double bendersOptimalityGap) {
+        this.bendersOptimalityGap = bendersOptimalityGap;
+    }
+
     void setDepModelStats(ModelStats depModelStats) {
         this.depModelStats = depModelStats;
     }
@@ -132,7 +142,9 @@ class TrainingResult implements Serializable {
             && bendersSolutionTime != null
             && bendersLowerBound != null
             && bendersUpperBound != null
+            && bendersGlobalUpperBound != null
             && bendersGap != null
+            && bendersOptimalityGap != null
             && bendersNumCuts != null
             && bendersNumIterations != null;
     }
@@ -162,7 +174,9 @@ class TrainingResult implements Serializable {
                 "Benders solution time (seconds)",
                 "Benders lower bound",
                 "Benders upper bound",
-                "Benders gap",
+                "Benders global upper bound",
+                "Benders gap (%)",
+                "Benders optimality gap (%)",
                 "Benders number of cuts",
                 "Benders number of iterations"));
     }
@@ -188,7 +202,9 @@ class TrainingResult implements Serializable {
             Double.toString(bendersSolutionTime),
             Double.toString(bendersLowerBound),
             Double.toString(bendersUpperBound),
+            Double.toString(bendersGlobalUpperBound),
             Double.toString(bendersGap),
+            Double.toString(bendersOptimalityGap),
             Integer.toString(bendersNumCuts),
             Integer.toString(bendersNumIterations)));
 
