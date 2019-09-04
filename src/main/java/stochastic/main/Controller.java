@@ -19,6 +19,7 @@ import stochastic.registry.Parameters;
 import stochastic.solver.BendersSolver;
 import stochastic.solver.DepSolver;
 import stochastic.solver.NaiveSolver;
+import stochastic.solver.UpperBoundSolver;
 import stochastic.utility.CSVHelper;
 import stochastic.utility.Enums;
 import stochastic.utility.OptException;
@@ -47,7 +48,9 @@ class Controller {
     private double bendersSolutionTime;
     private double bendersLowerBound;
     private double bendersUpperBound;
+    private double bendersGlobalUpperBound;
     private double bendersGap;
+    private double bendersOptimalityGap;
     private int bendersNumIterations;
     private int bendersNumCuts;
 
@@ -233,9 +236,17 @@ class Controller {
             bendersSolutionTime = bendersSolver.getSolutionTime();
             bendersLowerBound = bendersSolver.getLowerBound();
             bendersUpperBound = bendersSolver.getUpperBound();
+            bendersGlobalUpperBound = (
+                new UpperBoundSolver(dataRegistry, bendersSolution)).findUpperBound();
             bendersGap = bendersSolver.getPercentGap();
+            bendersOptimalityGap = ((bendersGlobalUpperBound - bendersLowerBound) /
+                bendersGlobalUpperBound) * 100.0;
             bendersNumIterations = bendersSolver.getIteration();
             bendersNumCuts = bendersSolver.getNumBendersCuts();
+
+            logger.debug("Benders global upper bound: " + bendersGlobalUpperBound);
+            logger.debug("Benders global optimality gap: " +
+                String.format("%.2f", bendersOptimalityGap) + " %");
         } catch (IloException ex) {
             logger.error(ex);
             throw new OptException("CPLEX error in Benders");
@@ -259,6 +270,14 @@ class Controller {
 
     final double getBendersUpperBound() {
         return bendersUpperBound;
+    }
+
+    final double getBendersGlobalUpperBound() {
+        return bendersGlobalUpperBound;
+    }
+
+    final double getBendersOptimalityGap() {
+        return bendersOptimalityGap;
     }
 
     final double getBendersGap() {
