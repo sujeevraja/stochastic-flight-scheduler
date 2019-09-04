@@ -22,7 +22,6 @@ public class SubSolver {
      */
     private static final Logger logger = LogManager.getLogger(SubSolver.class);
     private int scenarioNum;
-    private int[] randomDelays; // randomDelays[i] is the primary delay of legs[i].
     private ArrayList<Tail> tails;
     private ArrayList<Leg> legs;
     private int[] reschedules;  // reschedules[i] is the first-stage reschedule chosen for legs[i].
@@ -41,9 +40,8 @@ public class SubSolver {
     private double[][] dualsBound;
     private double dualRisk;
 
-    SubSolver(int scenarioNum, int[] randomDelays, ArrayList<Tail> tails, ArrayList<Leg> legs, int[] reschedules) {
+    SubSolver(int scenarioNum, ArrayList<Tail> tails, ArrayList<Leg> legs, int[] reschedules) {
         this.scenarioNum = scenarioNum;
-        this.randomDelays = randomDelays;
         this.tails = tails;
         this.legs = legs;
         this.reschedules = reschedules;
@@ -60,7 +58,7 @@ public class SubSolver {
 
     void constructSecondStage(HashMap<Integer, ArrayList<Path>> paths) throws OptException {
         try {
-            subModelBuilder = new SubModelBuilder(scenarioNum, randomDelays, legs, tails, paths, cplex);
+            subModelBuilder = new SubModelBuilder(scenarioNum, legs, tails, paths, cplex);
 
             IloLinearNumExpr objExpr = cplex.linearNumExpr();
             subModelBuilder.buildObjective(objExpr, null);
@@ -95,7 +93,7 @@ public class SubSolver {
             objValue = cplex.getObjValue();
         } catch (IloException ie) {
             logger.error(ie);
-            throw new OptException("error solving subproblem");
+            throw new OptException("error solving sub-problem");
         }
     }
 

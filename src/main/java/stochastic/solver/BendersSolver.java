@@ -99,7 +99,7 @@ public class BendersSolver {
         cacheOnPlanPathsForSecondStage();
 
         subCplex = new IloCplex();
-        if (!Parameters.isDebugVerbose())
+        if (Parameters.disableCplexOutput())
             subCplex.setOut(null);
 
         if (Parameters.isRunSecondStageInParallel())

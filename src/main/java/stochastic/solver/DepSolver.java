@@ -30,21 +30,22 @@ public class DepSolver {
     private RescheduleSolution depSolution;
     private ModelStats modelStats;
 
-    public DepSolver() {}
+    public DepSolver() {
+    }
 
     public void solve(DataRegistry dataRegistry) throws OptException {
         try {
             logger.info("starting DEP...");
             IloCplex cplex = new IloCplex();
             // cplex.setParam(IloCplex.Param.MIP.Tolerances.MIPGap, Constants.CPLEX_MIP_GAP);
-            if (!Parameters.isDebugVerbose())
+            if (Parameters.disableCplexOutput())
                 cplex.setOut(null);
 
             // master model
             ArrayList<Leg> legs = dataRegistry.getLegs();
             ArrayList<Tail> tails = dataRegistry.getTails();
             MasterModelBuilder masterModelBuilder = new MasterModelBuilder(legs, tails,
-                    dataRegistry.getRescheduleTimeBudget(), cplex);
+                dataRegistry.getRescheduleTimeBudget(), cplex);
 
             masterModelBuilder.buildVariables();
 
@@ -58,13 +59,13 @@ public class DepSolver {
             for (int i = 0; i < scenarios.length; ++i) {
                 Scenario s = scenarios[i];
                 ArrayList<Path> allPaths = dataRegistry.getNetwork().enumeratePathsForTails(
-                        tails, s.getPrimaryDelays());
+                    tails, s.getPrimaryDelays());
 
                 HashMap<Integer, ArrayList<Path>> tailPathsMap = SolverUtility.getPathsForFullEnum(
                     allPaths, tails);
 
-                SubModelBuilder subModelBuilder = new SubModelBuilder(
-                    i, s.getPrimaryDelays(), legs, tails, tailPathsMap, cplex);
+                SubModelBuilder subModelBuilder = new SubModelBuilder(i, legs, tails, tailPathsMap,
+                    cplex);
                 subModelBuilder.buildObjective(objExpr, s.getProbability());
                 subModelBuilder.addPathVarsToConstraints();
                 subModelBuilder.updateModelWithFirstStageVars(masterModelBuilder.getX());
@@ -88,7 +89,7 @@ public class DepSolver {
             objValue = cplex.getObjValue();
             logger.info("DEP objective: " + objValue);
             modelStats = new ModelStats(cplex.getNrows(), cplex.getNcols(), cplex.getNNZs(),
-                                        objValue);
+                objValue);
 
             if (Parameters.isDebugVerbose())
                 cplex.writeSolution("logs/dep_solution.xml");
