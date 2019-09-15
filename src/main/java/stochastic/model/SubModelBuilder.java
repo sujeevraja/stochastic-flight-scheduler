@@ -91,9 +91,9 @@ public class SubModelBuilder {
             if (Parameters.isSetCplexNames())
                 v.setName(prefix + "v");
             if (probability != null)
-                objExpr.addTerm(v, probability * Parameters.getRho());
+                objExpr.addTerm(v, probability * Parameters.getRiskAversion());
             else
-                objExpr.addTerm(v, Parameters.getRho());
+                objExpr.addTerm(v, Parameters.getRiskAversion());
         }
     }
 
