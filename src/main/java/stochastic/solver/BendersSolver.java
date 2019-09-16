@@ -11,6 +11,7 @@ import stochastic.output.RescheduleSolution;
 import stochastic.registry.DataRegistry;
 import stochastic.registry.Parameters;
 import stochastic.utility.CSVHelper;
+import stochastic.utility.Constants;
 import stochastic.utility.OptException;
 
 import java.io.BufferedWriter;
@@ -201,13 +202,17 @@ public class BendersSolver {
         logger.info("----- iteration: " + iteration);
         logger.info("----- lower bound: " + lowerBound);
         logger.info("----- upper bound: " + upperBound);
-        logger.info("----- upper bound from subsolver: " + bendersData.getUpperBound());
+        logger.info("----- upper bound from sub-solver: " + bendersData.getUpperBound());
 
         if (bendersData.getUpperBound() < upperBound)
             upperBound = bendersData.getUpperBound();
 
         logger.info("----- updated upper bound: " + upperBound);
         logger.info("----- number of cuts added: " + numBendersCuts);
+
+        if (upperBound <= lowerBound - Constants.EPS) {
+            throw new OptException("upper bound strictly less than lower bound");
+        }
     }
 
     private boolean isCutEffective(BendersCut cut, double[] xValues, Double thetaValue) {

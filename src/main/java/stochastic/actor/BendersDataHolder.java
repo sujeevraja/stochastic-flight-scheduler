@@ -31,19 +31,16 @@ public class BendersDataHolder extends AbstractActor {
     static class UpdateCut {
         private final int cutNum;
         private final double alpha;
+        private final double[] beta;
         private final double objValue;
         private final double probability;
-        private double[] dualsDelay;
-        private Double dualRisk;
 
-        UpdateCut(int cutNum, double alpha, double objValue, double probability,
-                  double[] dualsDelay, Double dualsRisk) {
+        UpdateCut(int cutNum, double alpha, double[] beta, double objValue, double probability) {
             this.cutNum = cutNum;
             this.alpha = alpha;
+            this.beta = beta;
             this.objValue = objValue;
             this.probability = probability;
-            this.dualsDelay = dualsDelay;
-            this.dualRisk = dualsRisk;
         }
     }
     static class Done {}
@@ -69,8 +66,7 @@ public class BendersDataHolder extends AbstractActor {
 
     private void handle(UpdateCut updateCut) {
         bendersData.updateAlpha(updateCut.cutNum, updateCut.alpha, updateCut.probability);
-        bendersData.updateBeta(updateCut.cutNum, updateCut.dualsDelay, updateCut.probability,
-            updateCut.dualRisk);
+        bendersData.updateBeta(updateCut.cutNum, updateCut.beta,  updateCut.probability);
         bendersData.setUpperBound(bendersData.getUpperBound() +
             (updateCut.objValue * updateCut.probability));
         ++numScenariosProcessed;

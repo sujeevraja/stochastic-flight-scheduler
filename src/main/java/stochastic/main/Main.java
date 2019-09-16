@@ -46,6 +46,7 @@ public class Main {
                 singleRun();
         } catch (OptException ex) {
             logger.error(ex);
+            ex.printStackTrace();
         }
     }
 

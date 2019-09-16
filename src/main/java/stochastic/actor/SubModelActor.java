@@ -52,10 +52,9 @@ public class SubModelActor extends AbstractActor {
         BendersDataHolder.UpdateCut updateCut = new BendersDataHolder.UpdateCut(
             subSolverRunnable.getCutNum(),
             subSolverRunnable.getAlpha(),
+            subSolverRunnable.getBeta(),
             subSolverRunnable.getObjValue(),
-            subSolverRunnable.getProbability(),
-            subSolverRunnable.getDualsDelay(),
-            subSolverRunnable.getDualRisk());
+            subSolverRunnable.getProbability());
         bendersDataHolder.tell(updateCut, getSelf());
     }
 }
