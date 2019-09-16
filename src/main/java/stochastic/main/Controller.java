@@ -236,13 +236,14 @@ class Controller {
             bendersSolutionTime = bendersSolver.getSolutionTime();
             bendersLowerBound = bendersSolver.getLowerBound();
             bendersUpperBound = bendersSolver.getUpperBound();
+            bendersNumIterations = bendersSolver.getIteration();
+            bendersNumCuts = bendersSolver.getNumBendersCuts();
+
             bendersGlobalUpperBound = (
                 new UpperBoundSolver(dataRegistry, bendersSolution)).findUpperBound();
             bendersGap = bendersSolver.getPercentGap();
             bendersOptimalityGap = ((bendersGlobalUpperBound - bendersLowerBound) /
                 bendersGlobalUpperBound) * 100.0;
-            bendersNumIterations = bendersSolver.getIteration();
-            bendersNumCuts = bendersSolver.getNumBendersCuts();
 
             logger.debug("Benders global upper bound: " + bendersGlobalUpperBound);
             logger.debug("Benders global optimality gap: " +

@@ -43,7 +43,7 @@ public class Parameters {
 
     // Parameters for expected excess formulation
     private static boolean expectedExcess;
-    private static double rho;
+    private static double riskAversion;
     private static double excessTarget;
 
     public static void setInstancePath(String instancePath) {
@@ -238,12 +238,12 @@ public class Parameters {
         return expectedExcess;
     }
 
-    public static void setRho(double rho) {
-        Parameters.rho = rho;
+    public static void setRiskAversion(double riskAversion) {
+        Parameters.riskAversion = riskAversion;
     }
 
-    public static double getRho() {
-        return rho;
+    public static double getRiskAversion() {
+        return riskAversion;
     }
 
     public static void setExcessTarget(double excessTarget) {

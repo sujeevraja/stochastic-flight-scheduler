@@ -46,6 +46,7 @@ public class SubSolver {
         this.legs = legs;
         this.reschedules = reschedules;
         solveAsMIP = false;
+        dualRisk = 0.0;
     }
 
     void setSolveAsMIP() {

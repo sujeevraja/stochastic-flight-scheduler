@@ -91,9 +91,9 @@ public class SubModelBuilder {
             if (Parameters.isSetCplexNames())
                 v.setName(prefix + "v");
             if (probability != null)
-                objExpr.addTerm(v, probability * Parameters.getRho());
+                objExpr.addTerm(v, probability * Parameters.getRiskAversion());
             else
-                objExpr.addTerm(v, Parameters.getRho());
+                objExpr.addTerm(v, Parameters.getRiskAversion());
         }
     }
 
@@ -135,17 +135,17 @@ public class SubModelBuilder {
                 delayRHS[i] += reschedules[i];
 
         if (Parameters.isExpectedExcess()) {
-            double xVal = 0;
-            for (int i = 0; i < numLegs; ++i)
-                if (reschedules[i] > 0)
-                    xVal += reschedules[i] * legs.get(i).getRescheduleCostPerMin();
-
+            double rhs = Parameters.getExcessTarget();
             IloLinearNumExpr riskExpr = cplex.linearNumExpr();
-            for (int i = 0; i < numLegs; i++)
+
+            for (int i = 0; i < numLegs; ++i) {
                 riskExpr.addTerm(z[i], legs.get(i).getDelayCostPerMin());
+                if (reschedules[i] > 0)
+                    rhs -= reschedules[i] * legs.get(i).getRescheduleCostPerMin();
+            }
 
             riskExpr.addTerm(v, -1);
-            riskConstraint = cplex.addLe(riskExpr, Parameters.getExcessTarget() - xVal);
+            riskConstraint = cplex.addLe(riskExpr, rhs);
             if (Parameters.isSetCplexNames())
                 riskConstraint.setName(prefix + "risk");
         }

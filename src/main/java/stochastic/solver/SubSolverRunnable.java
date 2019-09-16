@@ -38,9 +38,8 @@ public class SubSolverRunnable implements Runnable {
 
     // Data used to populate Benders cut.
     private double alpha;
+    private double[] beta;
     private double objValue;
-    private double[] dualsDelay;
-    private Double dualRisk;
 
 
     public SubSolverRunnable(DataRegistry dataRegistry, int iter, int scenarioNum, double probability,
@@ -142,10 +141,7 @@ public class SubSolverRunnable implements Runnable {
                 ss.collectDuals();
                 alpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsBound(),
                     ss.getDualRisk());
-
-                // final int cutNum = Parameters.isBendersMultiCut() ? scenarioNum : 0;
-                dualsDelay = ss.getDualsDelay();
-                dualRisk = Parameters.isExpectedExcess() ? ss.getDualRisk() : null;
+                beta = calculateBeta(ss.getDualsDelay(), ss.getDualRisk());
                 objValue = ss.getObjValue();
             }
 
@@ -230,20 +226,22 @@ public class SubSolverRunnable implements Runnable {
                 }
             }
 
-            // Verify optimality using the feasibility of \pi_f + b_f >= 0 for all flights.
-            double[] delayDuals = ss.getDualsDelay();
-            for (int i = 0; i < legs.size(); ++i) {
-                if (delayDuals[i] + legs.get(i).getDelayCostPerMin() <= -Constants.EPS) {
-                    logger.error("no new paths, but solution not dual feasible");
-                    throw new OptException("invalid optimality in second stage branch and price");
-                }
-            }
-
             // Cleanup CPLEX containers of the SubSolver object.
             if (!optimal)
                 ss.end();
 
             ++columnGenIter;
+        }
+
+        // Verify optimality using the feasibility of \pi_f + e_f(1 - \delta) >= 0 for all flights.
+        double[] delayDuals = ss.getDualsDelay();
+        final double dualRisk = Parameters.isExpectedExcess() ? ss.getDualRisk() : 0.0;
+        for (int i = 0; i < legs.size(); ++i) {
+            final double sum = delayDuals[i] + legs.get(i).getDelayCostPerMin() * (1 - dualRisk);
+            if (sum <= -Constants.EPS) {
+                logger.error("no new paths, but solution not dual feasible");
+                throw new OptException("invalid optimality in second stage branch and price");
+            }
         }
 
         int numPaths = 0;
@@ -276,10 +274,7 @@ public class SubSolverRunnable implements Runnable {
             // Update master problem data
             alpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsBound(),
                 ss.getDualRisk());
-
-            // final int cutNum = Parameters.isBendersMultiCut() ? scenarioNum : 0;
-            dualsDelay = ss.getDualsDelay();
-            dualRisk = Parameters.isExpectedExcess() ? ss.getDualRisk() : null;
+            beta = calculateBeta(ss.getDualsDelay(), ss.getDualRisk());
             objValue = ss.getObjValue();
 
             // cache best paths for each tail
@@ -389,6 +384,19 @@ public class SubSolverRunnable implements Runnable {
         return scenAlpha;
     }
 
+    private double[] calculateBeta(double[] dualsDelay, double dualRisk) {
+        ArrayList<Leg> legs = dataRegistry.getLegs();
+        final int numLegs = legs.size();
+        double[] beta = new double[numLegs];
+        for (int i = 0; i < numLegs; ++i) {
+            beta[i] = Math.abs(dualsDelay[i]) >= Constants.EPS ? (-dualsDelay[i]) : 0.0;
+            if (Math.abs(dualRisk) >= Constants.EPS)
+                beta[i] += dualRisk * legs.get(i).getRescheduleCostPerMin();
+        }
+
+        return beta;
+    }
+
     public int getCutNum() {
         return cutNum;
     }
@@ -397,20 +405,16 @@ public class SubSolverRunnable implements Runnable {
         return alpha;
     }
 
+    public double[] getBeta() {
+        return beta;
+    }
+
     public double getObjValue() {
         return objValue;
     }
 
     public double getProbability() {
         return probability;
-    }
-
-    public double[] getDualsDelay() {
-        return dualsDelay;
-    }
-
-    public Double getDualRisk() {
-        return dualRisk;
     }
 }
 

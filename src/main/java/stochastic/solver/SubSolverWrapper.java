@@ -40,8 +40,7 @@ class SubSolverWrapper {
             ssr.run();
 
             bendersData.updateAlpha(ssr.getCutNum(), ssr.getAlpha(), probability);
-            bendersData.updateBeta(ssr.getCutNum(), ssr.getDualsDelay(), probability,
-                ssr.getDualRisk());
+            bendersData.updateBeta(ssr.getCutNum(), ssr.getBeta(), probability);
             bendersData.setUpperBound(bendersData.getUpperBound() +
                 (ssr.getObjValue() * probability));
         }

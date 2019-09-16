@@ -46,6 +46,7 @@ public class Main {
                 singleRun();
         } catch (OptException ex) {
             logger.error(ex);
+            ex.printStackTrace();
         }
     }
 
@@ -161,10 +162,11 @@ public class Main {
         // Debugging parameter
         Parameters.setDebugVerbose(false); // Set to true to see CPLEX logs, lp files and solution xml files.
         Parameters.setSetCplexNames(false);
+        Parameters.setShowCplexOutput(false);
 
         // Multi-threading parameters
         Parameters.setRunSecondStageInParallel(true);
-        Parameters.setNumThreadsForSecondStage(30);
+        Parameters.setNumThreadsForSecondStage(6);
 
         // Solution quality parameters
         Parameters.setCheckSolutionQuality(true);
@@ -172,7 +174,7 @@ public class Main {
 
         // Expected excess parameters
         Parameters.setExpectedExcess(false);
-        Parameters.setRho(0.9);
+        Parameters.setRiskAversion(0.9);
         Parameters.setExcessTarget(40);
     }
 
@@ -194,7 +196,7 @@ public class Main {
             parameters.put("benders num iterations", Parameters.getNumBendersIterations());
             parameters.put("benders warm start", Parameters.isWarmStartBenders());
             parameters.put("expected excess enabled", Parameters.isExpectedExcess());
-            parameters.put("expected excess rho", Parameters.getRho());
+            parameters.put("expected excess risk aversion", Parameters.getRiskAversion());
             parameters.put("expected excess target", Parameters.getExcessTarget());
             parameters.put("flight pick strategy", Parameters.getFlightPickStrategy().name());
             parameters.put("reschedule time budget fraction", Parameters.getRescheduleBudgetFraction());

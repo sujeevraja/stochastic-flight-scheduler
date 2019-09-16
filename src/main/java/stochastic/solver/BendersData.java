@@ -37,15 +37,12 @@ public class BendersData {
         cut.setAlpha(cut.getAlpha() + (alpha * probability));
     }
 
-    public void updateBeta(int cutNum, double[] dualsDelay, double probability,
-                           Double dualRisk) {
-        double[] beta = cuts.get(cutNum).getBeta();
-        for (int j = 0; j < dualsDelay.length; j++) {
-            if (Math.abs(dualsDelay[j]) >= Constants.EPS)
-                beta[j] += (-dualsDelay[j] * probability);
-
-            if (dualRisk != null && Math.abs(dualRisk) >= Constants.EPS)
-                beta[j] += (dualRisk * probability);
+    public void updateBeta(int cutNum, double[] beta, double probability) {
+        double[] cutBeta = cuts.get(cutNum).getBeta();
+        for (int i = 0; i < cutBeta.length; ++i) {
+            if (Math.abs(beta[i]) >= Constants.EPS) {
+                cutBeta[i] += beta[i] * probability;
+            }
         }
     }
 }
