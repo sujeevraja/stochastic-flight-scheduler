@@ -76,7 +76,7 @@ public class Main {
         options.addOption("path", true, "instance path");
         options.addOption("r", true, "reschedule budget fraction");
         options.addOption("type", true,
-            "type (training/test/time)");
+            "type (benders/training/test)");
         options.addOption("h", false, "help (show options and exit)");
 
         CommandLineParser parser = new DefaultParser();
@@ -109,11 +109,11 @@ public class Main {
             throws OptException {
         BatchRunner batchRunner = new BatchRunner(name);
         switch (runType) {
+            case "benders":
+                batchRunner.bendersRun();
+                break;
             case "test":
                 batchRunner.testRun();
-                break;
-            case "time":
-                batchRunner.bendersRun();
                 break;
             case "training":
                 batchRunner.trainingRun();
