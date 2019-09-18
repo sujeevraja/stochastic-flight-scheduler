@@ -56,6 +56,8 @@ public class Main {
             "batch run (single run otherwise)");
         options.addOption("c", true,
             "column gen strategy (enum/all/best/first)");
+        options.addOption("cache", true,
+            "use column caching (y/n)");
         options.addOption("d", true,
             "distribution (exp/tnorm/lnorm");
         options.addOption("f", true,
@@ -158,6 +160,7 @@ public class Main {
         // Second-stage parameters
         Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.FIRST_PATHS);
         Parameters.setNumReducedCostPaths(10); // ignored for full enumeration
+        Parameters.setUseColumnCaching(true);
 
         // Debugging parameter
         Parameters.setDebugVerbose(false); // Set to true to see CPLEX logs, lp files and solution xml files.
@@ -310,6 +313,11 @@ public class Main {
         if (cmd.hasOption('r')) {
             final double budgetFraction = Double.parseDouble(cmd.getOptionValue('r'));
             Parameters.setRescheduleBudgetFraction(budgetFraction);
+        }
+        if (cmd.hasOption("cache")) {
+            final boolean useCaching = cmd.getOptionValue("cache").equals("y");
+            Parameters.setUseColumnCaching(useCaching);
+            logger.info("use column caches: " + useCaching);
         }
     }
 }

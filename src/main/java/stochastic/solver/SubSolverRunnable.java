@@ -96,9 +96,9 @@ public class SubSolverRunnable implements Runnable {
             ArrayList<Path> allPaths = dataRegistry.getNetwork().enumeratePathsForTails(
                 dataRegistry.getTails(), randomDelays);
 
-            // Store paths for each tail separately. Also add empty paths for each tail.
+            // Store paths for each tail separately.
             HashMap<Integer, ArrayList<Path>> tailPathsMap = SolverUtility.getPathsForFullEnum(
-                allPaths, dataRegistry.getTails());
+                allPaths);
 
             SubSolver ss = new SubSolver(scenarioNum, dataRegistry.getTails(),
                 dataRegistry.getLegs(), reschedules);
@@ -279,7 +279,9 @@ public class SubSolverRunnable implements Runnable {
 
             // cache best paths for each tail
             ss.collectSolution();
-            pathCache.addPaths(getBestPaths(ss.getyValues(), pathsAll));
+            if (Parameters.isUseColumnCaching()) {
+                pathCache.addPaths(getBestPaths(ss.getyValues(), pathsAll));
+            }
             ss.end();
         }
     }

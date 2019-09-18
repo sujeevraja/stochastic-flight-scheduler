@@ -62,7 +62,7 @@ public class DepSolver {
                     tails, s.getPrimaryDelays());
 
                 HashMap<Integer, ArrayList<Path>> tailPathsMap = SolverUtility.getPathsForFullEnum(
-                    allPaths, tails);
+                    allPaths);
 
                 SubModelBuilder subModelBuilder = new SubModelBuilder(i, legs, tails, tailPathsMap,
                     cplex);
