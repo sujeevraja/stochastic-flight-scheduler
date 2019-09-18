@@ -28,7 +28,8 @@ public class Main {
 
             final String name = cmd.hasOption('n')
                 ? cmd.getOptionValue('n')
-                : "instance1";
+                : "20171115022840-v2";
+                // : "instance1";
             String instancePath = cmd.hasOption("path")
                 ? cmd.getOptionValue("path")
                 : ("data/" + name);
@@ -56,6 +57,8 @@ public class Main {
             "batch run (single run otherwise)");
         options.addOption("c", true,
             "column gen strategy (enum/all/best/first)");
+        options.addOption("cache", true,
+            "use column caching (y/n)");
         options.addOption("d", true,
             "distribution (exp/tnorm/lnorm");
         options.addOption("f", true,
@@ -73,7 +76,7 @@ public class Main {
         options.addOption("path", true, "instance path");
         options.addOption("r", true, "reschedule budget fraction");
         options.addOption("type", true,
-            "type (training/test/time)");
+            "type (benders/training/test)");
         options.addOption("h", false, "help (show options and exit)");
 
         CommandLineParser parser = new DefaultParser();
@@ -106,11 +109,11 @@ public class Main {
             throws OptException {
         BatchRunner batchRunner = new BatchRunner(name);
         switch (runType) {
+            case "benders":
+                batchRunner.bendersRun();
+                break;
             case "test":
                 batchRunner.testRun();
-                break;
-            case "time":
-                batchRunner.bendersRun();
                 break;
             case "training":
                 batchRunner.trainingRun();
@@ -122,20 +125,12 @@ public class Main {
 
     private static void singleRun() throws OptException {
         logger.info("Started optimization...");
-
-        if (Parameters.getInstancePath() == null) {
-            // String path = "data/instance1";
-            String path = "data/20171115022840-v2";
-            Parameters.setInstancePath(path);
-        }
-
         Controller controller = new Controller();
         controller.readData();
         controller.setDelayGenerator();
         controller.buildScenarios();
         controller.solve();
         // controller.processSolution();
-
         logger.info("completed optimization.");
     }
 
@@ -158,6 +153,7 @@ public class Main {
         // Second-stage parameters
         Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.FIRST_PATHS);
         Parameters.setNumReducedCostPaths(10); // ignored for full enumeration
+        Parameters.setUseColumnCaching(true);
 
         // Debugging parameter
         Parameters.setDebugVerbose(false); // Set to true to see CPLEX logs, lp files and solution xml files.
@@ -310,6 +306,11 @@ public class Main {
         if (cmd.hasOption('r')) {
             final double budgetFraction = Double.parseDouble(cmd.getOptionValue('r'));
             Parameters.setRescheduleBudgetFraction(budgetFraction);
+        }
+        if (cmd.hasOption("cache")) {
+            final boolean useCaching = cmd.getOptionValue("cache").equals("y");
+            Parameters.setUseColumnCaching(useCaching);
+            logger.info("use column caches: " + useCaching);
         }
     }
 }

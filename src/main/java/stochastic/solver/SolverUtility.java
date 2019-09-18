@@ -5,14 +5,13 @@ import stochastic.domain.Tail;
 import stochastic.network.Path;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 public class SolverUtility {
     /**
-     * Generates a map that contains two paths for each tail: an empty path with no legs and a path
-     * that has the original plan with propagated delays based on the given primary delays.
+     * Generates a map that has the original plan with propagated delays based on the given primary
+     * delays.
      *
      * @param tailHashMap     map to retrieve tails using tail ids.
      * @param originalPathMap map with original path of each tail (indexed by id).
@@ -55,8 +54,9 @@ public class SolverUtility {
                 prevPrimaryDelay = primaryDelays[leg.getIndex()];
             }
 
+            // Don't allow empty paths as they may cause a mismatch between source and sink
+            // stations.
             ArrayList<Path> tailPaths = new ArrayList<>();
-            tailPaths.add(new Path(tail)); // add empty path
             tailPaths.add(pathWithDelays);
             initialPaths.put(tailId, tailPaths);
         }
@@ -64,15 +64,13 @@ public class SolverUtility {
         return initialPaths;
     }
 
-    static HashMap<Integer, ArrayList<Path>> getPathsForFullEnum(
-        ArrayList<Path> paths, ArrayList<Tail> tails) {
+    static HashMap<Integer, ArrayList<Path>> getPathsForFullEnum(ArrayList<Path> paths) {
         HashMap<Integer, ArrayList<Path>> tailPathsMap = new HashMap<>();
-        for (Tail t : tails)
-            tailPathsMap.put(t.getId(), new ArrayList<>(Collections.singletonList(new Path(t))));
-
-        for (Path p : paths)
-            tailPathsMap.get(p.getTail().getId()).add(p);
-
+        for (Path p : paths) {
+            Integer tailId = p.getTail().getId();
+            tailPathsMap.putIfAbsent(tailId, new ArrayList<>());
+            tailPathsMap.get(tailId).add(p);
+        }
         return tailPathsMap;
     }
 

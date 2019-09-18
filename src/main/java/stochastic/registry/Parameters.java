@@ -29,6 +29,7 @@ public class Parameters {
 
     private static Enums.ColumnGenStrategy columnGenStrategy;
     private static int numReducedCostPaths; // number of reduced cost paths to collect in second stage.
+    private static boolean useColumnCaching;
 
     private static boolean debugVerbose; // generates additional logging, writes lP files and solutions.
     private static boolean setCplexNames; // adds names to model variables and constraints.
@@ -172,6 +173,14 @@ public class Parameters {
 
     public static int getNumReducedCostPaths() {
         return numReducedCostPaths;
+    }
+
+    public static void setUseColumnCaching(boolean useColumnCaching) {
+        Parameters.useColumnCaching = useColumnCaching;
+    }
+
+    public static boolean isUseColumnCaching() {
+        return useColumnCaching;
     }
 
     public static void setDebugVerbose(boolean debugVerbose) {

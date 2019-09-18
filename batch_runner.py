@@ -14,6 +14,7 @@ class Config(object):
 
     def __init__(self):
         self.run_budget_set = False
+        self.run_column_caching_set = False
         self.run_mean_set = False
         self.run_parallel_set = False
         self.run_quality_set = False
@@ -60,6 +61,7 @@ class Controller:
             self.config.jar_path, ]
 
         if not (self.config.run_budget_set or
+                self.config.run_column_caching_set or
                 self.config.run_mean_set or
                 self.config.run_parallel_set or
                 self.config.run_quality_set or
@@ -68,6 +70,8 @@ class Controller:
 
         if self.config.run_budget_set:
             self._run_budget_set()
+        if self.config.run_column_caching_set:
+            self._run_column_caching_set()
         if self.config.run_mean_set:
             self._run_mean_set()
         if self.config.run_parallel_set:
@@ -95,6 +99,33 @@ class Controller:
 
         self._clean_delay_files()
         log.info("completed budget comparison runs.")
+
+    def _run_column_caching_set(self):
+        log.info("starting column caching comparison runs...")
+        for name, path in zip(self.config.names, self.config.paths):
+            for _ in range(5):
+                cmd = [c for c in self._base_cmd]
+                cmd.extend([
+                    "-batch",
+                    "-path", path,
+                    "-n", name,
+                    "-type", "benders",
+                    "-parallel", "1", ])
+
+                self._generate_delays(cmd)
+
+                for should_cache in ["y", "n"]:
+                    run_cmd = [c for c in cmd]
+                    run_cmd.extend([
+                        "-parseDelays",
+                        "-model", "benders",
+                        "-cache", should_cache, ])
+
+                    subprocess.check_call(run_cmd)
+                    log.info(f"finished time comparison run for {run_cmd}")
+
+        self._clean_delay_files()
+        log.info("completed time comparison runs.")
 
     def _run_mean_set(self):
         log.info("starting mean comparison runs...")
@@ -141,7 +172,7 @@ class Controller:
                     "-batch",
                     "-path", path,
                     "-n", name,
-                    "-type", "time"])
+                    "-type", "benders", ])
 
                 self._generate_delays(cmd)
 
@@ -168,7 +199,7 @@ class Controller:
                     "-batch",
                     "-path", path,
                     "-n", name,
-                    "-type", "time"])
+                    "-type", "benders"])
 
                 self._generate_delays(cmd)
 
@@ -278,10 +309,11 @@ def handle_command_line():
 
     parser.add_argument("-j", "--jarpath", type=str,
                         help="path to stochastic solver jar")
-
     parser.add_argument("-a", "--all", help="run all sets",
                         action="store_true")
     parser.add_argument("-b", "--budget", help="run budget set",
+                        action="store_true")
+    parser.add_argument("-c", "--caching", help="run column caching set",
                         action="store_true")
     parser.add_argument("-m", "--mean", help="run mean set",
                         action="store_true")
@@ -297,12 +329,14 @@ def handle_command_line():
 
     if args.all:
         config.run_budget_set = True
+        config.run_column_caching_set = True
         config.run_mean_set = True
         config.run_parallel_set = True
         config.run_quality_set = True
         config.run_time_comparison_set = True
     else:
         config.run_budget_set = args.budget
+        config.run_column_caching_set = args.caching
         config.run_mean_set = args.mean
         config.run_parallel_set = args.parallel
         config.run_quality_set = args.quality

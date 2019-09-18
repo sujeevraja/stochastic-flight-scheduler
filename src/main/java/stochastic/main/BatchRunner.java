@@ -224,6 +224,7 @@ class BatchRunner {
                 ArrayList<String> headers = new ArrayList<>(Arrays.asList(
                         "instance",
                         "column strategy",
+                        "caching",
                         "threads",
                         "Benders reschedule cost",
                         "Benders solution time (seconds)",
@@ -241,6 +242,7 @@ class BatchRunner {
             List<String> row = new ArrayList<>();
             row.add(instanceName);
             row.add(Parameters.getColumnGenStrategy().toString());
+            row.add(Boolean.toString(Parameters.isUseColumnCaching()));
             row.add(Integer.toString(Parameters.getNumThreadsForSecondStage()));
 
             // solve models and write solutions
