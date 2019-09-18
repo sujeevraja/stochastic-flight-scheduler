@@ -278,8 +278,8 @@ public class SubSolverRunnable implements Runnable {
             objValue = ss.getObjValue();
 
             // cache best paths for each tail
-            ss.collectSolution();
             if (Parameters.isUseColumnCaching()) {
+                ss.collectSolution();
                 pathCache.addPaths(getBestPaths(ss.getyValues(), pathsAll));
             }
             ss.end();

@@ -28,7 +28,8 @@ public class Main {
 
             final String name = cmd.hasOption('n')
                 ? cmd.getOptionValue('n')
-                : "instance1";
+                : "20171115022840-v2";
+                // : "instance1";
             String instancePath = cmd.hasOption("path")
                 ? cmd.getOptionValue("path")
                 : ("data/" + name);
@@ -124,20 +125,12 @@ public class Main {
 
     private static void singleRun() throws OptException {
         logger.info("Started optimization...");
-
-        if (Parameters.getInstancePath() == null) {
-            // String path = "data/instance1";
-            String path = "data/20171115022840-v2";
-            Parameters.setInstancePath(path);
-        }
-
         Controller controller = new Controller();
         controller.readData();
         controller.setDelayGenerator();
         controller.buildScenarios();
         controller.solve();
         // controller.processSolution();
-
         logger.info("completed optimization.");
     }
 
