@@ -14,6 +14,7 @@ class Config(object):
 
     def __init__(self):
         self.run_budget_set = False
+        self.run_expected_excess_set = False
         self.run_column_caching_set = False
         self.run_mean_set = False
         self.run_parallel_set = False
@@ -63,6 +64,7 @@ class Controller:
 
         if not (self.config.run_budget_set or
                 self.config.run_column_caching_set or
+                self.config.run_expected_excess_set or
                 self.config.run_mean_set or
                 self.config.run_parallel_set or
                 self.config.run_quality_set or
@@ -74,6 +76,8 @@ class Controller:
             self._run_budget_set()
         if self.config.run_column_caching_set:
             self._run_column_caching_set()
+        if self.config.run_expected_excess_set:
+            self._run_expected_excess_set()
         if self.config.run_mean_set:
             self._run_mean_set()
         if self.config.run_parallel_set:
@@ -130,6 +134,38 @@ class Controller:
 
         self._clean_delay_files()
         log.info("completed time comparison runs.")
+
+    def _run_expected_excess_set(self):
+        log.info("starting expected excess comparison runs...")
+        mean = "30"
+        standard_deviations = ["15.0", "30.0", "45.0"]
+        targets = ["15", "30", "45"]
+        aversions = ["0.1", "1", "10"]
+        # instance_name = "s1"
+        # instance_path = f"data/paper{instance_name}"
+        instance_name = "instance1"
+        instance_path = f"data/{instance_name}"
+
+        for sd in standard_deviations:
+            for target in targets:
+                for aversion in aversions:
+                    cmd = [c for c in self._base_cmd]
+                    cmd.extend([
+                        "-batch",
+                        "-parallel", "30",
+                        "-path", instance_path,
+                        "-n", instance_name,
+                        "-mean", mean,
+                        "-sd", sd,
+                        "-expectedExcess", "y",
+                        "-excessTarget", target,
+                        "-excessAversion", aversion,
+                    ])
+
+                    self._generate_all_results(cmd)
+
+        self._clean_delay_files()
+        log.info("completed expected excess comparison runs.")
 
     def _run_mean_set(self):
         log.info("starting mean comparison runs...")
@@ -345,6 +381,8 @@ def handle_command_line():
                         action="store_true")
     parser.add_argument("-c", "--caching", help="run column caching set",
                         action="store_true")
+    parser.add_argument("-e", "--excess", help="run expected excess set",
+                        action="store_true")
     parser.add_argument("-m", "--mean", help="run mean set",
                         action="store_true")
     parser.add_argument("-p", "--parallel", help="run parallel run set",
@@ -361,6 +399,7 @@ def handle_command_line():
 
     if args.all:
         config.run_budget_set = True
+        config.run_expected_excess_set = True
         config.run_column_caching_set = True
         config.run_mean_set = True
         config.run_parallel_set = True
@@ -369,6 +408,7 @@ def handle_command_line():
         config.run_single_vs_multi_cut_set = True
     else:
         config.run_budget_set = args.budget
+        config.run_expected_excess_set = True
         config.run_column_caching_set = args.caching
         config.run_mean_set = args.mean
         config.run_parallel_set = args.parallel
@@ -381,6 +421,7 @@ def handle_command_line():
 
     log.info(f"budget runs: {config.run_budget_set}")
     log.info(f"column caching runs: {config.run_column_caching_set}")
+    log.info(f"expected excess runs: {config.run_expected_excess_set}")
     log.info(f"mean runs: {config.run_mean_set}")
     log.info(f"parallel runs: {config.run_parallel_set}")
     log.info(f"quality runs: {config.run_quality_set}")
