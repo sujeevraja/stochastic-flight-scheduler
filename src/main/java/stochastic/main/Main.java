@@ -61,6 +61,12 @@ public class Main {
             "use column caching (y/n)");
         options.addOption("d", true,
             "distribution (exp/tnorm/lnorm");
+        options.addOption("expectedExcess", true,
+            "enable expected excess (y/n)");
+        options.addOption("excessTarget", true,
+            "expected excess target");
+        options.addOption("excessAversion", true,
+            "expected excess risk aversion");
         options.addOption("f", true,
             "flight pick (all/hub/rush)");
         options.addOption("generateDelays", false,
@@ -76,6 +82,7 @@ public class Main {
         options.addOption("path", true, "instance path");
         options.addOption("r", true, "reschedule budget fraction");
         options.addOption("s", false, "use single-cut Benders");
+        options.addOption("sd", true, "standard deviation");
         options.addOption("type", true,
             "type (benders/training/test)");
         options.addOption("h", false, "help (show options and exit)");
@@ -314,6 +321,18 @@ public class Main {
             logger.info("use column caches: " + useCaching);
         }
         Parameters.setBendersMultiCut(!cmd.hasOption('s'));
+        if (cmd.hasOption("expectedExcess")) {
+            final boolean useExpectedExcess = cmd.getOptionValue("expectedExcess").equals("y");
+            Parameters.setExpectedExcess(useExpectedExcess);
+        }
+        if (cmd.hasOption("excessTarget")) {
+            final int excessTarget = Integer.parseInt(cmd.getOptionValue("excessTarget"));
+            Parameters.setExcessTarget(excessTarget);
+        }
+        if (cmd.hasOption("excessAversion")) {
+            final double aversion = Double.parseDouble(cmd.getOptionValue("excessAversion"));
+            Parameters.setRiskAversion(aversion);
+        }
     }
 }
 
