@@ -45,7 +45,7 @@ public class Parameters {
     // Parameters for expected excess formulation
     private static boolean expectedExcess;
     private static double riskAversion;
-    private static double excessTarget;
+    private static int excessTarget;
 
     public static void setInstancePath(String instancePath) {
         Parameters.instancePath = instancePath;
@@ -255,11 +255,11 @@ public class Parameters {
         return riskAversion;
     }
 
-    public static void setExcessTarget(double excessTarget) {
+    public static void setExcessTarget(int excessTarget) {
         Parameters.excessTarget = excessTarget;
     }
 
-    public static double getExcessTarget() {
+    public static int getExcessTarget() {
         return excessTarget;
     }
 }

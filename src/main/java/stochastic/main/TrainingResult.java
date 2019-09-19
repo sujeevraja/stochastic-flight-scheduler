@@ -1,5 +1,7 @@
 package stochastic.main;
 
+import stochastic.registry.Parameters;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -151,13 +153,18 @@ class TrainingResult implements Serializable {
 
 
     static List<String> getCsvHeaders() {
-        return new ArrayList<>(Arrays.asList(
-                "instance",
-                "strategy",
-                "distribution",
-                "mean",
-                "standard deviation",
-                "budget fraction",
+        ArrayList<String> headers = new ArrayList<>(Arrays.asList(
+            "instance",
+            "strategy",
+            "distribution",
+            "mean",
+            "standard deviation",
+            "budget fraction"));
+        if (Parameters.isExpectedExcess()) {
+            headers.add("excess target");
+            headers.add("excess aversion");
+        }
+        headers.addAll(Arrays.asList(
                 "Naive rows",
                 "Naive columns",
                 "Naive non-zeroes",
@@ -179,6 +186,8 @@ class TrainingResult implements Serializable {
                 "Benders optimality gap (%)",
                 "Benders number of cuts",
                 "Benders number of iterations"));
+
+        return headers;
     }
 
     List<String> getCsvRow() {
@@ -189,6 +198,11 @@ class TrainingResult implements Serializable {
             Double.toString(distributionMean),
             Double.toString(distributionSd),
             Double.toString(budgetFraction)));
+
+        if (Parameters.isExpectedExcess()) {
+            row.add(Integer.toString(Parameters.getExcessTarget()));
+            row.add(Double.toString(Parameters.getRiskAversion()));
+        }
 
         row.addAll(naiveModelStats.getCsvRow());
         row.add(Double.toString(naiveRescheduleCost));

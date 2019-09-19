@@ -60,7 +60,7 @@ public class Main {
         options.addOption("cache", true,
             "use column caching (y/n)");
         options.addOption("d", true,
-            "distribution (exp/tnorm/lnorm");
+            "distribution (exp/tnorm/lnorm)");
         options.addOption("expectedExcess", true,
             "enable expected excess (y/n)");
         options.addOption("excessTarget", true,
@@ -199,9 +199,6 @@ public class Main {
             parameters.put("benders tolerance", Parameters.getBendersTolerance());
             parameters.put("benders num iterations", Parameters.getNumBendersIterations());
             parameters.put("benders warm start", Parameters.isWarmStartBenders());
-            parameters.put("expected excess enabled", Parameters.isExpectedExcess());
-            parameters.put("expected excess risk aversion", Parameters.getRiskAversion());
-            parameters.put("expected excess target", Parameters.getExcessTarget());
             parameters.put("flight pick strategy", Parameters.getFlightPickStrategy().name());
             parameters.put("reschedule time budget fraction", Parameters.getRescheduleBudgetFraction());
             parameters.put("reschedule time limit for flights", Parameters.getFlightRescheduleBound());
@@ -321,17 +318,24 @@ public class Main {
             logger.info("use column caches: " + useCaching);
         }
         Parameters.setBendersMultiCut(!cmd.hasOption('s'));
+        if (cmd.hasOption("sd")) {
+            final double sd = Double.parseDouble(cmd.getOptionValue("sd"));
+            Parameters.setDistributionSd(sd);
+        }
         if (cmd.hasOption("expectedExcess")) {
             final boolean useExpectedExcess = cmd.getOptionValue("expectedExcess").equals("y");
             Parameters.setExpectedExcess(useExpectedExcess);
+            logger.info("use expected excess: " + useExpectedExcess);
         }
-        if (cmd.hasOption("excessTarget")) {
-            final int excessTarget = Integer.parseInt(cmd.getOptionValue("excessTarget"));
-            Parameters.setExcessTarget(excessTarget);
-        }
-        if (cmd.hasOption("excessAversion")) {
-            final double aversion = Double.parseDouble(cmd.getOptionValue("excessAversion"));
-            Parameters.setRiskAversion(aversion);
+        if (Parameters.isExpectedExcess()) {
+            if (cmd.hasOption("excessTarget")) {
+                final int excessTarget = Integer.parseInt(cmd.getOptionValue("excessTarget"));
+                Parameters.setExcessTarget(excessTarget);
+            }
+            if (cmd.hasOption("excessAversion")) {
+                final double aversion = Double.parseDouble(cmd.getOptionValue("excessAversion"));
+                Parameters.setRiskAversion(aversion);
+            }
         }
     }
 }

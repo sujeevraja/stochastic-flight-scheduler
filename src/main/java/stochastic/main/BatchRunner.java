@@ -131,7 +131,14 @@ class BatchRunner {
             if (addTestHeaders) {
                 ArrayList<String> testHeaders = new ArrayList<>(Arrays.asList(
                     "instance", "strategy", "distribution", "mean", "standard deviation",
-                    "budget fraction", "approach", "rescheduleCost", "twoStageObjective",
+                    "budget fraction"));
+
+                if (Parameters.isExpectedExcess()) {
+                    testHeaders.add("excess target");
+                    testHeaders.add("excess aversion");
+                }
+
+                testHeaders.addAll(Arrays.asList("approach", "rescheduleCost", "twoStageObjective",
                     "decrease (%)"));
 
                 for (Enums.TestKPI kpi : Enums.TestKPI.values()) {
@@ -184,10 +191,17 @@ class BatchRunner {
                         Parameters.getDistributionType().toString(),
                         Double.toString(Parameters.getDistributionMean()),
                         Double.toString(Parameters.getDistributionSd()),
-                        Double.toString(Parameters.getRescheduleBudgetFraction()),
-                        rescheduleSolutions.get(j).getName(),
-                        Double.toString(rescheduleCost),
-                        Double.toString(twoStageObj)));
+                        Double.toString(Parameters.getRescheduleBudgetFraction())));
+
+                if (Parameters.isExpectedExcess()) {
+                    row.add(Integer.toString(Parameters.getExcessTarget()));
+                    row.add(Double.toString(Parameters.getRiskAversion()));
+                }
+
+                row.addAll(Arrays.asList(
+                    rescheduleSolutions.get(j).getName(),
+                    Double.toString(rescheduleCost),
+                    Double.toString(twoStageObj)));
 
                 double twoStageObjDecrease = 0.0;
                 if (j > 0) twoStageObjDecrease = ((baseObj - twoStageObj) / baseObj) * 100.0;
