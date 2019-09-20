@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import stochastic.domain.Leg;
 import stochastic.domain.Tail;
+import stochastic.utility.OptException;
 
 import java.util.ArrayList;
 
@@ -71,5 +72,26 @@ public class Path {
 
     public ArrayList<Integer> getPropagatedDelays() {
         return propagatedDelays;
+    }
+
+    public void checkLegality() throws OptException {
+        if (legs.isEmpty())
+            throw new OptException("empty path for " + tail);
+
+        // Check connection with source station.
+        if (!legs.get(0).getDepPort().equals(tail.getSourcePort()))
+            throw new OptException("source station mismatch for " + tail);
+
+        // Check connection with sink station.
+        if (!legs.get(legs.size() - 1).getArrPort().equals(tail.getSinkPort()))
+            throw new OptException("sink station mismatch for " + tail);
+
+        // Check connection between legs.
+        for (int i = 0; i < legs.size() - 1; ++i) {
+            Leg currLeg = legs.get(i);
+            Leg nextLeg = legs.get(i+1);
+            if (!currLeg.canConnectTo(nextLeg))
+                throw new OptException("invalid leg connection on path for " + tail);
+        }
     }
 }

@@ -60,9 +60,9 @@ public class Network {
             for (int j = i + 1; j < numLegs; ++j) {
                 Leg nextLeg = legs.get(j);
 
-                if (canConnect(currLeg, nextLeg))
+                if (currLeg.canConnectTo(nextLeg))
                     addNeighbor(i, j);
-                if (canConnect(nextLeg, currLeg))
+                if (nextLeg.canConnectTo(currLeg))
                     addNeighbor(j, i);
             }
         }
@@ -71,14 +71,6 @@ public class Network {
 
     public ArrayList<Integer> getNeighbors(int legIndex) {
         return adjacencyList.getOrDefault(legIndex, null);
-    }
-
-    private boolean canConnect(Leg currLeg, Leg nextLeg) {
-        if (!currLeg.getArrPort().equals(nextLeg.getDepPort()))
-            return false;
-
-        long arrPlusTurnTime = currLeg.getArrTime() + currLeg.getTurnTimeInMin();
-        return nextLeg.getDepTime() >= arrPlusTurnTime;
     }
 
     private void addNeighbor(Integer legIndex, Integer neighborIndex) {

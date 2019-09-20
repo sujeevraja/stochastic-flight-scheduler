@@ -110,6 +110,10 @@ public class Leg {
         arrTime = origArrTime;
     }
 
+    public boolean canConnectTo(Leg otherLeg) {
+        return arrPort.equals(otherLeg.depPort) && otherLeg.depTime >= arrTime + turnTimeInMin;
+    }
+
     @Override
     public final String toString() {
         return ("Leg(id=" + id + ",index=" + index + ",fltNum=" + fltNum + ",depPort=" + depPort +
