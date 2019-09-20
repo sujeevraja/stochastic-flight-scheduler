@@ -910,16 +910,6 @@
 <tail>10013</tail>
 </leg>
 <leg>
-<id>13476682</id>
-<depPort>103</depPort>
-<arrPort>105</arrPort>
-<depTime>2013-05-14T13:35:00Z</depTime>
-<arrTime>2013-05-14T17:00:00Z</arrTime>
-<turnTime>68</turnTime>
-<fltNum>27</fltNum>
-<tail>10013</tail>
-</leg>
-<leg>
 <id>13479582</id>
 <depPort>103</depPort>
 <arrPort>102</arrPort>
