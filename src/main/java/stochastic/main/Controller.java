@@ -344,7 +344,7 @@ class Controller {
      *
      * @param inputLegs list of legs parsed from a Schedule.xml file.
      */
-    private void storeLegs(ArrayList<Leg> inputLegs) {
+    private void storeLegs(ArrayList<Leg> inputLegs) throws OptException {
         ArrayList<Leg> legs = new ArrayList<>();
         HashMap<Integer, ArrayList<Leg>> tailHashMap = new HashMap<>();
 
@@ -410,6 +410,11 @@ class Controller {
 
             tailPaths.put(entry.getKey(), p);
         }
+
+        for (Map.Entry<Integer, Path> entry : tailPaths.entrySet()) {
+            entry.getValue().checkLegality();
+        }
+
         dataRegistry.setTailOrigPathMap(tailPaths);
     }
 
