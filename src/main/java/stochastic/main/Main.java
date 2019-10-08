@@ -75,6 +75,7 @@ public class Main {
             "parse primary delays from files");
         options.addOption("path", true, "instance path");
         options.addOption("r", true, "reschedule budget fraction");
+        options.addOption("s", false, "use single-cut Benders");
         options.addOption("type", true,
             "type (benders/training/test)");
         options.addOption("h", false, "help (show options and exit)");
@@ -312,6 +313,7 @@ public class Main {
             Parameters.setUseColumnCaching(useCaching);
             logger.info("use column caches: " + useCaching);
         }
+        Parameters.setBendersMultiCut(!cmd.hasOption('s'));
     }
 }
 
