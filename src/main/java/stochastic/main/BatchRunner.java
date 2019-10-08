@@ -226,6 +226,7 @@ class BatchRunner {
                         "column strategy",
                         "caching",
                         "threads",
+                        "multi cut",
                         "Benders reschedule cost",
                         "Benders solution time (seconds)",
                         "Benders lower bound",
@@ -244,6 +245,7 @@ class BatchRunner {
             row.add(Parameters.getColumnGenStrategy().toString());
             row.add(Boolean.toString(Parameters.isUseColumnCaching()));
             row.add(Integer.toString(Parameters.getNumThreadsForSecondStage()));
+            row.add(Boolean.toString(Parameters.isBendersMultiCut()));
 
             // solve models and write solutions
             Controller controller = new Controller();
