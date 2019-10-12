@@ -3,6 +3,7 @@
 import argparse
 import logging
 import os
+import shutil
 import subprocess
 
 
@@ -141,6 +142,7 @@ class Controller:
         standard_deviations = ["15.0", "30.0", "45.0"]
         targets = ["15", "30", "45"]
         aversions = ["0.1", "1", "10"]
+
         # instance_name = "s1"
         # instance_path = f"data/paper{instance_name}"
         instance_name = "instance1"
@@ -157,12 +159,30 @@ class Controller:
                         "-n", instance_name,
                         "-mean", mean,
                         "-sd", sd,
-                        "-expectedExcess", "y",
                         "-excessTarget", target,
                         "-excessAversion", aversion,
                     ])
 
-                    self._generate_all_results(cmd)
+                    self._generate_delays(cmd)
+                    log.info(f'generated delays for {cmd}')
+
+                    # Generate regular results
+                    for model in self._models:
+                        self._generate_reschedule_solution(cmd, model)
+                        log.info(f'finished training run for {model}')
+
+                    self._generate_test_results(cmd)
+                    log.info(f'generated test results for {cmd}')
+
+                    # Generate expected excess results
+                    cmd.extend(["-expectedExcess", "y"])
+
+                    for model in self._models:
+                        self._generate_reschedule_solution(cmd, model)
+                        log.info(f'finished training run for {model} with excess')
+
+                    self._generate_test_results(cmd)
+                    log.info(f'generated test results for {cmd} with excess')
 
         self._clean_delay_files()
         log.info("completed expected excess comparison runs.")
@@ -350,7 +370,7 @@ class Controller:
         gp_path = os.path.join(os.path.expanduser("~"), ".gradle",
                                "gradle.properties")
         if not os.path.isfile(gp_path):
-            log.warn("gradle.properties not available at {}".format(gp_path))
+            log.warning("gradle.properties not available at {}".format(gp_path))
             return None
 
         with open(gp_path, 'r') as fin:
