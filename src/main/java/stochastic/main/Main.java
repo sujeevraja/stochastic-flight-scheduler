@@ -327,15 +327,13 @@ public class Main {
             Parameters.setExpectedExcess(useExpectedExcess);
             logger.info("use expected excess: " + useExpectedExcess);
         }
-        if (Parameters.isExpectedExcess()) {
-            if (cmd.hasOption("excessTarget")) {
-                final int excessTarget = Integer.parseInt(cmd.getOptionValue("excessTarget"));
-                Parameters.setExcessTarget(excessTarget);
-            }
-            if (cmd.hasOption("excessAversion")) {
-                final double aversion = Double.parseDouble(cmd.getOptionValue("excessAversion"));
-                Parameters.setRiskAversion(aversion);
-            }
+        if (cmd.hasOption("excessTarget")) {
+            final int excessTarget = Integer.parseInt(cmd.getOptionValue("excessTarget"));
+            Parameters.setExcessTarget(excessTarget);
+        }
+        if (cmd.hasOption("excessAversion")) {
+            final double aversion = Double.parseDouble(cmd.getOptionValue("excessAversion"));
+            Parameters.setRiskAversion(aversion);
         }
     }
 }
