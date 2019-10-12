@@ -131,15 +131,8 @@ class BatchRunner {
             if (addTestHeaders) {
                 ArrayList<String> testHeaders = new ArrayList<>(Arrays.asList(
                     "instance", "strategy", "distribution", "mean", "standard deviation",
-                    "budget fraction"));
-
-                if (Parameters.isExpectedExcess()) {
-                    testHeaders.add("excess target");
-                    testHeaders.add("excess aversion");
-                }
-
-                testHeaders.addAll(Arrays.asList("approach", "rescheduleCost", "twoStageObjective",
-                    "decrease (%)"));
+                    "budget fraction", "expected excess", "excess target", "excess aversion",
+                    "approach", "rescheduleCost", "twoStageObjective", "decrease (%)"));
 
                 for (Enums.TestKPI kpi : Enums.TestKPI.values()) {
                     testHeaders.add(kpi.name());
@@ -191,12 +184,10 @@ class BatchRunner {
                         Parameters.getDistributionType().toString(),
                         Double.toString(Parameters.getDistributionMean()),
                         Double.toString(Parameters.getDistributionSd()),
-                        Double.toString(Parameters.getRescheduleBudgetFraction())));
-
-                if (Parameters.isExpectedExcess()) {
-                    row.add(Integer.toString(Parameters.getExcessTarget()));
-                    row.add(Double.toString(Parameters.getRiskAversion()));
-                }
+                        Double.toString(Parameters.getRescheduleBudgetFraction()),
+                        Boolean.toString(Parameters.isExpectedExcess()),
+                        Integer.toString(Parameters.getExcessTarget()),
+                        Double.toString(Parameters.getRiskAversion())));
 
                 row.addAll(Arrays.asList(
                     rescheduleSolutions.get(j).getName(),
