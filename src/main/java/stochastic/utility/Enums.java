@@ -49,6 +49,7 @@ public class Enums {
      */
     public enum TestKPI {
         delayCost,
+        expExcessDelayCost,
         totalFlightDelay,
         maximumFlightDelay,
         averageFlightDelay,
