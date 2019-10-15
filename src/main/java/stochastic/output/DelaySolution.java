@@ -1,5 +1,7 @@
 package stochastic.output;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import stochastic.domain.Leg;
 import stochastic.registry.Parameters;
 import stochastic.utility.CSVHelper;
@@ -18,6 +20,7 @@ public class DelaySolution {
      * DelaySolution objects store solutions to second-stage problems solved as MIPs. These objects capture quantities
      * like total delay and total propagated delay.
      */
+    private final static Logger logger = LogManager.getLogger(DelaySolution.class);
     private TestKPISet testKPISet;
     private int[] primaryDelays;
     private int[] totalDelays;
@@ -72,13 +75,20 @@ public class DelaySolution {
             expExcessDelayCost += legDelayCost;
             expExcessDelayCost += reschedules[i] * leg.getRescheduleCostPerMin();
         }
-        expExcessDelayCost = Math.max(expExcessDelayCost, 0);
+        expExcessDelayCost = Parameters.getRiskAversion() * Math.max(expExcessDelayCost, 0);
+        expExcessDelayCost += delayCost;
 
         if (Parameters.isExpectedExcess()) {
-            if (Math.abs(expExcessDelayCost - delayCostFromObjective) >= Constants.EPS)
+            if (Math.abs(expExcessDelayCost - delayCostFromObjective) >= Constants.EPS) {
+                logger.error("expected excess cost: " + expExcessDelayCost);
+                logger.error("second stage objective: " + delayCostFromObjective);
                 throw new OptException("expected excess delay cost calculation incorrect");
-        } else if (Math.abs(delayCost - delayCostFromObjective) >= Constants.EPS)
+            }
+        } else if (Math.abs(delayCost - delayCostFromObjective) >= Constants.EPS) {
+            logger.error("calculated delay cost: " + delayCost);
+            logger.error("second stage objective: " + delayCostFromObjective);
             throw new OptException("delay cost calculation incorrect");
+        }
 
         testKPISet.setKpi(Enums.TestKPI.delayCost, delayCost);
         testKPISet.setKpi(Enums.TestKPI.expExcessDelayCost, expExcessDelayCost);
