@@ -19,6 +19,7 @@ class Config(object):
         self.run_parallel_set = False
         self.run_quality_set = False
         self.run_time_comparison_set = False
+        self.run_single_vs_multi_cut_set = False
         self.jar_path = "build/libs/stochastic_uber.jar"
         self.cplex_lib_path = None
 
@@ -65,7 +66,8 @@ class Controller:
                 self.config.run_mean_set or
                 self.config.run_parallel_set or
                 self.config.run_quality_set or
-                self.config.run_time_comparison_set):
+                self.config.run_time_comparison_set or
+                self.config.run_single_vs_multi_cut_set):
             raise ScriptException("no batch run chosen, nothing to do.")
 
         if self.config.run_budget_set:
@@ -80,6 +82,8 @@ class Controller:
             self._run_quality_set()
         if self.config.run_time_comparison_set:
             self._run_time_comparison_set()
+        if self.config.run_single_vs_multi_cut_set:
+            self._run_single_vs_multi_cut_set()
 
         log.info("completed all batch runs")
 
@@ -216,6 +220,32 @@ class Controller:
         self._clean_delay_files()
         log.info("completed time comparison runs.")
 
+    def _run_single_vs_multi_cut_set(self):
+        log.info("starting cut comparison runs...")
+        for name, path in zip(self.config.names, self.config.paths):
+            for _ in range(5):
+                cmd = [c for c in self._base_cmd]
+                cmd.extend([
+                    "-batch",
+                    "-path", path,
+                    "-n", name,
+                    "-type", "benders",
+                    "-parallel", "1"])
+
+                self._generate_delays(cmd)
+
+                run_cmd = [c for c in cmd]
+                run_cmd.extend([
+                    "-parseDelays",
+                    "-model", "benders", ])
+
+                subprocess.check_call(run_cmd)
+                run_cmd.append("-s")
+                subprocess.check_call(run_cmd)
+
+        self._clean_delay_files()
+        log.info("completed cut comparison runs.")
+
     def _generate_all_results(self, cmd):
         self._generate_delays(cmd)
         log.info(f'generated delays for {cmd}')
@@ -321,6 +351,8 @@ def handle_command_line():
                         action="store_true")
     parser.add_argument("-q", "--quality", help="run quality set",
                         action="store_true")
+    parser.add_argument("-s", "--single", help="run cut comparison set",
+                        action="store_true")
     parser.add_argument("-t", "--time", help="run time comparison set",
                         action="store_true")
 
@@ -334,6 +366,7 @@ def handle_command_line():
         config.run_parallel_set = True
         config.run_quality_set = True
         config.run_time_comparison_set = True
+        config.run_single_vs_multi_cut_set = True
     else:
         config.run_budget_set = args.budget
         config.run_column_caching_set = args.caching
@@ -341,15 +374,18 @@ def handle_command_line():
         config.run_parallel_set = args.parallel
         config.run_quality_set = args.quality
         config.run_time_comparison_set = args.time
+        config.run_single_vs_multi_cut_set = args.single
 
     if args.jarpath:
         config.jar_path = args.jarpath
 
-    log.info("do budget runs: {}".format(config.run_budget_set))
-    log.info("do mean runs: {}".format(config.run_mean_set))
-    log.info("do quality runs: {}".format(config.run_quality_set))
-    log.info("do time comparison runs: {}".format(
-        config.run_time_comparison_set))
+    log.info(f"budget runs: {config.run_budget_set}")
+    log.info(f"column caching runs: {config.run_column_caching_set}")
+    log.info(f"mean runs: {config.run_mean_set}")
+    log.info(f"parallel runs: {config.run_parallel_set}")
+    log.info(f"quality runs: {config.run_quality_set}")
+    log.info(f"single vs multi cut runs: {config.run_single_vs_multi_cut_set}")
+    log.info(f"time comparison runs: {config.run_time_comparison_set}")
 
     return config
 
