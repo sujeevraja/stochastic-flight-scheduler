@@ -226,11 +226,8 @@ public class QualityChecker {
 
     private DelaySolution getDelaySolution(Scenario scen, int scenarioNum, String slnName,
                                            int[] reschedules) {
-        // update leg departure time according to reschedule values.
-        if (reschedules != null) {
-            for (Leg leg : dataRegistry.getLegs())
-                leg.reschedule(reschedules[leg.getIndex()]);
-        }
+        if (reschedules == null)
+            reschedules = zeroReschedules;
 
         // solve routing MIP and collect solution
         int[] delays = scen.getPrimaryDelays();
@@ -239,7 +236,7 @@ public class QualityChecker {
                 dataRegistry.getTailOrigPathMap(), delays));
 
         SubSolverRunnable ssr = new SubSolverRunnable(dataRegistry, 0, scenarioNum,
-            scen.getProbability(), zeroReschedules, delays, pathCache);
+            scen.getProbability(), reschedules, delays, pathCache);
         ssr.setCplex(cplex);
         ssr.setFilePrefix(slnName);
         ssr.setSolveForQuality(true);
@@ -250,10 +247,6 @@ public class QualityChecker {
 
         DelaySolution delaySolution = ssr.getDelaySolution();
         delaySolution.setSolutionTimeInSeconds(slnTime);
-
-        // undo reschedules
-        for (Leg leg : dataRegistry.getLegs())
-            leg.revertReschedule();
 
         return delaySolution;
     }
