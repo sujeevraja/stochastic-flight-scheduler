@@ -75,6 +75,7 @@ public class Main {
         options.addOption("model", true, "model (naive/dep/benders/all)");
         options.addOption("n", true,
             "instance name");
+        options.addOption("numScenarios", true, "number of scenarios");
         options.addOption("parallel", true,
             "number of parallel runs for second stage");
         options.addOption("parseDelays", false,
@@ -301,6 +302,10 @@ public class Main {
         }
         else
             logger.info("model not provided, defaulting to Benders");
+        if (cmd.hasOption("numScenarios")) {
+            final int numScenarios = Integer.parseInt(cmd.getOptionValue("numScenarios"));
+            Parameters.setNumSecondStageScenarios(numScenarios);
+        }
         if (cmd.hasOption("parallel")) {
             final int numThreads = Integer.parseInt(cmd.getOptionValue("parallel"));
             Parameters.setNumThreadsForSecondStage(numThreads);
