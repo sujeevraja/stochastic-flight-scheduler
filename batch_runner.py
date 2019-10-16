@@ -139,7 +139,7 @@ class Controller:
     def _run_expected_excess_set(self):
         log.info("starting expected excess comparison runs...")
         mean = "30"
-        standard_deviations = ["30.0", "45.0", "60.0"]
+        standard_deviations = ["15.0", "30.0", "45.0", "60.0"]
         targets = ["2500", "5000", "7500"]
         aversion = "10"
 
