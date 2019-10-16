@@ -140,8 +140,8 @@ class Controller:
         log.info("starting expected excess comparison runs...")
         mean = "30"
         standard_deviations = ["15.0", "30.0", "45.0"]
-        targets = ["15", "30", "45"]
-        aversions = ["0.1", "1", "10"]
+        targets = ["2000"]
+        aversions = ["10"]
 
         # instance_name = "s1"
         # instance_path = f"data/paper{instance_name}"

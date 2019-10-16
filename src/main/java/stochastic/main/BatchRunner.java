@@ -179,10 +179,10 @@ class BatchRunner {
                 final double eeDelayCost = testKPISet.getKpi(Enums.TestKPI.expExcessDelayCost);
                 final double twoStageObj = rescheduleCost + delayCost;
                 final double eeObj = rescheduleCost + eeDelayCost;
-                if (baseObj == null)
+                if (baseObj == null) {
                     baseObj = twoStageObj;
-                if (baseExpExcessObj == null)
                     baseExpExcessObj = eeObj;
+                }
 
                 ArrayList<String> row = new ArrayList<>(Arrays.asList(
                         instanceName,
