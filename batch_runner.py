@@ -139,9 +139,9 @@ class Controller:
     def _run_expected_excess_set(self):
         log.info("starting expected excess comparison runs...")
         mean = "30"
-        standard_deviations = ["15.0", "30.0", "45.0"]
-        targets = ["2000"]
-        aversions = ["10"]
+        standard_deviations = ["30.0", "45.0", "60.0"]
+        target = "2000"
+        aversion = "10"
 
         # instance_name = "s1"
         # instance_path = f"data/paper{instance_name}"
@@ -149,43 +149,54 @@ class Controller:
         instance_path = f"data/{instance_name}"
 
         for sd in standard_deviations:
-            for target in targets:
-                for aversion in aversions:
-                    cmd = [c for c in self._base_cmd]
-                    cmd.extend([
-                        "-batch",
-                        "-parallel", "30",
-                        "-path", instance_path,
-                        "-n", instance_name,
-                        "-mean", mean,
-                        "-sd", sd,
-                        "-excessTarget", target,
-                        "-excessAversion", aversion,
-                    ])
+            cmd = [c for c in self._base_cmd]
+            cmd.extend([
+                "-batch",
+                "-parallel", "30",
+                "-path", instance_path,
+                "-n", instance_name,
+                "-mean", mean,
+                "-sd", sd,
+                "-excessTarget", target,
+                "-excessAversion", aversion,
+            ])
 
-                    self._generate_delays(cmd)
-                    log.info(f'generated delays for {cmd}')
+            self._generate_delays(cmd)
+            log.info(f'generated training delays for {cmd}')
 
-                    # Generate regular results
-                    for model in self._models:
-                        self._generate_reschedule_solution(cmd, model)
-                        log.info(f'finished training run for {model}')
+            # Generate regular results
+            for model in self._models:
+                self._generate_reschedule_solution(cmd, model)
+                log.info(f'finished training run for {model}')
 
-                    self._generate_test_results(cmd)
-                    log.info(f'generated test results for {cmd}')
+            self._generate_test_results(cmd, parse_delays=True)
+            log.info(f'generated test results for {cmd}')
 
-                    # Generate expected excess results
-                    cmd.extend(["-expectedExcess", "y"])
+            # Generate expected excess results
+            cmd.extend(["-expectedExcess", "y"])
+            for model in self._models:
+                self._generate_reschedule_solution(cmd, model)
+                log.info(f'finished training run for {model} with excess')
 
-                    for model in self._models:
-                        self._generate_reschedule_solution(cmd, model)
-                        log.info(f'finished training run for {model} with excess')
+            self._generate_test_results(cmd, parse_delays=True)
+            log.info(f'generated test results for {cmd} with excess')
 
-                    self._generate_test_results(cmd)
-                    log.info(f'generated test results for {cmd} with excess')
-
-        self._clean_delay_files()
+            self._clean_delay_files()
         log.info("completed expected excess comparison runs.")
+
+    @staticmethod
+    def _move_delay_files(src_path, dst_path):
+        for f in os.listdir(src_path):
+            if f.startswith("primary") and f.endswith(".csv"):
+                shutil.move(
+                    os.path.join(src_path, f),
+                    os.path.join(dst_path, f))
+
+    @staticmethod
+    def _remove_delay_files(folder_path):
+        for f in os.listdir(folder_path):
+            if f.startswith("primary") and f.endswith(".csv"):
+                os.unlink(os.path.join(folder_path, f))
 
     def _run_mean_set(self):
         log.info("starting mean comparison runs...")
@@ -314,9 +325,11 @@ class Controller:
         log.info(f'generated test results for {cmd}')
 
     @staticmethod
-    def _generate_delays(orig_cmd):
+    def _generate_delays(orig_cmd, num_scenarios=None):
         cmd = [c for c in orig_cmd]
         cmd.append("-generateDelays")
+        if num_scenarios is not None:
+            cmd.extend(["-numScenarios", str(num_scenarios)])
         subprocess.check_call(cmd)
 
     @staticmethod
@@ -329,11 +342,11 @@ class Controller:
         subprocess.check_call(cmd)
 
     @staticmethod
-    def _generate_test_results(orig_cmd):
+    def _generate_test_results(orig_cmd, parse_delays=False):
         cmd = [c for c in orig_cmd]
-        cmd.extend([
-            # "-parseDelays",
-            "-type", "test"])
+        cmd.extend(["-type", "test"])
+        if parse_delays:
+            cmd.append("-parseDelays")
         subprocess.check_call(cmd)
 
     def _validate_setup(self):
