@@ -140,48 +140,69 @@ class Controller:
         log.info("starting expected excess comparison runs...")
         mean = "30"
         standard_deviations = ["30.0", "45.0", "60.0"]
-        target = "2000"
+        targets = ["2500", "5000", "7500"]
         aversion = "10"
 
         # instance_name = "s1"
-        # instance_path = f"data/paper{instance_name}"
+        # instance_path = f"data/paper/{instance_name}"
         instance_name = "instance1"
         instance_path = f"data/{instance_name}"
 
+        solution_path = os.path.join(os.getcwd(), "solution")
+        training_delays_path = os.path.join(os.getcwd(), "training_delays")
+        os.makedirs(training_delays_path, exist_ok=True)
+        test_delays_path = os.path.join(os.getcwd(), "test_delays")
+        os.makedirs(test_delays_path, exist_ok=True)
+
         for sd in standard_deviations:
-            cmd = [c for c in self._base_cmd]
-            cmd.extend([
-                "-batch",
-                "-parallel", "30",
-                "-path", instance_path,
-                "-n", instance_name,
-                "-mean", mean,
-                "-sd", sd,
-                "-excessTarget", target,
-                "-excessAversion", aversion,
-            ])
+            for target in targets:
+                cmd = [c for c in self._base_cmd]
+                cmd.extend([
+                    "-batch",
+                    "-parallel", "30",
+                    "-path", instance_path,
+                    "-n", instance_name,
+                    "-mean", mean,
+                    "-sd", sd,
+                    "-excessTarget", target,
+                    "-excessAversion", aversion,
+                ])
 
-            self._generate_delays(cmd)
-            log.info(f'generated training delays for {cmd}')
+                # Generate training delay scenarios
+                self._generate_delays(cmd)
+                log.info(f'generated training delays for {cmd}')
 
-            # Generate regular results
-            for model in self._models:
-                self._generate_reschedule_solution(cmd, model)
-                log.info(f'finished training run for {model}')
+                # Generate regular training results
+                for model in self._models:
+                    self._generate_reschedule_solution(cmd, model)
+                    log.info(f'finished training run for {model}')
 
-            self._generate_test_results(cmd, parse_delays=True)
-            log.info(f'generated test results for {cmd}')
+                # Protect training delays for EE runs and generate test delays.
+                self._move_delay_files(solution_path, training_delays_path)
+                self._generate_delays(cmd, num_scenarios=100)
 
-            # Generate expected excess results
-            cmd.extend(["-expectedExcess", "y"])
-            for model in self._models:
-                self._generate_reschedule_solution(cmd, model)
-                log.info(f'finished training run for {model} with excess')
+                # Generate regular test results
+                self._generate_test_results(cmd, parse_delays=True)
+                log.info(f'generated test results for {cmd}')
 
-            self._generate_test_results(cmd, parse_delays=True)
-            log.info(f'generated test results for {cmd} with excess')
+                # Protect test delays and move training delays back to solution folder.
+                self._move_delay_files(solution_path, test_delays_path)
+                self._move_delay_files(training_delays_path, solution_path)
 
-            self._clean_delay_files()
+                # Generate expected excess training results
+                cmd.extend(["-expectedExcess", "y"])
+                for model in self._models:
+                    self._generate_reschedule_solution(cmd, model)
+                    log.info(f'finished training run for {model} with excess')
+
+                # Clear training delay files and move test delay files to solution folder.
+                self._remove_delay_files(solution_path)
+                self._move_delay_files(test_delays_path, solution_path)
+
+                self._generate_test_results(cmd, parse_delays=True)
+                log.info(f'generated test results for {cmd} with excess')
+
+                self._clean_delay_files()
         log.info("completed expected excess comparison runs.")
 
     @staticmethod
