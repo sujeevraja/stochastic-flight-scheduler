@@ -139,8 +139,8 @@ class Controller:
     def _run_expected_excess_set(self):
         log.info("starting expected excess comparison runs...")
         mean = "30"
-        standard_deviations = ["15.0", "30.0", "45.0", "60.0"]
-        targets = ["2500", "5000", "7500"]
+        standard_deviations = ["30.0", "45.0", "60.0"]
+        targets = ["2500", "5000"]
         aversion = "10"
 
         # instance_name = "s1"
@@ -148,11 +148,11 @@ class Controller:
         instance_name = "instance1"
         instance_path = f"data/{instance_name}"
 
-        solution_path = os.path.join(os.getcwd(), "solution")
-        training_delays_path = os.path.join(os.getcwd(), "training_delays")
-        os.makedirs(training_delays_path, exist_ok=True)
-        test_delays_path = os.path.join(os.getcwd(), "test_delays")
-        os.makedirs(test_delays_path, exist_ok=True)
+        # solution_path = os.path.join(os.getcwd(), "solution")
+        # training_delays_path = os.path.join(os.getcwd(), "training_delays")
+        # os.makedirs(training_delays_path, exist_ok=True)
+        # test_delays_path = os.path.join(os.getcwd(), "test_delays")
+        # os.makedirs(test_delays_path, exist_ok=True)
 
         for sd in standard_deviations:
             for target in targets:
@@ -178,16 +178,16 @@ class Controller:
                     log.info(f'finished training run for {model}')
 
                 # Protect training delays for EE runs and generate test delays.
-                self._move_delay_files(solution_path, training_delays_path)
-                self._generate_delays(cmd, num_scenarios=100)
+                # self._move_delay_files(solution_path, training_delays_path)
+                # self._generate_delays(cmd, num_scenarios=100)
 
                 # Generate regular test results
                 self._generate_test_results(cmd, parse_delays=True)
-                log.info(f'generated test results for {cmd}')
+                # log.info(f'generated test results for {cmd}')
 
                 # Protect test delays and move training delays back to solution folder.
-                self._move_delay_files(solution_path, test_delays_path)
-                self._move_delay_files(training_delays_path, solution_path)
+                # self._move_delay_files(solution_path, test_delays_path)
+                # self._move_delay_files(training_delays_path, solution_path)
 
                 # Generate expected excess training results
                 cmd.extend(["-expectedExcess", "y"])
@@ -196,8 +196,8 @@ class Controller:
                     log.info(f'finished training run for {model} with excess')
 
                 # Clear training delay files and move test delay files to solution folder.
-                self._remove_delay_files(solution_path)
-                self._move_delay_files(test_delays_path, solution_path)
+                # self._remove_delay_files(solution_path)
+                # self._move_delay_files(test_delays_path, solution_path)
 
                 self._generate_test_results(cmd, parse_delays=True)
                 log.info(f'generated test results for {cmd} with excess')
