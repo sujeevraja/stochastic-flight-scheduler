@@ -489,9 +489,12 @@ class Controller {
             kpiManager.writeOutput();
 
             if (Parameters.isCheckSolutionQuality()) {
-                // Scenario[] testScenarios = dataRegistry.getDelayScenarios();
-                Scenario[] testScenarios = dataRegistry.getDelayGenerator().generateScenarios(
-                    Parameters.getNumTestScenarios());
+                Scenario[] testScenarios;
+                if (Parameters.isParsePrimaryDelaysFromFiles())
+                    testScenarios = dataRegistry.getDelayScenarios();
+                else
+                    testScenarios = dataRegistry.getDelayGenerator().generateScenarios(
+                        Parameters.getNumTestScenarios());
 
                 // The labeling algorithm only solves the root node LP. Getting the true MIP
                 // solution with labeling needs a proper branch and bound setup. So, we force the

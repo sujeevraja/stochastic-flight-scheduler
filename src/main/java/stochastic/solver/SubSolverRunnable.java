@@ -287,7 +287,8 @@ public class SubSolverRunnable implements Runnable {
     }
 
     private void buildDelaySolution(SubSolver ss, int[] primaryDelays,
-                                    HashMap<Integer, ArrayList<Path>> tailPaths) {
+                                    HashMap<Integer, ArrayList<Path>> tailPaths)
+        throws OptException{
         // find selected paths for each tail
         ArrayList<Tail> tails = dataRegistry.getTails();
         ArrayList<Path> selectedPaths = new ArrayList<>();
@@ -329,7 +330,7 @@ public class SubSolverRunnable implements Runnable {
         }
 
         delaySolution = new DelaySolution(ss.getObjValue(), primaryDelays, totalDelays,
-            propagatedDelays, ss.getdValues());
+            propagatedDelays, ss.getzValues(), dataRegistry.getLegs(), reschedules);
     }
 
     private HashMap<Integer, Path> getBestPaths(

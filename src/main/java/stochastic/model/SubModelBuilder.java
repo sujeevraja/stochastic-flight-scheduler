@@ -212,7 +212,7 @@ public class SubModelBuilder {
             cplex.add(cplex.conversion(y[i], IloNumVarType.Int));
     }
 
-    public double[] getdValues() throws IloException {
+    public double[] getzValues() throws IloException {
         return cplex.getValues(z);
     }
 

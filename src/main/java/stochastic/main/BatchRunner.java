@@ -131,8 +131,9 @@ class BatchRunner {
             if (addTestHeaders) {
                 ArrayList<String> testHeaders = new ArrayList<>(Arrays.asList(
                     "instance", "strategy", "distribution", "mean", "standard deviation",
-                    "budget fraction", "approach", "rescheduleCost", "twoStageObjective",
-                    "decrease (%)"));
+                    "budget fraction", "expected excess", "excess target", "excess aversion",
+                    "approach", "rescheduleCost", "twoStageObjective", "decrease (%)",
+                    "expExcessObjective", "decrease (%)"));
 
                 for (Enums.TestKPI kpi : Enums.TestKPI.values()) {
                     testHeaders.add(kpi.name());
@@ -170,13 +171,18 @@ class BatchRunner {
 
             // write test results
             Double baseObj = null;
+            Double baseExpExcessObj = null;
             for (int j = 0; j < testKPISets.length; ++j) {
                 TestKPISet testKPISet = testKPISets[j];
                 final double rescheduleCost = rescheduleSolutions.get(j).getRescheduleCost();
                 final double delayCost = testKPISet.getKpi(Enums.TestKPI.delayCost);
+                final double eeDelayCost = testKPISet.getKpi(Enums.TestKPI.expExcessDelayCost);
                 final double twoStageObj = rescheduleCost + delayCost;
-                if (baseObj == null)
+                final double eeObj = rescheduleCost + eeDelayCost;
+                if (baseObj == null) {
                     baseObj = twoStageObj;
+                    baseExpExcessObj = eeObj;
+                }
 
                 ArrayList<String> row = new ArrayList<>(Arrays.asList(
                         instanceName,
@@ -185,13 +191,23 @@ class BatchRunner {
                         Double.toString(Parameters.getDistributionMean()),
                         Double.toString(Parameters.getDistributionSd()),
                         Double.toString(Parameters.getRescheduleBudgetFraction()),
-                        rescheduleSolutions.get(j).getName(),
-                        Double.toString(rescheduleCost),
-                        Double.toString(twoStageObj)));
+                        Boolean.toString(Parameters.isExpectedExcess()),
+                        Integer.toString(Parameters.getExcessTarget()),
+                        Double.toString(Parameters.getRiskAversion())));
+
+                row.addAll(Arrays.asList(
+                    rescheduleSolutions.get(j).getName(),
+                    Double.toString(rescheduleCost),
+                    Double.toString(twoStageObj)));
 
                 double twoStageObjDecrease = 0.0;
                 if (j > 0) twoStageObjDecrease = ((baseObj - twoStageObj) / baseObj) * 100.0;
                 row.add(Double.toString(twoStageObjDecrease));
+
+                row.add(Double.toString(eeObj));
+                double eeObjDecrease = 0.0;
+                if (j > 0) eeObjDecrease = ((baseExpExcessObj - eeObj) / baseExpExcessObj) * 100.0;
+                row.add(Double.toString(eeObjDecrease));
 
                 TestKPISet percentDecreaseSet = j > 0
                         ? TestKPISet.getPercentageDecrease(baseKPISet, testKPISet)

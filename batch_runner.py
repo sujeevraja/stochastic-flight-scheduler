@@ -3,6 +3,7 @@
 import argparse
 import logging
 import os
+import shutil
 import subprocess
 
 
@@ -14,6 +15,7 @@ class Config(object):
 
     def __init__(self):
         self.run_budget_set = False
+        self.run_expected_excess_set = False
         self.run_column_caching_set = False
         self.run_mean_set = False
         self.run_parallel_set = False
@@ -63,6 +65,7 @@ class Controller:
 
         if not (self.config.run_budget_set or
                 self.config.run_column_caching_set or
+                self.config.run_expected_excess_set or
                 self.config.run_mean_set or
                 self.config.run_parallel_set or
                 self.config.run_quality_set or
@@ -74,6 +77,8 @@ class Controller:
             self._run_budget_set()
         if self.config.run_column_caching_set:
             self._run_column_caching_set()
+        if self.config.run_expected_excess_set:
+            self._run_expected_excess_set()
         if self.config.run_mean_set:
             self._run_mean_set()
         if self.config.run_parallel_set:
@@ -130,6 +135,89 @@ class Controller:
 
         self._clean_delay_files()
         log.info("completed time comparison runs.")
+
+    def _run_expected_excess_set(self):
+        log.info("starting expected excess comparison runs...")
+        mean = "30"
+        standard_deviations = ["30.0", "45.0", "60.0"]
+        targets = ["2500", "5000"]
+        aversion = "10"
+
+        # instance_name = "s1"
+        # instance_path = f"data/paper/{instance_name}"
+        instance_name = "instance1"
+        instance_path = f"data/{instance_name}"
+
+        # solution_path = os.path.join(os.getcwd(), "solution")
+        # training_delays_path = os.path.join(os.getcwd(), "training_delays")
+        # os.makedirs(training_delays_path, exist_ok=True)
+        # test_delays_path = os.path.join(os.getcwd(), "test_delays")
+        # os.makedirs(test_delays_path, exist_ok=True)
+
+        for sd in standard_deviations:
+            for target in targets:
+                cmd = [c for c in self._base_cmd]
+                cmd.extend([
+                    "-batch",
+                    "-parallel", "30",
+                    "-path", instance_path,
+                    "-n", instance_name,
+                    "-mean", mean,
+                    "-sd", sd,
+                    "-excessTarget", target,
+                    "-excessAversion", aversion,
+                ])
+
+                # Generate training delay scenarios
+                self._generate_delays(cmd)
+                log.info(f'generated training delays for {cmd}')
+
+                # Generate regular training results
+                for model in self._models:
+                    self._generate_reschedule_solution(cmd, model)
+                    log.info(f'finished training run for {model}')
+
+                # Protect training delays for EE runs and generate test delays.
+                # self._move_delay_files(solution_path, training_delays_path)
+                # self._generate_delays(cmd, num_scenarios=100)
+
+                # Generate regular test results
+                self._generate_test_results(cmd, parse_delays=True)
+                # log.info(f'generated test results for {cmd}')
+
+                # Protect test delays and move training delays back to solution folder.
+                # self._move_delay_files(solution_path, test_delays_path)
+                # self._move_delay_files(training_delays_path, solution_path)
+
+                # Generate expected excess training results
+                cmd.extend(["-expectedExcess", "y"])
+                for model in self._models:
+                    self._generate_reschedule_solution(cmd, model)
+                    log.info(f'finished training run for {model} with excess')
+
+                # Clear training delay files and move test delay files to solution folder.
+                # self._remove_delay_files(solution_path)
+                # self._move_delay_files(test_delays_path, solution_path)
+
+                self._generate_test_results(cmd, parse_delays=True)
+                log.info(f'generated test results for {cmd} with excess')
+
+                self._clean_delay_files()
+        log.info("completed expected excess comparison runs.")
+
+    @staticmethod
+    def _move_delay_files(src_path, dst_path):
+        for f in os.listdir(src_path):
+            if f.startswith("primary") and f.endswith(".csv"):
+                shutil.move(
+                    os.path.join(src_path, f),
+                    os.path.join(dst_path, f))
+
+    @staticmethod
+    def _remove_delay_files(folder_path):
+        for f in os.listdir(folder_path):
+            if f.startswith("primary") and f.endswith(".csv"):
+                os.unlink(os.path.join(folder_path, f))
 
     def _run_mean_set(self):
         log.info("starting mean comparison runs...")
@@ -258,9 +346,11 @@ class Controller:
         log.info(f'generated test results for {cmd}')
 
     @staticmethod
-    def _generate_delays(orig_cmd):
+    def _generate_delays(orig_cmd, num_scenarios=None):
         cmd = [c for c in orig_cmd]
         cmd.append("-generateDelays")
+        if num_scenarios is not None:
+            cmd.extend(["-numScenarios", str(num_scenarios)])
         subprocess.check_call(cmd)
 
     @staticmethod
@@ -273,11 +363,11 @@ class Controller:
         subprocess.check_call(cmd)
 
     @staticmethod
-    def _generate_test_results(orig_cmd):
+    def _generate_test_results(orig_cmd, parse_delays=False):
         cmd = [c for c in orig_cmd]
-        cmd.extend([
-            # "-parseDelays",
-            "-type", "test"])
+        cmd.extend(["-type", "test"])
+        if parse_delays:
+            cmd.append("-parseDelays")
         subprocess.check_call(cmd)
 
     def _validate_setup(self):
@@ -314,7 +404,7 @@ class Controller:
         gp_path = os.path.join(os.path.expanduser("~"), ".gradle",
                                "gradle.properties")
         if not os.path.isfile(gp_path):
-            log.warn("gradle.properties not available at {}".format(gp_path))
+            log.warning("gradle.properties not available at {}".format(gp_path))
             return None
 
         with open(gp_path, 'r') as fin:
@@ -345,6 +435,8 @@ def handle_command_line():
                         action="store_true")
     parser.add_argument("-c", "--caching", help="run column caching set",
                         action="store_true")
+    parser.add_argument("-e", "--excess", help="run expected excess set",
+                        action="store_true")
     parser.add_argument("-m", "--mean", help="run mean set",
                         action="store_true")
     parser.add_argument("-p", "--parallel", help="run parallel run set",
@@ -361,6 +453,7 @@ def handle_command_line():
 
     if args.all:
         config.run_budget_set = True
+        config.run_expected_excess_set = True
         config.run_column_caching_set = True
         config.run_mean_set = True
         config.run_parallel_set = True
@@ -369,6 +462,7 @@ def handle_command_line():
         config.run_single_vs_multi_cut_set = True
     else:
         config.run_budget_set = args.budget
+        config.run_expected_excess_set = True
         config.run_column_caching_set = args.caching
         config.run_mean_set = args.mean
         config.run_parallel_set = args.parallel
@@ -381,6 +475,7 @@ def handle_command_line():
 
     log.info(f"budget runs: {config.run_budget_set}")
     log.info(f"column caching runs: {config.run_column_caching_set}")
+    log.info(f"expected excess runs: {config.run_expected_excess_set}")
     log.info(f"mean runs: {config.run_mean_set}")
     log.info(f"parallel runs: {config.run_parallel_set}")
     log.info(f"quality runs: {config.run_quality_set}")

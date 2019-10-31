@@ -31,7 +31,10 @@ public class UpperBoundSolver {
         TestKPISet averageKPISet = qc.collectAverageTestStatsForBatchRun(
             new ArrayList<>(Collections.singletonList(rescheduleSolution)))[0];
         Parameters.setColumnGenStrategy(originalStrategy);
-        return rescheduleSolution.getRescheduleCost() + averageKPISet.getKpi(
-            Enums.TestKPI.delayCost);
+
+        final double delayCost = Parameters.isExpectedExcess()
+            ? averageKPISet.getKpi(Enums.TestKPI.expExcessDelayCost)
+            : averageKPISet.getKpi(Enums.TestKPI.delayCost);
+        return rescheduleSolution.getRescheduleCost() + delayCost;
     }
 }

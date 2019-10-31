@@ -32,7 +32,7 @@ public class SubSolver {
 
     // Solution info
     private double objValue;
-    private double[] dValues;
+    private double[] zValues;
     private double[][] yValues;
     private double[] dualsTail;
     private double[] dualsLeg;
@@ -99,7 +99,7 @@ public class SubSolver {
     }
 
     void collectSolution() throws IloException {
-        dValues = subModelBuilder.getdValues();
+        zValues = subModelBuilder.getzValues();
         yValues = subModelBuilder.getyValues();
     }
 
@@ -135,8 +135,8 @@ public class SubSolver {
         return objValue;
     }
 
-    double[] getdValues() {
-        return dValues;
+    double[] getzValues() {
+        return zValues;
     }
 
     double[][] getyValues() {

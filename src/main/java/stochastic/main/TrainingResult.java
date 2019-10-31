@@ -1,5 +1,7 @@
 package stochastic.main;
 
+import stochastic.registry.Parameters;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -152,33 +154,36 @@ class TrainingResult implements Serializable {
 
     static List<String> getCsvHeaders() {
         return new ArrayList<>(Arrays.asList(
-                "instance",
-                "strategy",
-                "distribution",
-                "mean",
-                "standard deviation",
-                "budget fraction",
-                "Naive rows",
-                "Naive columns",
-                "Naive non-zeroes",
-                "Naive objective",
-                "Naive model reschedule cost",
-                "Naive model solution time (seconds)",
-                "DEP rows",
-                "DEP columns",
-                "DEP non-zeroes",
-                "DEP objective",
-                "DEP reschedule cost",
-                "DEP solution time (seconds)",
-                "Benders reschedule cost",
-                "Benders solution time (seconds)",
-                "Benders lower bound",
-                "Benders upper bound",
-                "Benders global upper bound",
-                "Benders gap (%)",
-                "Benders optimality gap (%)",
-                "Benders number of cuts",
-                "Benders number of iterations"));
+            "instance",
+            "strategy",
+            "distribution",
+            "mean",
+            "standard deviation",
+            "budget fraction",
+            "expected excess",
+            "excess target",
+            "excess aversion",
+            "Naive rows",
+            "Naive columns",
+            "Naive non-zeroes",
+            "Naive objective",
+            "Naive model reschedule cost",
+            "Naive model solution time (seconds)",
+            "DEP rows",
+            "DEP columns",
+            "DEP non-zeroes",
+            "DEP objective",
+            "DEP reschedule cost",
+            "DEP solution time (seconds)",
+            "Benders reschedule cost",
+            "Benders solution time (seconds)",
+            "Benders lower bound",
+            "Benders upper bound",
+            "Benders global upper bound",
+            "Benders gap (%)",
+            "Benders optimality gap (%)",
+            "Benders number of cuts",
+            "Benders number of iterations"));
     }
 
     List<String> getCsvRow() {
@@ -188,7 +193,10 @@ class TrainingResult implements Serializable {
             distribution,
             Double.toString(distributionMean),
             Double.toString(distributionSd),
-            Double.toString(budgetFraction)));
+            Double.toString(budgetFraction),
+            Boolean.toString(Parameters.isExpectedExcess()),
+            Integer.toString(Parameters.getExcessTarget()),
+            Double.toString(Parameters.getRiskAversion())));
 
         row.addAll(naiveModelStats.getCsvRow());
         row.add(Double.toString(naiveRescheduleCost));
