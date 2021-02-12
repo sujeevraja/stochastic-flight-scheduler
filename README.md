@@ -1,36 +1,38 @@
 ## Stochastic Flight Scheduler
 
-This repository contains Java code to solve a 2-stage stochastic model related to flight planning.
-The model is a 2-stage stochastic model where the first stage reschedules flights to adjust
-slacks. The second stage minimizes excess delay over the OTP limit after offsetting primary delays
-using the first stage rescheduling.
+This repository contains data and code used to run experiments for results in the
+[paper](https://arxiv.org/abs/2001.08548) on using stochastic programming to adjust flight
+schedules to minimize propagated delays. The crux of the code solves a 2-stage stochastic model
+where the first stage reschedules flights to adjust slacks in connection time. The second stage
+minimizes excess delay after offsetting primary delays using the first stage rescheduling. The code
+requires CPLEX to run.
+
+## License
+
+License for code in this repo is the MIT license (see LICENSE file in the repo). However,
+it relies on CPLEX and Java libraries like commons-math. So, their licenses have to be checked
+before using code sections that use these libraries. Code sections with external dependencies are:
+
+- Data input/output (XML, YAML libs)
+- Solving models to get solutions, dual values (CPLEX)
+- Generating random delays from a specific distribution (commons-math)
 
 ## Features
 
 Given a flight schedule XML file, this solver can be used to:
 
-- generate random second-stage scenarios and probabilities.
-- run the 2-stage model with Benders and generated scenarios to find an optimal reschedule plan.
-- solve the second stage models sequentially or in parallel.
+- Generate random second-stage scenarios and probabilities.
+- Run the 2-stage model with Benders and generated scenarios to find an optimal re-schedule plan.
+- Solve the second stage models sequentially or in parallel.
 - Use full enumeration or column generation with labeling to solve the second stage problems.
-- solve the same problem using a naive MIP that uses expected values of primary delays.
-- compare performance of the all models and original schedule with new random delay scenarios.
-- run batch runs to compare model quality/performance by varying parameters.
-
-## Dependencies
-
-- CPLEX
-- Gradle (installation optional)
-- commons math3 3.6.1 (for probability distributions, obtained by Gradle)
-- commons CLI 1.4 (for Java CLI argument parsing, obtained by Gradle)
-- log4j 2.10.0 (for logging, obtained by Gradle)
-- snakeyaml 1.23 (for YAML file writing, obtained by Gradle)
-- Python3 (only to run the batch runner script _batch_runner.py_)
+- Solve the same problem using a naive MIP that uses expected values of primary delays.
+- Compare performance of the all models and original schedule with new random delay scenarios.
+- Run batch runs to compare model quality/performance by varying parameters.
 
 ## Usage
 
-Clone the repository. Create a file named _gradle.properties_ in the root
-folder. Add the following two lines to the file:
+Create a file named _gradle.properties_ in the repo folder. Add the following two lines to the
+file:
 
 ```
 cplexJarPath=/file/path/to/cplex/jar
