@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import argparse
 import logging
 import os
@@ -10,7 +8,7 @@ import subprocess
 log = logging.getLogger(__name__)
 
 
-class Config(object):
+class Config:
     """Class that holds global parameters."""
 
     def __init__(self):
@@ -488,7 +486,6 @@ def handle_command_line():
 def main():
     logging.basicConfig(format='%(asctime)s %(levelname)s--: %(message)s',
                         level=logging.DEBUG)
-
     try:
         config = handle_command_line()
         controller = Controller(config)
