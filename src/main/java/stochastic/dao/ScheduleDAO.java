@@ -46,13 +46,13 @@ public class ScheduleDAO {
             }
         } catch (ParserConfigurationException pce) {
             logger.error(pce);
-            throw new OptException("Unable to create DocumentBuilder to read Schedule.xml");
+            throw new OptException("Unable to create DocumentBuilder to read schedule xml");
         } catch (IOException ioe) {
             logger.error(ioe);
-            throw new OptException("Unable to read Schedule.xml");
+            throw new OptException("Unable to read schedule xml");
         } catch (SAXException se) {
             logger.error(se);
-            throw new OptException("Possibly ill-formed xml in Schedule.xml");
+            throw new OptException("Possibly ill-formed xml in schedule xml");
         }
     }
 

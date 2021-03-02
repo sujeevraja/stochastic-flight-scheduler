@@ -70,7 +70,7 @@ class Controller {
         // Read leg data and remove unnecessary legs
         String instancePath = Parameters.getInstancePath();
         logger.debug("instance path: " + instancePath);
-        ArrayList<Leg> legs = new ScheduleDAO(instancePath + "/Schedule.xml").getLegs();
+        ArrayList<Leg> legs = new ScheduleDAO(instancePath).getLegs();
         storeLegs(legs);
         // limitNumTails();
         logger.info("Collected leg and tail data from Schedule.xml.");
