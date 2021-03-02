@@ -169,6 +169,8 @@ public class SubSolverRunnable implements Runnable {
         boolean optimal = false;
         int columnGenIter = 0;
         while (!optimal) {
+            logger.debug("scenario " + scenarioNum + " column gen iteration " + columnGenIter + " starting...");
+
             // Solve second-stage RMP (Restricted Master Problem)
             ss.constructSecondStage(pathsAll);
 
@@ -269,7 +271,6 @@ public class SubSolverRunnable implements Runnable {
 
             ss.collectSolution();
             buildDelaySolution(ss, randomDelays, pathsAll);
-            ss.end();
         } else {
             // Update master problem data
             alpha = calculateAlpha(ss.getDualsLeg(), ss.getDualsTail(), ss.getDualsBound(),
@@ -282,8 +283,8 @@ public class SubSolverRunnable implements Runnable {
                 ss.collectSolution();
                 pathCache.addPaths(getBestPaths(ss.getyValues(), pathsAll));
             }
-            ss.end();
         }
+        ss.end();
     }
 
     private void buildDelaySolution(SubSolver ss, int[] primaryDelays,
