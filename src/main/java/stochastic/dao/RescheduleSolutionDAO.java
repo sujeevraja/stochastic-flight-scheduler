@@ -17,7 +17,7 @@ import java.util.*;
  */
 public class RescheduleSolutionDAO {
     private final static Logger logger = LogManager.getLogger(RescheduleSolutionDAO.class);
-    private RescheduleSolution rescheduleSolution;
+    private final RescheduleSolution rescheduleSolution;
 
     public RescheduleSolutionDAO(String modelName, ArrayList<Leg> legs) throws OptException {
         try {

@@ -7,13 +7,11 @@ public class Tail {
      * Class used to hold individual aircraft and route data.
      * Assumed that original schedule is always non-empty.
      */
-    private Integer id;
+    private final Integer id;
     private Integer index;
-    private ArrayList<Leg> origSchedule;
-    private Integer sourcePort;
-    private Integer sinkPort;
-    private long sourceTime;
-    private long sinkTime;
+    private final ArrayList<Leg> origSchedule;
+    private final Integer sourcePort;
+    private final Integer sinkPort;
 
     public Tail(Integer id, ArrayList<Leg> origSchedule) {
         this.id = id;
@@ -21,8 +19,6 @@ public class Tail {
         this.origSchedule = origSchedule;
         sourcePort = origSchedule.get(0).getDepPort();
         sinkPort = origSchedule.get(origSchedule.size() - 1).getArrPort();
-        sourceTime = origSchedule.get(0).getDepTime();
-        sinkTime = origSchedule.get(origSchedule.size() - 1).getArrTime();
     }
 
     public Integer getId() {
@@ -47,14 +43,6 @@ public class Tail {
 
     public Integer getSinkPort() {
         return sinkPort;
-    }
-
-    public long getSourceTime() {
-        return sourceTime;
-    }
-
-    public long getSinkTime() {
-        return sinkTime;
     }
 
     @Override

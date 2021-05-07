@@ -1,24 +1,21 @@
 package stochastic.network;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import stochastic.domain.Leg;
 import stochastic.domain.Tail;
 import stochastic.utility.OptException;
 
 import java.util.ArrayList;
 
+/**
+ * Represents a column for the model.
+ * Holds the tail for which it was generated and a list of legs.
+ */
 public class Path {
-    /**
-     * Represents a column for the model.
-     * Holds the tail for which it was generated and a list of legs.
-     */
-    private final static Logger logger = LogManager.getLogger(Path.class);
-    private Tail tail;
-    private ArrayList<Leg> legs;
-    private ArrayList<Integer> propagatedDelays;
+    private final Tail tail;
+    private final ArrayList<Leg> legs;
+    private final ArrayList<Integer> propagatedDelays;
     private static int pathCounter = 0;
-    private int index;
+    private final int index;
 
     public Path(Tail tail) {
         this.tail = tail;

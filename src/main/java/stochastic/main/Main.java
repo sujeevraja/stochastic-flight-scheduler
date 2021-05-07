@@ -105,7 +105,6 @@ public class Main {
     private static void writeStatsAndExit() throws OptException {
         logger.info("started primary delay generation...");
         Controller controller = new Controller();
-        controller.readData();
         controller.computeStats();
         logger.info("completed primary delay generation.");
     }
@@ -113,7 +112,6 @@ public class Main {
     private static void writeDelaysAndExit() throws OptException {
         logger.info("started primary delay generation...");
         Controller controller = new Controller();
-        controller.readData();
         controller.computeStats();
         controller.setDelayGenerator();
         Parameters.setParsePrimaryDelaysFromFiles(false);
@@ -143,7 +141,6 @@ public class Main {
     private static void singleRun() throws OptException {
         logger.info("Started optimization...");
         Controller controller = new Controller();
-        controller.readData();
         controller.computeStats();
         controller.setDelayGenerator();
         controller.buildScenarios();
