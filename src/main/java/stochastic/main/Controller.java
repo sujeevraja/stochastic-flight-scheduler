@@ -78,8 +78,17 @@ class Controller {
 
         logger.info("started building connection network...");
         dataRegistry.buildConnectionNetwork();
-        dataRegistry.getNetwork().countPathsForTails(dataRegistry.getTails());
         logger.info("built connection network.");
+
+    }
+
+    final void computeStats() {
+        ArrayList<Leg> legs = dataRegistry.getLegs();
+        ArrayList<Tail> tails = dataRegistry.getTails();
+        final long numPaths = dataRegistry.getNetwork().countPathsForTails(tails);
+        logger.info("number of legs " + legs.size());
+        logger.info("number of tails " + tails.size());
+        logger.info("number of paths " + numPaths);
     }
 
     final void setDelayGenerator() {

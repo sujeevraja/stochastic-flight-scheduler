@@ -17,7 +17,7 @@ public class Network {
      */
     private final static Logger logger = LogManager.getLogger(Network.class);
 
-    private ArrayList<Leg> legs;
+    private final ArrayList<Leg> legs;
     private HashMap<Integer, ArrayList<Integer>> adjacencyList; // keys and values are indices of leg list.
 
     public Network(ArrayList<Leg> legs) {
@@ -25,7 +25,7 @@ public class Network {
         buildAdjacencyList();
     }
 
-    public void countPathsForTails(ArrayList<Tail> tails) {
+    public long countPathsForTails(ArrayList<Tail> tails) {
         long totalNumPaths = 0;
         for (Tail tail : tails) {
             PathCounter pc = new PathCounter(tail, legs, adjacencyList);
@@ -34,8 +34,7 @@ public class Network {
                     + tail.getSinkPort() + "): " + numPathsForTail);
             totalNumPaths += numPathsForTail;
         }
-
-        logger.info("total number of paths: " + totalNumPaths);
+        return totalNumPaths;
     }
 
     public ArrayList<Path> enumeratePathsForTails(ArrayList<Tail> tails, int[] delays) {

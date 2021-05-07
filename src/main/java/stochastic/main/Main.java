@@ -14,10 +14,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.TreeMap;
 
+/**
+ * Class that owns main().
+ */
 public class Main {
-    /**
-     * Class that owns main().
-     */
     private final static Logger logger = LogManager.getLogger(Main.class);
 
     public static void main(String[] args) {
@@ -36,7 +36,9 @@ public class Main {
             writeDefaultParameters();
             updateParameters(cmd);
 
-            if (cmd.hasOption("generateDelays"))
+            if (cmd.hasOption("stats"))
+                writeStatsAndExit();
+            else if (cmd.hasOption("generateDelays"))
                 writeDelaysAndExit();
             else if (cmd.hasOption("batch"))
                 batchRun(name, cmd.getOptionValue("type"));
@@ -80,6 +82,7 @@ public class Main {
         options.addOption("r", true, "reschedule budget fraction");
         options.addOption("s", false, "use single-cut Benders");
         options.addOption("sd", true, "standard deviation");
+        options.addOption("stats", false, "generate stats about instance");
         options.addOption("type", true,
             "type (benders/training/test)");
         options.addOption("h", false, "help (show options and exit)");
@@ -99,10 +102,19 @@ public class Main {
         }
     }
 
+    private static void writeStatsAndExit() throws OptException {
+        logger.info("started primary delay generation...");
+        Controller controller = new Controller();
+        controller.readData();
+        controller.computeStats();
+        logger.info("completed primary delay generation.");
+    }
+
     private static void writeDelaysAndExit() throws OptException {
         logger.info("started primary delay generation...");
         Controller controller = new Controller();
         controller.readData();
+        controller.computeStats();
         controller.setDelayGenerator();
         Parameters.setParsePrimaryDelaysFromFiles(false);
         controller.buildScenarios();
@@ -132,6 +144,7 @@ public class Main {
         logger.info("Started optimization...");
         Controller controller = new Controller();
         controller.readData();
+        controller.computeStats();
         controller.setDelayGenerator();
         controller.buildScenarios();
         controller.solve();
