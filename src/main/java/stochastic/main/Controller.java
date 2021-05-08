@@ -10,6 +10,7 @@ import stochastic.delay.Scenario;
 import stochastic.delay.StrategicDelayGenerator;
 import stochastic.domain.Leg;
 import stochastic.domain.Tail;
+import stochastic.network.Network;
 import stochastic.output.KpiManager;
 import stochastic.output.QualityChecker;
 import stochastic.output.RescheduleSolution;
@@ -71,18 +72,36 @@ class Controller {
     final void computeStats() {
         ArrayList<Leg> legs = dataRegistry.getLegs();
         ArrayList<Tail> tails = dataRegistry.getTails();
-        final long numPaths = dataRegistry.getNetwork().countPathsForTails(tails);
+        Network network = dataRegistry.getNetwork();
+        final long numPaths = network.countPathsForTails(tails);
+        int numConnections = network.getNumConnections();
         logger.info("number of legs " + legs.size());
         logger.info("number of tails " + tails.size());
         logger.info("number of paths " + numPaths);
+        logger.info("number of connections " + numConnections);
 
-        Map<Integer, Integer> visitCounts = new HashMap<>();
+        int hubVisits = 0;
+        int nonHubVisits = 0;
+        final int hub = dataRegistry.getHub();
         for (Leg leg : legs) {
-            visitCounts.replace(leg.getDepPort(),
-                visitCounts.getOrDefault(leg.getDepPort(), 0) + 1);
-            visitCounts.replace(leg.getArrPort(),
-                visitCounts.getOrDefault(leg.getArrPort(), 0) + 1);
+            if (leg.getDepPort().equals(hub))
+                ++hubVisits;
+            else
+                ++nonHubVisits;
         }
+        // logger.info("number of hub visits " + hubVisits);
+        // logger.info("number of non hub visits " + nonHubVisits);
+        final double hubVisitPercent = hubVisits * 100.0 / (hubVisits + nonHubVisits);
+        logger.info("hub visit percentage " + hubVisitPercent);
+
+        final long numHubRoundTrips = network.computeNumRoundTripsTo(hub);
+        // logger.info("number of round trips to hub " + numHubRoundTrips);
+
+        final long numRoundTrips = network.computeNumRoundTripsTo(null);
+        // logger.info("number of round trips " + numRoundTrips);
+
+        final double density = network.computeDensity();
+        logger.info("density " + density);
     }
 
     final void setDelayGenerator() {
