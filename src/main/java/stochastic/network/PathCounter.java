@@ -21,8 +21,8 @@ class PathCounter {
         this.adjacencyList = adjacencyList;
     }
 
-    int countPathsForTail() {
-        int numPaths = 0;
+    long countPathsForTail() {
+        long numPaths = 0;
         for (Leg leg : legs) {
             if (!tail.getSourcePort().equals(leg.getDepPort()))
                 continue;

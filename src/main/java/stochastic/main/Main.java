@@ -28,11 +28,8 @@ public class Main {
 
             final String name = cmd.hasOption('n')
                 ? cmd.getOptionValue('n')
-                : "20171115022840-v2";
-                // : "instance1";
-            String instancePath = cmd.hasOption("path")
-                ? cmd.getOptionValue("path")
-                : ("data/" + name);
+                : "s6";
+            String instancePath = "data/" + name + ".xml";
             Parameters.setInstancePath(instancePath);
 
             setDefaultParameters();
@@ -80,7 +77,6 @@ public class Main {
             "number of parallel runs for second stage");
         options.addOption("parseDelays", false,
             "parse primary delays from files");
-        options.addOption("path", true, "instance path");
         options.addOption("r", true, "reschedule budget fraction");
         options.addOption("s", false, "use single-cut Benders");
         options.addOption("sd", true, "standard deviation");

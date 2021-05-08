@@ -26,10 +26,10 @@ public class Network {
     }
 
     public void countPathsForTails(ArrayList<Tail> tails) {
-        int totalNumPaths = 0;
+        long totalNumPaths = 0;
         for (Tail tail : tails) {
             PathCounter pc = new PathCounter(tail, legs, adjacencyList);
-            int numPathsForTail = pc.countPathsForTail();
+            long numPathsForTail = pc.countPathsForTail();
             logger.info("number of paths for tail " + tail.getId() + "(" + tail.getSourcePort() + " -> "
                     + tail.getSinkPort() + "): " + numPathsForTail);
             totalNumPaths += numPathsForTail;
