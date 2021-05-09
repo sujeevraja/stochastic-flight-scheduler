@@ -1,33 +1,31 @@
 import argparse
+import enum
 import logging
 import os
 import shutil
 import subprocess
-
+import typing
 
 log = logging.getLogger(__name__)
 
 
-class Config:
-    """Class that holds global parameters."""
+class RunType(enum.Enum):
+    Budget = enum.auto()
+    ExpectedExcess = enum.auto()
+    ColumnCaching = enum.auto()
+    Mean = enum.auto()
+    Parallel = enum.auto()
+    Quality = enum.auto()
+    TimeComparison = enum.auto()
+    CutComparison = enum.auto()
 
-    def __init__(self):
-        self.run_budget_set = False
-        self.run_expected_excess_set = False
-        self.run_column_caching_set = False
-        self.run_mean_set = False
-        self.run_parallel_set = False
-        self.run_quality_set = False
-        self.run_time_comparison_set = False
-        self.run_single_vs_multi_cut_set = False
-        self.jar_path = "build/libs/stochastic_uber.jar"
-        self.cplex_lib_path = None
 
-        self.names = ["s{}".format(i) for i in range(1, 6)]
-        self.paths = ["data/paper/{}".format(n) for n in self.names]
-        # self.names = ["instance1", "instance2"]
-        # self.names = ["instance1"]
-        # self.paths = ["data/{}".format(n) for n in self.names]
+class Config(typing.NamedTuple):
+    """Script parameters"""
+    run_type: RunType
+    jar_path: str
+    cplex_lib_path: str
+    names: typing.List[str]
 
 
 class ScriptException(Exception):
@@ -41,59 +39,133 @@ class ScriptException(Exception):
         return repr(self.value)
 
 
+def get_root() -> str:
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+
+def move_delay_files(src_path: str, dst_path: str):
+    for f in os.listdir(src_path):
+        if f.startswith("primary") and f.endswith(".csv"):
+            shutil.move(
+                os.path.join(src_path, f),
+                os.path.join(dst_path, f))
+
+
+def remove_delay_files(folder_path: str):
+    for f in os.listdir(folder_path):
+        if f.startswith("primary") and f.endswith(".csv"):
+            os.unlink(os.path.join(folder_path, f))
+
+
+def clean_delay_files():
+    sln_path = os.path.join(get_root(), 'solution')
+    for f in os.listdir(sln_path):
+        if (f.endswith(".csv")
+                and (f.startswith("primary_delay") or f.startswith("reschedule_"))):
+            os.remove(os.path.join(sln_path, f))
+
+
+def generate_delays(orig_cmd: typing.List[str], num_scenarios: typing.Optional[int] = None):
+    cmd = [c for c in orig_cmd]
+    cmd.append("-generateDelays")
+    if num_scenarios is not None:
+        cmd.extend(["-numScenarios", str(num_scenarios)])
+    subprocess.check_call(cmd)
+
+
+def generate_reschedule_solution(orig_cmd: typing.List[str], model: str):
+    cmd = [c for c in orig_cmd]
+    cmd.extend([
+        "-model", model,
+        "-parseDelays",
+        "-type", "training"])
+    subprocess.check_call(cmd)
+
+
+def generate_test_results(orig_cmd: typing.List[str], parse_delays=False):
+    cmd = [c for c in orig_cmd]
+    cmd.extend(["-type", "test"])
+    if parse_delays:
+        cmd.append("-parseDelays")
+    subprocess.check_call(cmd)
+
+
+def generate_all_results(cmd: typing.List[str], models: typing.List[str]):
+    generate_delays(cmd)
+    log.info(f'generated delays for {cmd}')
+
+    for model in models:
+        generate_reschedule_solution(cmd, model)
+        log.info(f'finished training run for {model}')
+
+    generate_test_results(cmd)
+    log.info(f'generated test results for {cmd}')
+
+
+def validate_setup(config: Config):
+    if not os.path.isfile(config.jar_path):
+        raise ScriptException(f"unable to find uberjar at {config.jar_path}.")
+    else:
+        log.info("located uberjar.")
+
+    if os.path.isdir(config.cplex_lib_path):
+        log.info("located cplex library path.")
+    else:
+        raise ScriptException(f"invalid cplex lib path: {config.cplex_lib_path}")
+
+    os.makedirs("logs", exist_ok=True)
+    log.info("created/checked logs folder")
+
+    os.makedirs("solution", exist_ok=True)
+    for f in os.listdir(os.path.join(os.getcwd(), "solution")):
+        if f != '.gitkeep':
+            raise ScriptException("solution folder not empty.")
+    log.info("created/checked solution folder")
+
+
 class Controller:
     """class that manages the functionality of the entire script."""
 
-    def __init__(self, config):
-        self.config = config
-        self._base_cmd = None
-        self._models = ["naive", "dep", "benders"]
-
-    def run(self):
-        self._validate_setup()
-        self._validate_cplex_library_path()
+    def __init__(self, config: Config):
+        validate_setup(config)
+        self.config: Config = config
         self._base_cmd = [
             "java",
             "-Xms32m",
             "-Xmx32g",
-            "-Djava.library.path={}".format(
-                self.config.cplex_lib_path),
+            f"-Djava.library.path={self.config.cplex_lib_path}",
             "-jar",
             self.config.jar_path, ]
+        self._models = ["naive", "dep", "benders"]
 
-        if not (self.config.run_budget_set or
-                self.config.run_column_caching_set or
-                self.config.run_expected_excess_set or
-                self.config.run_mean_set or
-                self.config.run_parallel_set or
-                self.config.run_quality_set or
-                self.config.run_time_comparison_set or
-                self.config.run_single_vs_multi_cut_set):
-            raise ScriptException("no batch run chosen, nothing to do.")
-
-        if self.config.run_budget_set:
+    def run(self):
+        run_type = self.config.run_type
+        if run_type == RunType.Budget:
             self._run_budget_set()
-        if self.config.run_column_caching_set:
-            self._run_column_caching_set()
-        if self.config.run_expected_excess_set:
+        elif run_type == RunType.ExpectedExcess:
             self._run_expected_excess_set()
-        if self.config.run_mean_set:
+        elif run_type == RunType.ColumnCaching:
+            self._run_column_caching_set()
+        elif run_type == RunType.Mean:
             self._run_mean_set()
-        if self.config.run_parallel_set:
+        elif run_type == RunType.Parallel:
             self._run_parallel_set()
-        if self.config.run_quality_set:
+        elif run_type == RunType.Quality:
             self._run_quality_set()
-        if self.config.run_time_comparison_set:
+        elif run_type == RunType.TimeComparison:
             self._run_time_comparison_set()
-        if self.config.run_single_vs_multi_cut_set:
+        elif run_type == RunType.CutComparison:
             self._run_single_vs_multi_cut_set()
+        else:
+            log.warning(f"unknown run type: {run_type}")
 
-        log.info("completed all batch runs")
+        clean_delay_files()
+        log.info("completed batch run.")
 
     def _run_budget_set(self):
         log.info("starting budget comparison runs...")
         budget_fractions = ["0.25", "0.5", "0.75", "1", "2"]
-        for name, path in zip(self.config.names, self.config.paths):
+        for name, path in zip(self.config.names, self.config.names):
             for bf in budget_fractions:
                 cmd = [c for c in self._base_cmd]
                 cmd.extend([
@@ -102,14 +174,12 @@ class Controller:
                     "-n", name,
                     "-r", bf])
 
-                self._generate_all_results(cmd)
-
-        self._clean_delay_files()
+                generate_all_results(cmd, self._models)
         log.info("completed budget comparison runs.")
 
     def _run_column_caching_set(self):
         log.info("starting column caching comparison runs...")
-        for name, path in zip(self.config.names, self.config.paths):
+        for name, path in zip(self.config.names, self.config.names):
             for _ in range(5):
                 cmd = [c for c in self._base_cmd]
                 cmd.extend([
@@ -119,7 +189,7 @@ class Controller:
                     "-type", "benders",
                     "-parallel", "1", ])
 
-                self._generate_delays(cmd)
+                generate_delays(cmd)
 
                 for should_cache in ["y", "n"]:
                     run_cmd = [c for c in cmd]
@@ -131,7 +201,6 @@ class Controller:
                     subprocess.check_call(run_cmd)
                     log.info(f"finished time comparison run for {run_cmd}")
 
-        self._clean_delay_files()
         log.info("completed time comparison runs.")
 
     def _run_expected_excess_set(self):
@@ -167,59 +236,44 @@ class Controller:
                 ])
 
                 # Generate training delay scenarios
-                self._generate_delays(cmd)
+                generate_delays(cmd)
                 log.info(f'generated training delays for {cmd}')
 
                 # Generate regular training results
                 for model in self._models:
-                    self._generate_reschedule_solution(cmd, model)
+                    generate_reschedule_solution(cmd, model)
                     log.info(f'finished training run for {model}')
 
                 # Protect training delays for EE runs and generate test delays.
-                # self._move_delay_files(solution_path, training_delays_path)
-                # self._generate_delays(cmd, num_scenarios=100)
+                # move_delay_files(solution_path, training_delays_path)
+                # generate_delays(cmd, num_scenarios=100)
 
                 # Generate regular test results
-                self._generate_test_results(cmd, parse_delays=True)
+                generate_test_results(cmd, parse_delays=True)
                 # log.info(f'generated test results for {cmd}')
 
                 # Protect test delays and move training delays back to solution folder.
-                # self._move_delay_files(solution_path, test_delays_path)
-                # self._move_delay_files(training_delays_path, solution_path)
+                # move_delay_files(solution_path, test_delays_path)
+                # move_delay_files(training_delays_path, solution_path)
 
                 # Generate expected excess training results
                 cmd.extend(["-expectedExcess", "y"])
                 for model in self._models:
-                    self._generate_reschedule_solution(cmd, model)
+                    generate_reschedule_solution(cmd, model)
                     log.info(f'finished training run for {model} with excess')
 
                 # Clear training delay files and move test delay files to solution folder.
-                # self._remove_delay_files(solution_path)
-                # self._move_delay_files(test_delays_path, solution_path)
+                # remove_delay_files(solution_path)
+                # move_delay_files(test_delays_path, solution_path)
 
-                self._generate_test_results(cmd, parse_delays=True)
+                generate_test_results(cmd, parse_delays=True)
                 log.info(f'generated test results for {cmd} with excess')
 
-                self._clean_delay_files()
         log.info("completed expected excess comparison runs.")
-
-    @staticmethod
-    def _move_delay_files(src_path, dst_path):
-        for f in os.listdir(src_path):
-            if f.startswith("primary") and f.endswith(".csv"):
-                shutil.move(
-                    os.path.join(src_path, f),
-                    os.path.join(dst_path, f))
-
-    @staticmethod
-    def _remove_delay_files(folder_path):
-        for f in os.listdir(folder_path):
-            if f.startswith("primary") and f.endswith(".csv"):
-                os.unlink(os.path.join(folder_path, f))
 
     def _run_mean_set(self):
         log.info("starting mean comparison runs...")
-        for name, path in zip(self.config.names, self.config.paths):
+        for name, path in zip(self.config.names, self.config.names):
             for distribution in ['exp', 'tnorm', 'lnorm']:
                 for mean in ["15", "30", "45", "60"]:
                     cmd = [c for c in self._base_cmd]
@@ -230,14 +284,13 @@ class Controller:
                         "-d", distribution,
                         "-mean", mean, ])
 
-                    self._generate_all_results(cmd)
+                    generate_all_results(cmd, self._models)
 
-        self._clean_delay_files()
         log.info("completed mean comparison runs.")
 
     def _run_quality_set(self):
         log.info("starting quality runs...")
-        for name, path in zip(self.config.names, self.config.paths):
+        for name, path in zip(self.config.names, self.config.names):
             for distribution in ['exp', 'tnorm', 'lnorm']:
                 for flight_pick in ['all', 'hub', 'rush']:
                     cmd = [c for c in self._base_cmd]
@@ -248,14 +301,13 @@ class Controller:
                         "-d", distribution,
                         "-f", flight_pick, ])
 
-                    self._generate_all_results(cmd)
+                    generate_all_results(cmd, self._models)
 
-        self._clean_delay_files()
         log.info("completed quality runs.")
 
     def _run_parallel_set(self):
         log.info("starting multi-threading comparison runs...")
-        for name, path in zip(self.config.names, self.config.paths):
+        for name, path in zip(self.config.names, self.config.names):
             for _ in range(5):
                 cmd = [c for c in self._base_cmd]
                 cmd.extend([
@@ -264,7 +316,7 @@ class Controller:
                     "-n", name,
                     "-type", "benders", ])
 
-                self._generate_delays(cmd)
+                generate_delays(cmd)
 
                 for num_threads in [1, 10, 20, 30]:
                     run_cmd = [c for c in cmd]
@@ -277,12 +329,11 @@ class Controller:
                     log.info(
                         f'finished threading run for {name}, {num_threads}')
 
-        self._clean_delay_files()
         log.info("completed multi-threading comparison runs.")
 
     def _run_time_comparison_set(self):
         log.info("starting time comparison runs...")
-        for name, path in zip(self.config.names, self.config.paths):
+        for name, path in zip(self.config.names, self.config.names):
             for _ in range(5):
                 cmd = [c for c in self._base_cmd]
                 cmd.extend([
@@ -291,34 +342,32 @@ class Controller:
                     "-n", name,
                     "-type", "benders"])
 
-                self._generate_delays(cmd)
+                generate_delays(cmd)
 
-                for cgen in ['enum', 'all', 'best', 'first']:
+                for column_gen in ['enum', 'all', 'best', 'first']:
                     run_cmd = [c for c in cmd]
                     run_cmd.extend([
                         "-parseDelays",
                         "-model", "benders",
-                        "-c", cgen, ])
+                        "-c", column_gen, ])
 
                     subprocess.check_call(run_cmd)
                     log.info(f"finished time comparison run for {run_cmd}")
 
-        self._clean_delay_files()
         log.info("completed time comparison runs.")
 
     def _run_single_vs_multi_cut_set(self):
         log.info("starting cut comparison runs...")
-        for name, path in zip(self.config.names, self.config.paths):
+        for path in zip(self.config.names, self.config.names):
             for _ in range(5):
                 cmd = [c for c in self._base_cmd]
                 cmd.extend([
                     "-batch",
-                    "-path", path,
-                    "-n", name,
+                    "-n", path,
                     "-type", "benders",
                     "-parallel", "1"])
 
-                self._generate_delays(cmd)
+                generate_delays(cmd)
 
                 run_cmd = [c for c in cmd]
                 run_cmd.extend([
@@ -329,158 +378,50 @@ class Controller:
                 run_cmd.append("-s")
                 subprocess.check_call(run_cmd)
 
-        self._clean_delay_files()
         log.info("completed cut comparison runs.")
 
-    def _generate_all_results(self, cmd):
-        self._generate_delays(cmd)
-        log.info(f'generated delays for {cmd}')
 
-        for model in self._models:
-            self._generate_reschedule_solution(cmd, model)
-            log.info(f'finished training run for {model}')
+def guess_cplex_library_path() -> str:
+    gp_path = os.path.join(os.path.expanduser("~"), ".gradle", "gradle.properties")
+    if not os.path.isfile(gp_path):
+        raise ScriptException(f"gradle.properties not available at {gp_path}")
 
-        self._generate_test_results(cmd)
-        log.info(f'generated test results for {cmd}')
+    with open(gp_path, 'r') as fin:
+        for line in fin:
+            line = line.strip()
+            if line.startswith('cplexLibPath='):
+                return line.split('=')[-1].strip()
 
-    @staticmethod
-    def _generate_delays(orig_cmd, num_scenarios=None):
-        cmd = [c for c in orig_cmd]
-        cmd.append("-generateDelays")
-        if num_scenarios is not None:
-            cmd.extend(["-numScenarios", str(num_scenarios)])
-        subprocess.check_call(cmd)
-
-    @staticmethod
-    def _generate_reschedule_solution(orig_cmd, model):
-        cmd = [c for c in orig_cmd]
-        cmd.extend([
-            "-model", model,
-            "-parseDelays",
-            "-type", "training"])
-        subprocess.check_call(cmd)
-
-    @staticmethod
-    def _generate_test_results(orig_cmd, parse_delays=False):
-        cmd = [c for c in orig_cmd]
-        cmd.extend(["-type", "test"])
-        if parse_delays:
-            cmd.append("-parseDelays")
-        subprocess.check_call(cmd)
-
-    def _validate_setup(self):
-        if not os.path.isfile(self.config.jar_path):
-            raise ScriptException(
-                "unable to find uberjar at {}".format(self.config.jar_path))
-        else:
-            log.info("located uberjar.")
-
-        os.makedirs("logs", exist_ok=True)
-        log.info("created/checked logs folder")
-
-        os.makedirs("solution", exist_ok=True)
-        for f in os.listdir(os.path.join(os.getcwd(), "solution")):
-            if f != '.gitkeep':
-                raise ScriptException("solution folder not empty.")
-        log.info("created/checked solution folder")
-
-    def _validate_cplex_library_path(self):
-        if self.config.cplex_lib_path is None:
-            self.config.cplex_lib_path = self._guess_cplex_library_path()
-
-        if not self.config.cplex_lib_path:
-            raise ScriptException("unable to find cplex library path")
-        elif not os.path.isdir(self.config.cplex_lib_path):
-            raise ScriptException(
-                "invalid folder at cplex library path: {}".format(
-                    self.config.cplex_lib_path))
-        else:
-            log.info("located cplex library path.")
-
-    @staticmethod
-    def _guess_cplex_library_path():
-        gp_path = os.path.join(os.path.expanduser("~"), ".gradle",
-                               "gradle.properties")
-        if not os.path.isfile(gp_path):
-            log.warning("gradle.properties not available at {}".format(gp_path))
-            return None
-
-        with open(gp_path, 'r') as fin:
-            for line in fin:
-                line = line.strip()
-                if line.startswith('cplexLibPath='):
-                    return line.split('=')[-1].strip()
-
-        return None
-
-    @staticmethod
-    def _clean_delay_files():
-        sln_path = os.path.join(os.getcwd(), 'solution')
-        for f in os.listdir(sln_path):
-            if (f.endswith(".csv")
-                    and (f.startswith("primary_delay") or f.startswith("reschedule_"))):
-                os.remove(os.path.join(sln_path, f))
+    raise ScriptException("cplex lib path not found from gradle.properties")
 
 
-def handle_command_line():
-    parser = argparse.ArgumentParser()
+def handle_command_line() -> Config:
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument("-j", "--jarpath", type=str,
-                        help="path to stochastic solver jar")
-    parser.add_argument("-a", "--all", help="run all sets",
-                        action="store_true")
-    parser.add_argument("-b", "--budget", help="run budget set",
-                        action="store_true")
-    parser.add_argument("-c", "--caching", help="run column caching set",
-                        action="store_true")
-    parser.add_argument("-e", "--excess", help="run expected excess set",
-                        action="store_true")
-    parser.add_argument("-m", "--mean", help="run mean set",
-                        action="store_true")
-    parser.add_argument("-p", "--parallel", help="run parallel run set",
-                        action="store_true")
-    parser.add_argument("-q", "--quality", help="run quality set",
-                        action="store_true")
-    parser.add_argument("-s", "--single", help="run cut comparison set",
-                        action="store_true")
-    parser.add_argument("-t", "--time", help="run time comparison set",
-                        action="store_true")
+    run_type_dict = {
+        "b": RunType.Budget,
+        "c": RunType.ColumnCaching,
+        "e": RunType.ExpectedExcess,
+        "m": RunType.Mean,
+        "p": RunType.Parallel,
+        "q": RunType.Quality,
+        "t": RunType.TimeComparison,
+        "u": RunType.CutComparison
+    }
 
-    args = parser.parse_args()
-    config = Config()
+    root = get_root()
+    parser.add_argument("-r", "--run_type", type=str, choices=list(run_type_dict.keys()),
+                        help="type of batch run", default="b")
 
-    if args.all:
-        config.run_budget_set = True
-        config.run_expected_excess_set = True
-        config.run_column_caching_set = True
-        config.run_mean_set = True
-        config.run_parallel_set = True
-        config.run_quality_set = True
-        config.run_time_comparison_set = True
-        config.run_single_vs_multi_cut_set = True
-    else:
-        config.run_budget_set = args.budget
-        config.run_expected_excess_set = True
-        config.run_column_caching_set = args.caching
-        config.run_mean_set = args.mean
-        config.run_parallel_set = args.parallel
-        config.run_quality_set = args.quality
-        config.run_time_comparison_set = args.time
-        config.run_single_vs_multi_cut_set = args.single
+    default_names: typing.List[str] = [f"s{i}" for i in range(1, 7)]
+    parser.add_argument("-n", "--names", type=str, nargs="+", default=default_names,
+                        help="names of instances to run")
 
-    if args.jarpath:
-        config.jar_path = args.jarpath
-
-    log.info(f"budget runs: {config.run_budget_set}")
-    log.info(f"column caching runs: {config.run_column_caching_set}")
-    log.info(f"expected excess runs: {config.run_expected_excess_set}")
-    log.info(f"mean runs: {config.run_mean_set}")
-    log.info(f"parallel runs: {config.run_parallel_set}")
-    log.info(f"quality runs: {config.run_quality_set}")
-    log.info(f"single vs multi cut runs: {config.run_single_vs_multi_cut_set}")
-    log.info(f"time comparison runs: {config.run_time_comparison_set}")
-
-    return config
+    args_dict = vars(parser.parse_args())
+    args_dict["cplex_lib_path"] = guess_cplex_library_path()
+    args_dict["run_type"] = run_type_dict[args_dict["run_type"]]
+    args_dict["jar_path"] = os.path.join(root, "build", "libs", "stochastic_uber.jar")
+    return Config(**args_dict)
 
 
 def main():
