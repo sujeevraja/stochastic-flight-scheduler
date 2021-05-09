@@ -13,11 +13,12 @@ log = logging.getLogger(__name__)
 
 class RunType(enum.Enum):
     Budget = enum.auto()
-    ExpectedExcess = enum.auto()
+    # ExpectedExcess = enum.auto()
     ColumnCaching = enum.auto()
     Mean = enum.auto()
     Parallel = enum.auto()
     Quality = enum.auto()
+    Scenario = enum.auto()
     TimeComparison = enum.auto()
     CutComparison = enum.auto()
 
@@ -95,14 +96,14 @@ def generate_test_results(orig_cmd: typing.List[str], parse_delays=False):
 
 def generate_all_results(cmd: typing.List[str], models: typing.List[str]):
     generate_delays(cmd)
-    log.info(f'generated delays for {cmd}')
+    log.info(f"generated delays for {cmd}")
 
     for model in models:
         generate_reschedule_solution(cmd, model)
-        log.info(f'finished training run for {model}')
+        log.info(f"finished training run for {model}")
 
     generate_test_results(cmd)
-    log.info(f'generated test results for {cmd}')
+    log.info(f"generated test results for {cmd}")
 
 
 def validate_setup(config: Config):
@@ -141,13 +142,19 @@ class Controller:
             self.config.jar_path,
             "-path", self.config.path, ]
         self._models = ["naive", "dep", "benders"]
+        self._default_delay_mean = 30
+        self._default_delay_sd = 15
+        self._default_delay_distribution = "lnorm"
+        self._default_budget_fraction = 0.5
+        self._default_column_gen_strategy: str = "first"
+        self._default_num_threads: int = 30
 
     def run(self):
         run_type = self.config.run_type
         if run_type == RunType.Budget:
             self._run_budget_set()
-        elif run_type == RunType.ExpectedExcess:
-            self._run_expected_excess_set()
+        # elif run_type == RunType.ExpectedExcess:
+        #    self._run_expected_excess_set()
         elif run_type == RunType.ColumnCaching:
             self._run_column_caching_set()
         elif run_type == RunType.Mean:
@@ -156,6 +163,8 @@ class Controller:
             self._run_parallel_set()
         elif run_type == RunType.Quality:
             self._run_quality_set()
+        elif run_type == RunType.Scenario:
+            self._run_scenario_set()
         elif run_type == RunType.TimeComparison:
             self._run_time_comparison_set()
         elif run_type == RunType.CutComparison:
@@ -175,7 +184,13 @@ class Controller:
                 cmd.extend([
                     "-batch",
                     "-name", name,
-                    "-r", bf])
+                    "-r", bf,
+                    "-d", self._default_delay_distribution,
+                    "-mean", self._default_delay_mean,
+                    "-sd", self._default_delay_sd,
+                    "-f", self._default_column_gen_strategy,
+                    "-parallel", self._default_num_threads,
+                ])
 
                 generate_all_results(cmd, self._models)
         log.info("completed budget comparison runs.")
@@ -205,71 +220,6 @@ class Controller:
 
         log.info("completed time comparison runs.")
 
-    def _run_expected_excess_set(self):
-        log.info("starting expected excess comparison runs...")
-        mean = "30"
-        standard_deviations = ["30.0", "45.0", "60.0"]
-        targets = ["2500", "5000"]
-        aversion = "10"
-
-        # instance_name = "s1"
-        instance_name = "instance1"
-
-        # solution_path = os.path.join(os.getcwd(), "solution")
-        # training_delays_path = os.path.join(os.getcwd(), "training_delays")
-        # os.makedirs(training_delays_path, exist_ok=True)
-        # test_delays_path = os.path.join(os.getcwd(), "test_delays")
-        # os.makedirs(test_delays_path, exist_ok=True)
-
-        for sd in standard_deviations:
-            for target in targets:
-                cmd = [c for c in self._base_cmd]
-                cmd.extend([
-                    "-batch",
-                    "-parallel", "30",
-                    "-name", instance_name,
-                    "-mean", mean,
-                    "-sd", sd,
-                    "-excessTarget", target,
-                    "-excessAversion", aversion,
-                ])
-
-                # Generate training delay scenarios
-                generate_delays(cmd)
-                log.info(f'generated training delays for {cmd}')
-
-                # Generate regular training results
-                for model in self._models:
-                    generate_reschedule_solution(cmd, model)
-                    log.info(f'finished training run for {model}')
-
-                # Protect training delays for EE runs and generate test delays.
-                # move_delay_files(solution_path, training_delays_path)
-                # generate_delays(cmd, num_scenarios=100)
-
-                # Generate regular test results
-                generate_test_results(cmd, parse_delays=True)
-                # log.info(f'generated test results for {cmd}')
-
-                # Protect test delays and move training delays back to solution folder.
-                # move_delay_files(solution_path, test_delays_path)
-                # move_delay_files(training_delays_path, solution_path)
-
-                # Generate expected excess training results
-                cmd.extend(["-expectedExcess", "y"])
-                for model in self._models:
-                    generate_reschedule_solution(cmd, model)
-                    log.info(f'finished training run for {model} with excess')
-
-                # Clear training delay files and move test delay files to solution folder.
-                # remove_delay_files(solution_path)
-                # move_delay_files(test_delays_path, solution_path)
-
-                generate_test_results(cmd, parse_delays=True)
-                log.info(f'generated test results for {cmd} with excess')
-
-        log.info("completed expected excess comparison runs.")
-
     def _run_mean_set(self):
         log.info("starting mean comparison runs...")
         for name in self.config.names:
@@ -289,16 +239,14 @@ class Controller:
     def _run_quality_set(self):
         log.info("starting quality runs...")
         for name in self.config.names:
-            for distribution in ['exp', 'tnorm', 'lnorm']:
-                for flight_pick in ['hub', 'rush']:
-                    cmd = [c for c in self._base_cmd]
-                    cmd.extend([
-                        "-batch",
-                        "-name", name,
-                        "-d", distribution,
-                        "-f", flight_pick, ])
+            for flight_pick in ['hub', 'rush']:
+                cmd = [c for c in self._base_cmd]
+                cmd.extend([
+                    "-batch",
+                    "-name", name,
+                    "-f", flight_pick, ])
 
-                    generate_all_results(cmd, self._models)
+                generate_all_results(cmd, self._models)
 
         log.info("completed quality runs.")
 
@@ -375,6 +323,76 @@ class Controller:
 
         log.info("completed cut comparison runs.")
 
+    def _run_scenario_set(self):
+        log.info("starting scenario runs...")
+        log.info("completed scenario runs.")
+
+    def _run_expected_excess_set(self):
+        log.info("starting expected excess comparison runs...")
+        mean = "30"
+        standard_deviations = ["30.0", "45.0", "60.0"]
+        targets = ["2500", "5000"]
+        aversion = "10"
+
+        # instance_name = "s1"
+        instance_name = "instance1"
+
+        # solution_path = os.path.join(os.getcwd(), "solution")
+        # training_delays_path = os.path.join(os.getcwd(), "training_delays")
+        # os.makedirs(training_delays_path, exist_ok=True)
+        # test_delays_path = os.path.join(os.getcwd(), "test_delays")
+        # os.makedirs(test_delays_path, exist_ok=True)
+
+        for sd in standard_deviations:
+            for target in targets:
+                cmd = [c for c in self._base_cmd]
+                cmd.extend([
+                    "-batch",
+                    "-parallel", "30",
+                    "-name", instance_name,
+                    "-mean", mean,
+                    "-sd", sd,
+                    "-excessTarget", target,
+                    "-excessAversion", aversion,
+                ])
+
+                # Generate training delay scenarios
+                generate_delays(cmd)
+                log.info(f'generated training delays for {cmd}')
+
+                # Generate regular training results
+                for model in self._models:
+                    generate_reschedule_solution(cmd, model)
+                    log.info(f'finished training run for {model}')
+
+                # Protect training delays for EE runs and generate test delays.
+                # move_delay_files(solution_path, training_delays_path)
+                # generate_delays(cmd, num_scenarios=100)
+
+                # Generate regular test results
+                generate_test_results(cmd, parse_delays=True)
+                # log.info(f'generated test results for {cmd}')
+
+                # Protect test delays and move training delays back to solution folder.
+                # move_delay_files(solution_path, test_delays_path)
+                # move_delay_files(training_delays_path, solution_path)
+
+                # Generate expected excess training results
+                cmd.extend(["-expectedExcess", "y"])
+                for model in self._models:
+                    generate_reschedule_solution(cmd, model)
+                    log.info(f'finished training run for {model} with excess')
+
+                # Clear training delay files and move test delay files to solution folder.
+                # remove_delay_files(solution_path)
+                # move_delay_files(test_delays_path, solution_path)
+
+                generate_test_results(cmd, parse_delays=True)
+                log.info(f'generated test results for {cmd} with excess')
+
+        log.info("completed expected excess comparison runs.")
+
+
 
 def guess_cplex_library_path() -> str:
     gp_path = os.path.join(os.path.expanduser("~"), ".gradle", "gradle.properties")
@@ -396,7 +414,7 @@ def handle_command_line() -> Config:
     run_type_dict = {
         "b": RunType.Budget,
         "c": RunType.ColumnCaching,
-        "e": RunType.ExpectedExcess,
+        # "e": RunType.ExpectedExcess,
         "m": RunType.Mean,
         "p": RunType.Parallel,
         "q": RunType.Quality,
