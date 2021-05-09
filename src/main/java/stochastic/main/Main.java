@@ -3,15 +3,11 @@ package stochastic.main;
 import org.apache.commons.cli.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.yaml.snakeyaml.DumperOptions;
-import org.yaml.snakeyaml.Yaml;
 import stochastic.registry.Parameters;
 import stochastic.utility.Enums;
 import stochastic.utility.OptException;
+import stochastic.utility.Util;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.TreeMap;
 
 /**
@@ -189,42 +185,31 @@ public class Main {
     }
 
     private static void writeDefaultParameters() throws OptException {
-        try {
-            String kpiFileName = "solution/parameters.yaml";
-            if (BatchRunner.fileExists(kpiFileName))
-                return;
+        String kpiFileName = "solution/parameters.yaml";
+        if (BatchRunner.fileExists(kpiFileName))
+            return;
 
-            TreeMap<String, Object> parameters = new TreeMap<>();
+        TreeMap<String, Object> parameters = new TreeMap<>();
 
-            parameters.put("column gen strategy", Parameters.getColumnGenStrategy().name());
-            parameters.put("column gen num reduced cost paths per tail", Parameters.getNumReducedCostPaths());
-            parameters.put("distribution mean", Parameters.getDistributionMean());
-            parameters.put("distribution standard deviation", Parameters.getDistributionSd());
-            parameters.put("distribution type", Parameters.getDistributionType().name());
-            parameters.put("benders multi-cut", Parameters.isBendersMultiCut());
-            parameters.put("benders tolerance", Parameters.getBendersTolerance());
-            parameters.put("benders num iterations", Parameters.getNumBendersIterations());
-            parameters.put("benders warm start", Parameters.isWarmStartBenders());
-            parameters.put("flight pick strategy", Parameters.getFlightPickStrategy().name());
-            parameters.put("reschedule time budget fraction", Parameters.getRescheduleBudgetFraction());
-            parameters.put("reschedule time limit for flights", Parameters.getFlightRescheduleBound());
-            parameters.put("second stage in parallel", Parameters.isRunSecondStageInParallel());
-            parameters.put("second stage num scenarios", Parameters.getNumSecondStageScenarios());
-            parameters.put("second stage num threads", Parameters.getNumThreadsForSecondStage());
-            parameters.put("test number of scenarios", Parameters.getNumTestScenarios());
+        parameters.put("column gen strategy", Parameters.getColumnGenStrategy().name());
+        parameters.put("column gen num reduced cost paths per tail", Parameters.getNumReducedCostPaths());
+        parameters.put("distribution mean", Parameters.getDistributionMean());
+        parameters.put("distribution standard deviation", Parameters.getDistributionSd());
+        parameters.put("distribution type", Parameters.getDistributionType().name());
+        parameters.put("benders multi-cut", Parameters.isBendersMultiCut());
+        parameters.put("benders tolerance", Parameters.getBendersTolerance());
+        parameters.put("benders num iterations", Parameters.getNumBendersIterations());
+        parameters.put("benders warm start", Parameters.isWarmStartBenders());
+        parameters.put("flight pick strategy", Parameters.getFlightPickStrategy().name());
+        parameters.put("reschedule time budget fraction", Parameters.getRescheduleBudgetFraction());
+        parameters.put("reschedule time limit for flights", Parameters.getFlightRescheduleBound());
+        parameters.put("second stage in parallel", Parameters.isRunSecondStageInParallel());
+        parameters.put("second stage num scenarios", Parameters.getNumSecondStageScenarios());
+        parameters.put("second stage num threads", Parameters.getNumThreadsForSecondStage());
+        parameters.put("test number of scenarios", Parameters.getNumTestScenarios());
 
-            BufferedWriter kpiWriter = new BufferedWriter(new FileWriter(kpiFileName));
-            DumperOptions options = new DumperOptions();
-            options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-            options.setPrettyFlow(true);
-            Yaml yaml = new Yaml(options);
-            yaml.dump(parameters, kpiWriter);
-            kpiWriter.close();
-            logger.info("wrote default parameters");
-        } catch (IOException ex) {
-            logger.error(ex);
-            throw new OptException("error writing default parameters");
-        }
+        Util.writeToYaml(parameters, kpiFileName);
+        logger.info("wrote default parameters");
     }
 
     private static void updateParameters(CommandLine cmd) throws OptException {
