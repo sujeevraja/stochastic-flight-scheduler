@@ -6,10 +6,10 @@ import java.util.Arrays;
 import java.util.List;
 
 public class ModelStats implements Serializable {
-    private int numRows;
-    private int numColumns;
-    private int numNonZeroes;
-    private double objective;
+    private final int numRows;
+    private final int numColumns;
+    private final int numNonZeroes;
+    private final double objective;
 
     public ModelStats(int numRows, int numColumns, int numNonZeroes, double objective) {
         this.numRows = numRows;

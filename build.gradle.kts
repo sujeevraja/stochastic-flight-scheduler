@@ -30,7 +30,7 @@ dependencies {
     implementation("org.yaml:snakeyaml:1.8")
 
     val cplexJarPath: String by project
-    compile(files(cplexJarPath))
+    implementation(files(cplexJarPath))
 
     // Use JUnit test framework
     testImplementation("junit:junit:4.12")
@@ -73,7 +73,7 @@ tasks {
 
 application {
     // Define the main class for the application
-    mainClassName = "stochastic.main.Main"
+    mainClass.set("stochastic.main.Main")
 
     val cplexLibPath : String by project
     applicationDefaultJvmArgs = listOf(

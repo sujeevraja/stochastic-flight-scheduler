@@ -3,21 +3,17 @@ package stochastic.main;
 import org.apache.commons.cli.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.yaml.snakeyaml.DumperOptions;
-import org.yaml.snakeyaml.Yaml;
 import stochastic.registry.Parameters;
 import stochastic.utility.Enums;
 import stochastic.utility.OptException;
+import stochastic.utility.Util;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.TreeMap;
 
+/**
+ * Class that owns main().
+ */
 public class Main {
-    /**
-     * Class that owns main().
-     */
     private final static Logger logger = LogManager.getLogger(Main.class);
 
     public static void main(String[] args) {
@@ -36,7 +32,9 @@ public class Main {
             writeDefaultParameters();
             updateParameters(cmd);
 
-            if (cmd.hasOption("generateDelays"))
+            if (cmd.hasOption("stats"))
+                writeStatsAndExit();
+            else if (cmd.hasOption("generateDelays"))
                 writeDelaysAndExit();
             else if (cmd.hasOption("batch"))
                 batchRun(name, cmd.getOptionValue("type"));
@@ -80,6 +78,7 @@ public class Main {
         options.addOption("r", true, "reschedule budget fraction");
         options.addOption("s", false, "use single-cut Benders");
         options.addOption("sd", true, "standard deviation");
+        options.addOption("stats", false, "generate stats about instance");
         options.addOption("type", true,
             "type (benders/training/test)");
         options.addOption("h", false, "help (show options and exit)");
@@ -99,10 +98,17 @@ public class Main {
         }
     }
 
+    private static void writeStatsAndExit() throws OptException {
+        logger.info("started primary delay generation...");
+        Controller controller = new Controller();
+        controller.computeStats();
+        logger.info("completed primary delay generation.");
+    }
+
     private static void writeDelaysAndExit() throws OptException {
         logger.info("started primary delay generation...");
         Controller controller = new Controller();
-        controller.readData();
+        controller.computeStats();
         controller.setDelayGenerator();
         Parameters.setParsePrimaryDelaysFromFiles(false);
         controller.buildScenarios();
@@ -110,8 +116,7 @@ public class Main {
         logger.info("completed primary delay generation.");
     }
 
-    private static void batchRun(String name, String runType)
-            throws OptException {
+    private static void batchRun(String name, String runType) throws OptException {
         BatchRunner batchRunner = new BatchRunner(name);
         switch (runType) {
             case "benders":
@@ -131,7 +136,7 @@ public class Main {
     private static void singleRun() throws OptException {
         logger.info("Started optimization...");
         Controller controller = new Controller();
-        controller.readData();
+        controller.computeStats();
         controller.setDelayGenerator();
         controller.buildScenarios();
         controller.solve();
@@ -180,42 +185,31 @@ public class Main {
     }
 
     private static void writeDefaultParameters() throws OptException {
-        try {
-            String kpiFileName = "solution/parameters.yaml";
-            if (BatchRunner.fileExists(kpiFileName))
-                return;
+        String kpiFileName = "solution/parameters.yaml";
+        if (BatchRunner.fileExists(kpiFileName))
+            return;
 
-            TreeMap<String, Object> parameters = new TreeMap<>();
+        TreeMap<String, Object> parameters = new TreeMap<>();
 
-            parameters.put("column gen strategy", Parameters.getColumnGenStrategy().name());
-            parameters.put("column gen num reduced cost paths per tail", Parameters.getNumReducedCostPaths());
-            parameters.put("distribution mean", Parameters.getDistributionMean());
-            parameters.put("distribution standard deviation", Parameters.getDistributionSd());
-            parameters.put("distribution type", Parameters.getDistributionType().name());
-            parameters.put("benders multi-cut", Parameters.isBendersMultiCut());
-            parameters.put("benders tolerance", Parameters.getBendersTolerance());
-            parameters.put("benders num iterations", Parameters.getNumBendersIterations());
-            parameters.put("benders warm start", Parameters.isWarmStartBenders());
-            parameters.put("flight pick strategy", Parameters.getFlightPickStrategy().name());
-            parameters.put("reschedule time budget fraction", Parameters.getRescheduleBudgetFraction());
-            parameters.put("reschedule time limit for flights", Parameters.getFlightRescheduleBound());
-            parameters.put("second stage in parallel", Parameters.isRunSecondStageInParallel());
-            parameters.put("second stage num scenarios", Parameters.getNumSecondStageScenarios());
-            parameters.put("second stage num threads", Parameters.getNumThreadsForSecondStage());
-            parameters.put("test number of scenarios", Parameters.getNumTestScenarios());
+        parameters.put("column gen strategy", Parameters.getColumnGenStrategy().name());
+        parameters.put("column gen num reduced cost paths per tail", Parameters.getNumReducedCostPaths());
+        parameters.put("distribution mean", Parameters.getDistributionMean());
+        parameters.put("distribution standard deviation", Parameters.getDistributionSd());
+        parameters.put("distribution type", Parameters.getDistributionType().name());
+        parameters.put("benders multi-cut", Parameters.isBendersMultiCut());
+        parameters.put("benders tolerance", Parameters.getBendersTolerance());
+        parameters.put("benders num iterations", Parameters.getNumBendersIterations());
+        parameters.put("benders warm start", Parameters.isWarmStartBenders());
+        parameters.put("flight pick strategy", Parameters.getFlightPickStrategy().name());
+        parameters.put("reschedule time budget fraction", Parameters.getRescheduleBudgetFraction());
+        parameters.put("reschedule time limit for flights", Parameters.getFlightRescheduleBound());
+        parameters.put("second stage in parallel", Parameters.isRunSecondStageInParallel());
+        parameters.put("second stage num scenarios", Parameters.getNumSecondStageScenarios());
+        parameters.put("second stage num threads", Parameters.getNumThreadsForSecondStage());
+        parameters.put("test number of scenarios", Parameters.getNumTestScenarios());
 
-            BufferedWriter kpiWriter = new BufferedWriter(new FileWriter(kpiFileName));
-            DumperOptions options = new DumperOptions();
-            options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-            options.setPrettyFlow(true);
-            Yaml yaml = new Yaml(options);
-            yaml.dump(parameters, kpiWriter);
-            kpiWriter.close();
-            logger.info("wrote default parameters");
-        } catch (IOException ex) {
-            logger.error(ex);
-            throw new OptException("error writing default parameters");
-        }
+        Util.writeToYaml(parameters, kpiFileName);
+        logger.info("wrote default parameters");
     }
 
     private static void updateParameters(CommandLine cmd) throws OptException {

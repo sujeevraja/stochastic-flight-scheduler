@@ -7,6 +7,7 @@ import stochastic.domain.Tail;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 public class Network {
     /**
@@ -17,7 +18,7 @@ public class Network {
      */
     private final static Logger logger = LogManager.getLogger(Network.class);
 
-    private ArrayList<Leg> legs;
+    private final ArrayList<Leg> legs;
     private HashMap<Integer, ArrayList<Integer>> adjacencyList; // keys and values are indices of leg list.
 
     public Network(ArrayList<Leg> legs) {
@@ -25,7 +26,45 @@ public class Network {
         buildAdjacencyList();
     }
 
-    public void countPathsForTails(ArrayList<Tail> tails) {
+    public int getNumConnections() {
+        int numConnections = 0;
+        for (Map.Entry<Integer, ArrayList<Integer>> entry : adjacencyList.entrySet()) {
+            numConnections += entry.getValue().size();
+        }
+        return numConnections;
+    }
+
+    public long computeNumRoundTripsTo(Integer airportId) {
+        long numTrips = 0;
+        for (Leg leg : legs) {
+            if (airportId != null && !leg.getDepPort().equals(airportId))
+                continue;
+
+            final Integer index = leg.getIndex();
+            if (!adjacencyList.containsKey(index))
+                continue;
+
+            ArrayList<Integer> neighborLegIndices = adjacencyList.get(index);
+            final Integer depPort = leg.getDepPort();
+            for (Integer neighborIndex : neighborLegIndices) {
+                Leg neighbor = legs.get(neighborIndex);
+                if (neighbor.getArrPort().equals(depPort))
+                    ++numTrips;
+            }
+        }
+        return numTrips;
+    }
+
+    public double computeDensity() {
+        long numVertices = legs.size();
+        long numEdges = 0;
+        for (ArrayList<Integer> neighbors : adjacencyList.values()) {
+            numEdges += neighbors.size();
+        }
+        return (2.0 * (numEdges)) / (numVertices * (numVertices - 1));
+    }
+
+    public long countPathsForTails(ArrayList<Tail> tails) {
         long totalNumPaths = 0;
         for (Tail tail : tails) {
             PathCounter pc = new PathCounter(tail, legs, adjacencyList);
@@ -34,8 +73,7 @@ public class Network {
                     + tail.getSinkPort() + "): " + numPathsForTail);
             totalNumPaths += numPathsForTail;
         }
-
-        logger.info("total number of paths: " + totalNumPaths);
+        return totalNumPaths;
     }
 
     public ArrayList<Path> enumeratePathsForTails(ArrayList<Tail> tails, int[] delays) {

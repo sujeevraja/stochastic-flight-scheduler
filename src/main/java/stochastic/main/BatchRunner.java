@@ -66,7 +66,6 @@ class BatchRunner {
 
             // solve models and write solutions
             Controller controller = new Controller();
-            controller.readData();
             controller.setDelayGenerator();
             controller.buildScenarios();
             controller.solve();
@@ -144,7 +143,6 @@ class BatchRunner {
 
             // read model data
             Controller controller = new Controller();
-            controller.readData();
 
             // read all reschedule solutions
             ArrayList<RescheduleSolution> rescheduleSolutions =
@@ -265,7 +263,6 @@ class BatchRunner {
 
             // solve models and write solutions
             Controller controller = new Controller();
-            controller.readData();
             controller.setDelayGenerator();
             controller.buildScenarios();
             controller.solve();

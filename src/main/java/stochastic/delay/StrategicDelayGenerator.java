@@ -4,22 +4,22 @@ import stochastic.domain.Leg;
 import stochastic.registry.Parameters;
 import stochastic.utility.Enums;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class StrategicDelayGenerator implements DelayGenerator {
     /**
      * StrategicDelayGenerator can be used to generate random primary delays for flights based on a flight strategy
      * and distribution details specified in Parameters.
      */
-    private ArrayList<Leg> legs;
-    private Enums.FlightPickStrategy flightPickStrategy;
-    private Sampler sampler;
+    private final ArrayList<Leg> legs;
+    private final int hub;
+    private final Enums.FlightPickStrategy flightPickStrategy;
+    private final Sampler sampler;
 
-    public StrategicDelayGenerator(ArrayList<Leg> legs) {
+    public StrategicDelayGenerator(ArrayList<Leg> legs, int hub) {
         this.legs = legs;
+        this.hub = hub;
         this.flightPickStrategy = Parameters.getFlightPickStrategy();
         sampler = new Sampler();
     }
@@ -53,32 +53,8 @@ public class StrategicDelayGenerator implements DelayGenerator {
     }
 
     private ArrayList<Leg> selectHubLegs() {
-        // find port with most departures.
-        HashMap<Integer, Integer> portDeparturesMap = new HashMap<>();
-        for (Leg leg : legs) {
-            int depPort = leg.getDepPort();
-            if (portDeparturesMap.containsKey(depPort))
-                portDeparturesMap.replace(depPort, portDeparturesMap.get(depPort) + 1);
-            else
-                portDeparturesMap.put(depPort, 1);
-        }
-
-        int maxNumDepartures = 0;
-        int hub = -1;
-        for (Map.Entry<Integer, Integer> entry : portDeparturesMap.entrySet()) {
-            if (entry.getValue() > maxNumDepartures) {
-                hub = entry.getKey();
-                maxNumDepartures = entry.getValue();
-            }
-        }
-
-        // collect legs departing from hub and return them.
-        ArrayList<Leg> selectedLegs = new ArrayList<>();
-        for (Leg leg : legs)
-            if (leg.getDepPort().equals(hub))
-                selectedLegs.add(leg);
-
-        return selectedLegs;
+        return legs.stream().filter(
+            leg -> leg.getDepPort().equals(hub)).collect(Collectors.toCollection(ArrayList::new));
     }
 
     private ArrayList<Leg> selectRushTimeLegs() {

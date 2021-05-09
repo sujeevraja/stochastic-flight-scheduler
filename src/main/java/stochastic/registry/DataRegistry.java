@@ -9,72 +9,56 @@ import stochastic.network.Path;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 
 public class DataRegistry {
     /**
      * Holds input data.
      */
-    private ArrayList<Leg> legs;
-    private ArrayList<Tail> tails;
-    private HashMap<Integer, Tail> idTailMap;
-    private HashMap<Integer, Path> tailOrigPathMap;
-    private Network network;
+    private final ArrayList<Leg> legs;
+    private final ArrayList<Tail> tails;
+    private final HashMap<Integer, Tail> idTailMap;
+    private final HashMap<Integer, Path> tailOrigPathMap;
+    private final Network network;
+    private final int hub;
 
     private DelayGenerator delayGenerator;
     private Scenario[] delayScenarios;
     private int rescheduleTimeBudget;
 
-    public DataRegistry() {
-        legs = new ArrayList<>();
-        tails = new ArrayList<>();
+    public DataRegistry(ArrayList<Leg> legs, ArrayList<Tail> tails, HashMap<Integer, Path> tailOrigPathMap, int hub) {
+        this.legs = legs;
+        network = new Network(legs);
+
+        this.tails = tails;
+        idTailMap = new HashMap<>();
+        for (Tail tail : tails)
+            idTailMap.put(tail.getId(), tail);
+
+        this.tailOrigPathMap = tailOrigPathMap;
+        this.hub = hub;
     }
 
     public HashMap<Integer, Path> getTailOrigPathMap() {
         return tailOrigPathMap;
     }
 
-    public void setTailOrigPathMap(HashMap<Integer, Path> tailOrigPathMap) {
-        this.tailOrigPathMap = tailOrigPathMap;
-    }
-
     public ArrayList<Leg> getLegs() {
         return legs;
-    }
-
-    public void setLegs(ArrayList<Leg> legs) {
-        this.legs = legs;
-    }
-
-    public void setTails(ArrayList<Tail> tails) {
-        this.tails = tails;
     }
 
     public ArrayList<Tail> getTails() {
         return tails;
     }
 
-    public void buildIdTailMap() {
-        idTailMap = new HashMap<>();
-        for (Tail tail : tails)
-            idTailMap.put(tail.getId(), tail);
-    }
-
-    public Tail getTail(Integer id) {
-        return idTailMap.getOrDefault(id, null);
-    }
-
     public HashMap<Integer, Tail> getIdTailMap() {
         return idTailMap;
-    }
-
-    public void buildConnectionNetwork() {
-        network = new Network(legs);
     }
 
     public Network getNetwork() {
         return network;
     }
+
+    public int getHub() { return hub; }
 
     public void setDelayGenerator(DelayGenerator delayGenerator) {
         this.delayGenerator = delayGenerator;
@@ -100,4 +84,3 @@ public class DataRegistry {
         return rescheduleTimeBudget;
     }
 }
-

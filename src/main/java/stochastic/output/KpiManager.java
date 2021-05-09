@@ -2,14 +2,11 @@ package stochastic.output;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.yaml.snakeyaml.DumperOptions;
-import org.yaml.snakeyaml.Yaml;
 import stochastic.registry.DataRegistry;
 import stochastic.registry.Parameters;
+import stochastic.utility.OptException;
+import stochastic.utility.Util;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.TreeMap;
 
 /**
@@ -17,8 +14,8 @@ import java.util.TreeMap;
  */
 public class KpiManager {
     private final static Logger logger = LogManager.getLogger(KpiManager.class);
-    private DataRegistry dataRegistry;
-    private TreeMap<String, Object> kpis;
+    private final DataRegistry dataRegistry;
+    private final TreeMap<String, Object> kpis;
 
     public KpiManager(DataRegistry dataRegistry) {
         this.dataRegistry = dataRegistry;
@@ -29,25 +26,12 @@ public class KpiManager {
         kpis.put(key, value);
     }
 
-    public void writeOutput() throws IOException {
-        writeKpis();
-        logger.info("solution processing completed.");
-    }
-
-    private void writeKpis() throws IOException {
+    public void writeOutput() throws OptException {
         TreeMap<String, Object> allKpis = new TreeMap<>();
         allKpis.put("input", getInputKpis());
         allKpis.put("output", kpis);
-
-        String kpiFileName = "solution/kpis.yaml";
-        BufferedWriter kpiWriter = new BufferedWriter(new FileWriter(kpiFileName));
-        DumperOptions options = new DumperOptions();
-        options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-        options.setPrettyFlow(true);
-        Yaml yaml = new Yaml(options);
-        yaml.dump(allKpis, kpiWriter);
-        kpiWriter.close();
-        logger.info("wrote KPIs");
+        Util.writeToYaml(allKpis, "solution/kpis.yaml");
+        logger.info("solution processing completed.");
     }
 
     private TreeMap<String, Object> getInputKpis() {
