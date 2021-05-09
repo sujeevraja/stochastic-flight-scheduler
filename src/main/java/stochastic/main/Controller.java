@@ -24,6 +24,7 @@ import stochastic.solver.UpperBoundSolver;
 import stochastic.utility.CSVHelper;
 import stochastic.utility.Enums;
 import stochastic.utility.OptException;
+import stochastic.utility.Util;
 
 import java.io.*;
 import java.util.*;
@@ -70,15 +71,14 @@ class Controller {
     }
 
     final void computeStats() {
-        ArrayList<Leg> legs = dataRegistry.getLegs();
-        ArrayList<Tail> tails = dataRegistry.getTails();
-        Network network = dataRegistry.getNetwork();
-        final long numPaths = network.countPathsForTails(tails);
-        int numConnections = network.getNumConnections();
-        logger.info("number of legs " + legs.size());
-        logger.info("number of tails " + tails.size());
-        logger.info("number of paths " + numPaths);
-        logger.info("number of connections " + numConnections);
+        final ArrayList<Leg> legs = dataRegistry.getLegs();
+        final ArrayList<Tail> tails = dataRegistry.getTails();
+        final Network network = dataRegistry.getNetwork();
+        final TreeMap<String, Object> stats = new TreeMap<>();
+        stats.put("numLegs", legs.size());
+        stats.put("numTails", tails.size());
+        stats.put("numPaths", network.countPathsForTails(tails));
+        stats.put("numConnections", network.getNumConnections());
 
         int hubVisits = 0;
         int nonHubVisits = 0;
@@ -89,19 +89,14 @@ class Controller {
             else
                 ++nonHubVisits;
         }
-        // logger.info("number of hub visits " + hubVisits);
-        // logger.info("number of non hub visits " + nonHubVisits);
-        final double hubVisitPercent = hubVisits * 100.0 / (hubVisits + nonHubVisits);
-        logger.info("hub visit percentage " + hubVisitPercent);
-
-        final long numHubRoundTrips = network.computeNumRoundTripsTo(hub);
-        // logger.info("number of round trips to hub " + numHubRoundTrips);
-
-        final long numRoundTrips = network.computeNumRoundTripsTo(null);
-        // logger.info("number of round trips " + numRoundTrips);
-
-        final double density = network.computeDensity();
-        logger.info("density " + density);
+        stats.put("numHubVisits", hubVisits);
+        stats.put("numNonHubVisits", nonHubVisits);
+        stats.put("hubVisitPercent", hubVisits * 100.0 / (hubVisits + nonHubVisits));
+        stats.put("numRoundTripsToHub", network.computeNumRoundTripsTo(hub));
+        stats.put("numRoundTrips", network.computeNumRoundTripsTo(null));
+        stats.put("networkDensity", network.computeDensity());
+        for (Map.Entry<String, Object> entry : stats.entrySet())
+            logger.info(entry.getKey() + " " + entry.getValue());
     }
 
     final void setDelayGenerator() {

@@ -120,8 +120,7 @@ public class Main {
         logger.info("completed primary delay generation.");
     }
 
-    private static void batchRun(String name, String runType)
-            throws OptException {
+    private static void batchRun(String name, String runType) throws OptException {
         BatchRunner batchRunner = new BatchRunner(name);
         switch (runType) {
             case "benders":
