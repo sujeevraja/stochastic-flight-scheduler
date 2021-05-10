@@ -290,7 +290,7 @@ class Controller:
         log.info("starting quality runs...")
         for name in self.config.names:
             for distribution in ['exp', 'tnorm', 'lnorm']:
-                for flight_pick in ['all', 'hub', 'rush']:
+                for flight_pick in ['hub', 'rush']:
                     cmd = [c for c in self._base_cmd]
                     cmd.extend([
                         "-batch",
