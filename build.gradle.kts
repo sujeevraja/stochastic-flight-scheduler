@@ -12,6 +12,12 @@ plugins {
 
     // Apply the application plugin to add support for building an application
     application
+
+    jacoco
+}
+
+jacoco {
+    toolVersion = "0.8.7"
 }
 
 repositories {
@@ -33,7 +39,8 @@ dependencies {
     implementation(files(cplexJarPath))
 
     // Use JUnit test framework
-    testImplementation("junit:junit:4.12")
+    testImplementation(platform("org.junit:junit-bom:5.7.1"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
 tasks {
@@ -64,6 +71,10 @@ tasks {
         delete(fileTree("solution") {
             include("*.csv", "*.txt", "*.yaml")
         })
+    }
+
+    withType<Test> {
+        useJUnitPlatform()
     }
 
     compileJava {

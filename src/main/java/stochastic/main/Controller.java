@@ -441,10 +441,10 @@ class Controller {
 
         ArrayList<Leg> legs = dataRegistry.getLegs();
 
-        String[] models = new String[] {"naive", "dep", "benders"};
+        String[] models = new String[]{"naive", "dep", "benders"};
         for (String model : models)
             rescheduleSolutions.add(
-                    (new RescheduleSolutionDAO(model, legs)).getRescheduleSolution());
+                (new RescheduleSolutionDAO(model, legs)).getRescheduleSolution());
 
         return rescheduleSolutions;
     }

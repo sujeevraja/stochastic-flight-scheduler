@@ -26,9 +26,9 @@ public class NaiveSolver {
      * These delays are then propagated downstream in the original routes.
      */
     private final static Logger logger = LogManager.getLogger(NaiveSolver.class);
-    private DataRegistry dataRegistry;
-    private ArrayList<Leg> legs;
-    private double[] expectedDelays;
+    private final DataRegistry dataRegistry;
+    private final ArrayList<Leg> legs;
+    private final double[] expectedDelays;
     private ModelStats modelStats;
     private RescheduleSolution finalRescheduleSolution;
     private double solutionTime;
@@ -134,7 +134,7 @@ public class NaiveSolver {
 
             if (i < originalRoute.size() - 1) {
                 Leg nextLeg = originalRoute.get(i + 1);
-                final int slack = SolverUtility.getSlack(currLeg, nextLeg);
+                final int slack = SolverUtility.getSlackInMin(currLeg, nextLeg);
                 addConnectivityConstraint(currLeg, nextLeg, slack);
                 propagatedDelay = SolverUtility.getPropagatedDelay(currLeg, nextLeg,
                     propagatedDelay + expectedDelays[currLeg.getIndex()]);
