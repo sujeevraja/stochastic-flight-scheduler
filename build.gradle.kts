@@ -12,6 +12,12 @@ plugins {
 
     // Apply the application plugin to add support for building an application
     application
+
+    jacoco
+}
+
+jacoco {
+    toolVersion = "0.8.7"
 }
 
 repositories {
