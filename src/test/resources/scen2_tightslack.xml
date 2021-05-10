@@ -1,0 +1,22 @@
+<legs>
+    <leg>
+        <id>3850359</id>
+        <depPort>100</depPort>
+        <arrPort>101</arrPort>
+        <depTime>2017-11-15T08:20:00.000Z</depTime>
+        <arrTime>2017-11-15T09:45:00.000Z</arrTime>
+        <turnTime>45</turnTime>
+        <fltNum>1</fltNum>
+        <tail>10001</tail>
+    </leg>
+    <leg>
+        <id>3850556</id>
+        <depPort>101</depPort>
+        <arrPort>100</arrPort>
+        <depTime>2017-11-15T10:30:00.000Z</depTime>
+        <arrTime>2017-11-15T11:50:00.000Z</arrTime>
+        <turnTime>45</turnTime>
+        <fltNum>2</fltNum>
+        <tail>10001</tail>
+    </leg>
+</legs>
