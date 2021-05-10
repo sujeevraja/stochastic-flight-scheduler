@@ -22,11 +22,9 @@ public class Main {
             if (cmd == null)
                 return;
 
-            final String name = cmd.hasOption('n')
-                ? cmd.getOptionValue('n')
-                : "s6";
-            String instancePath = "data/" + name + ".xml";
-            Parameters.setInstancePath(instancePath);
+            final String name = cmd.getOptionValue("name", "s6");
+            final String path = cmd.getOptionValue("path", "data");
+            Parameters.setInstancePath(path + "/" + name + ".xml");
 
             setDefaultParameters();
             writeDefaultParameters();
@@ -68,13 +66,13 @@ public class Main {
             "generate primary delays, write to file and exit");
         options.addOption("mean", true, "distribution mean");
         options.addOption("model", true, "model (naive/dep/benders/all)");
-        options.addOption("n", true,
-            "instance name");
+        options.addOption("name", true, "instance name");
         options.addOption("numScenarios", true, "number of scenarios");
         options.addOption("parallel", true,
             "number of parallel runs for second stage");
         options.addOption("parseDelays", false,
             "parse primary delays from files");
+        options.addOption("path", true, "path to folder with instance");
         options.addOption("r", true, "reschedule budget fraction");
         options.addOption("s", false, "use single-cut Benders");
         options.addOption("sd", true, "standard deviation");

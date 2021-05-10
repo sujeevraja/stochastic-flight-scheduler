@@ -25,7 +25,7 @@ import java.util.List;
  */
 class BatchRunner {
     private final static Logger logger = LogManager.getLogger(BatchRunner.class);
-    private String instanceName;
+    private final String instanceName;
 
     BatchRunner(String instanceName) {
         this.instanceName = instanceName;
