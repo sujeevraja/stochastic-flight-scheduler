@@ -33,7 +33,9 @@ dependencies {
     implementation(files(cplexJarPath))
 
     // Use JUnit test framework
-    testImplementation("junit:junit:4.12")
+    // testImplementation("junit:junit:4.12")
+    testImplementation(platform("org.junit:junit-bom:5.7.1"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
 tasks {
@@ -64,6 +66,10 @@ tasks {
         delete(fileTree("solution") {
             include("*.csv", "*.txt", "*.yaml")
         })
+    }
+
+    withType<Test> {
+        useJUnitPlatform()
     }
 
     compileJava {
