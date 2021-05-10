@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 import enum
 import logging
@@ -25,6 +27,7 @@ class Config(typing.NamedTuple):
     run_type: RunType
     jar_path: str
     cplex_lib_path: str
+    path: str
     names: typing.List[str]
 
 
@@ -135,7 +138,8 @@ class Controller:
             "-Xmx32g",
             f"-Djava.library.path={self.config.cplex_lib_path}",
             "-jar",
-            self.config.jar_path, ]
+            self.config.jar_path,
+            "-path", self.config.path, ]
         self._models = ["naive", "dep", "benders"]
 
     def run(self):
@@ -165,13 +169,12 @@ class Controller:
     def _run_budget_set(self):
         log.info("starting budget comparison runs...")
         budget_fractions = ["0.25", "0.5", "0.75", "1", "2"]
-        for name, path in zip(self.config.names, self.config.names):
+        for name in self.config.names:
             for bf in budget_fractions:
                 cmd = [c for c in self._base_cmd]
                 cmd.extend([
                     "-batch",
-                    "-path", path,
-                    "-n", name,
+                    "-name", name,
                     "-r", bf])
 
                 generate_all_results(cmd, self._models)
@@ -179,13 +182,12 @@ class Controller:
 
     def _run_column_caching_set(self):
         log.info("starting column caching comparison runs...")
-        for name, path in zip(self.config.names, self.config.names):
+        for name in self.config.names:
             for _ in range(5):
                 cmd = [c for c in self._base_cmd]
                 cmd.extend([
                     "-batch",
-                    "-path", path,
-                    "-n", name,
+                    "-name", name,
                     "-type", "benders",
                     "-parallel", "1", ])
 
@@ -211,9 +213,7 @@ class Controller:
         aversion = "10"
 
         # instance_name = "s1"
-        # instance_path = f"data/paper/{instance_name}"
         instance_name = "instance1"
-        instance_path = f"data/{instance_name}"
 
         # solution_path = os.path.join(os.getcwd(), "solution")
         # training_delays_path = os.path.join(os.getcwd(), "training_delays")
@@ -227,8 +227,7 @@ class Controller:
                 cmd.extend([
                     "-batch",
                     "-parallel", "30",
-                    "-path", instance_path,
-                    "-n", instance_name,
+                    "-name", instance_name,
                     "-mean", mean,
                     "-sd", sd,
                     "-excessTarget", target,
@@ -273,14 +272,13 @@ class Controller:
 
     def _run_mean_set(self):
         log.info("starting mean comparison runs...")
-        for name, path in zip(self.config.names, self.config.names):
+        for name in self.config.names:
             for distribution in ['exp', 'tnorm', 'lnorm']:
                 for mean in ["15", "30", "45", "60"]:
                     cmd = [c for c in self._base_cmd]
                     cmd.extend([
                         "-batch",
-                        "-path", path,
-                        "-n", name,
+                        "-name", name,
                         "-d", distribution,
                         "-mean", mean, ])
 
@@ -290,14 +288,13 @@ class Controller:
 
     def _run_quality_set(self):
         log.info("starting quality runs...")
-        for name, path in zip(self.config.names, self.config.names):
+        for name in self.config.names:
             for distribution in ['exp', 'tnorm', 'lnorm']:
                 for flight_pick in ['all', 'hub', 'rush']:
                     cmd = [c for c in self._base_cmd]
                     cmd.extend([
                         "-batch",
-                        "-path", path,
-                        "-n", name,
+                        "-name", name,
                         "-d", distribution,
                         "-f", flight_pick, ])
 
@@ -307,13 +304,12 @@ class Controller:
 
     def _run_parallel_set(self):
         log.info("starting multi-threading comparison runs...")
-        for name, path in zip(self.config.names, self.config.names):
+        for name in self.config.names:
             for _ in range(5):
                 cmd = [c for c in self._base_cmd]
                 cmd.extend([
                     "-batch",
-                    "-path", path,
-                    "-n", name,
+                    "-name", name,
                     "-type", "benders", ])
 
                 generate_delays(cmd)
@@ -333,13 +329,12 @@ class Controller:
 
     def _run_time_comparison_set(self):
         log.info("starting time comparison runs...")
-        for name, path in zip(self.config.names, self.config.names):
+        for name in self.config.names:
             for _ in range(5):
                 cmd = [c for c in self._base_cmd]
                 cmd.extend([
                     "-batch",
-                    "-path", path,
-                    "-n", name,
+                    "-name", name,
                     "-type", "benders"])
 
                 generate_delays(cmd)
@@ -358,12 +353,12 @@ class Controller:
 
     def _run_single_vs_multi_cut_set(self):
         log.info("starting cut comparison runs...")
-        for path in zip(self.config.names, self.config.names):
+        for name in self.config.names:
             for _ in range(5):
                 cmd = [c for c in self._base_cmd]
                 cmd.extend([
                     "-batch",
-                    "-n", path,
+                    "-name", name,
                     "-type", "benders",
                     "-parallel", "1"])
 
@@ -412,6 +407,10 @@ def handle_command_line() -> Config:
     root = get_root()
     parser.add_argument("-r", "--run_type", type=str, choices=list(run_type_dict.keys()),
                         help="type of batch run", default="b")
+
+    default_path = os.path.join(root, "data")
+    parser.add_argument("-p", "--path", type=str, default=default_path,
+                        help="path to folder with xml files")
 
     default_names: typing.List[str] = [f"s{i}" for i in range(1, 7)]
     parser.add_argument("-n", "--names", type=str, nargs="+", default=default_names,
