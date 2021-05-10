@@ -74,18 +74,18 @@ public class SolverUtility {
         return tailPathsMap;
     }
 
-    static int getSlack(Leg incomingLeg, Leg outgoingLeg) {
+    static int getSlackInMin(Leg incomingLeg, Leg outgoingLeg) {
         int slack = (int) (outgoingLeg.getDepTime() - incomingLeg.getArrTime());
         return slack - incomingLeg.getTurnTimeInMin();
     }
 
     public static int getPropagatedDelay(Leg incomingLeg, Leg outgoingLeg, int totalIncomingDelay) {
-        final int slack = getSlack(incomingLeg, outgoingLeg);
+        final int slack = getSlackInMin(incomingLeg, outgoingLeg);
         return Math.max(0, totalIncomingDelay - slack);
     }
 
     static double getPropagatedDelay(Leg incomingLeg, Leg outgoingLeg, double totalIncomingDelay) {
-        final int slack = getSlack(incomingLeg, outgoingLeg);
+        final int slack = getSlackInMin(incomingLeg, outgoingLeg);
         return Math.max(0.0, totalIncomingDelay - slack);
     }
 }

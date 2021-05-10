@@ -134,7 +134,7 @@ public class NaiveSolver {
 
             if (i < originalRoute.size() - 1) {
                 Leg nextLeg = originalRoute.get(i + 1);
-                final int slack = SolverUtility.getSlack(currLeg, nextLeg);
+                final int slack = SolverUtility.getSlackInMin(currLeg, nextLeg);
                 addConnectivityConstraint(currLeg, nextLeg, slack);
                 propagatedDelay = SolverUtility.getPropagatedDelay(currLeg, nextLeg,
                     propagatedDelay + expectedDelays[currLeg.getIndex()]);
