@@ -30,7 +30,7 @@ public class Main {
                     cmd.getOptionValue("output", "solution/result.yaml"));
 
             setDefaultParameters();
-            writeDefaultParameters();
+            // writeDefaultParameters();
             updateParameters(cmd);
 
             if (cmd.hasOption("stats"))
