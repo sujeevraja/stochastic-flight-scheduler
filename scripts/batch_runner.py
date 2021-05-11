@@ -62,7 +62,8 @@ def remove_delay_files(folder_path: str):
 
 
 def clean_delay_files():
-    sln_path = os.path.join(get_root(), 'solution')
+    base = os.path.abspath(os.path.dirname(__file__))
+    sln_path = os.path.join(base, 'solution')
     for f in os.listdir(sln_path):
         if (f.endswith(".csv")
                 and (f.startswith("primary_delay") or f.startswith("reschedule_"))):
@@ -142,10 +143,11 @@ class Controller:
             self.config.jar_path,
             "-path", self.config.path, ]
         self._models = ["naive", "dep", "benders"]
-        self._default_delay_mean = 30
-        self._default_delay_sd = 15
-        self._default_delay_distribution = "lnorm"
-        self._default_budget_fraction = 0.5
+        self._default_num_scenarios: int = 30
+        self._default_delay_mean: int = 30
+        self._default_delay_sd: int = 15
+        self._default_delay_distribution: str = "lnorm"
+        self._default_budget_fraction: float = 0.5
         self._default_column_gen_strategy: str = "first"
         self._default_num_threads: int = 30
 
@@ -184,6 +186,7 @@ class Controller:
                 cmd.extend([
                     "-batch",
                     "-name", name,
+                    "-numScenarios", str(self._default_num_scenarios),
                     "-r", bf,
                     "-d", str(self._default_delay_distribution),
                     "-mean", str(self._default_delay_mean),
