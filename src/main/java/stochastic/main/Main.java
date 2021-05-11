@@ -24,7 +24,10 @@ public class Main {
 
             final String name = cmd.getOptionValue("name", "s6");
             final String path = cmd.getOptionValue("path", "data");
+            Parameters.setInstanceName(name);
             Parameters.setInstancePath(path + "/" + name + ".xml");
+            Parameters.setOutputPath(
+                    cmd.getOptionValue("output", "solution/result.yaml"));
 
             setDefaultParameters();
             writeDefaultParameters();
@@ -68,6 +71,7 @@ public class Main {
         options.addOption("model", true, "model (naive/dep/benders/all)");
         options.addOption("name", true, "instance name");
         options.addOption("numScenarios", true, "number of scenarios");
+        options.addOption("output", true, "path to output file");
         options.addOption("parallel", true,
             "number of parallel runs for second stage");
         options.addOption("parseDelays", false,

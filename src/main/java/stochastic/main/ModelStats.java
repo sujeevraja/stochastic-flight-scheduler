@@ -1,9 +1,7 @@
 package stochastic.main;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.HashMap;
 
 public class ModelStats implements Serializable {
     private final int numRows;
@@ -18,11 +16,12 @@ public class ModelStats implements Serializable {
         this.objective = objective;
     }
 
-    List<String> getCsvRow() {
-        return new ArrayList<>(Arrays.asList(
-            Integer.toString(numRows),
-            Integer.toString(numColumns),
-            Integer.toString(numNonZeroes),
-            Double.toString(objective)));
+    HashMap<String, Object> asMap(String prefix) {
+        HashMap<String, Object> data = new HashMap<>();
+        data.put(prefix + "NumRows", numRows);
+        data.put(prefix + "NumColumns", numColumns);
+        data.put(prefix + "NumNonZeroes", numNonZeroes);
+        data.put(prefix + "Objective", objective);
+        return data;
     }
 }

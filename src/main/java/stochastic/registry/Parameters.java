@@ -3,7 +3,9 @@ package stochastic.registry;
 import stochastic.utility.Enums;
 
 public class Parameters {
+    private static String instanceName;
     private static String instancePath;
+    private static String outputPath;
     private static Enums.Model model;
 
     /**
@@ -47,12 +49,28 @@ public class Parameters {
     private static double riskAversion;
     private static int excessTarget;
 
+    public static void setInstanceName(String instanceName) {
+        Parameters.instanceName = instanceName;
+    }
+
+    public static String getInstanceName() {
+        return instanceName;
+    }
+
     public static void setInstancePath(String instancePath) {
         Parameters.instancePath = instancePath;
     }
 
     public static String getInstancePath() {
         return instancePath;
+    }
+
+    public static String getOutputPath() {
+        return outputPath;
+    }
+
+    public static void setOutputPath(String outputPath) {
+        Parameters.outputPath = outputPath;
     }
 
     public static void setModel(Enums.Model model) {

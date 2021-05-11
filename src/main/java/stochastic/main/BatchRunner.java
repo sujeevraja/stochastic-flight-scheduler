@@ -11,6 +11,7 @@ import stochastic.registry.Parameters;
 import stochastic.utility.CSVHelper;
 import stochastic.utility.Enums;
 import stochastic.utility.OptException;
+import stochastic.utility.Util;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -34,16 +35,7 @@ class BatchRunner {
     void trainingRun() throws OptException {
         try {
             logger.info("starting training run...");
-            final String trainingPath = "solution/results_training.csv";
-            final boolean addTrainingHeaders = !fileExists(trainingPath);
-            if (addTrainingHeaders) {
-                BufferedWriter trainingWriter = new BufferedWriter(
-                    new FileWriter(trainingPath));
-                CSVHelper.writeLine(trainingWriter, TrainingResult.getCsvHeaders());
-                trainingWriter.close();
-            }
-
-            final String trainingRowPath = "solution/partial_training_result.txt";
+            final String trainingRowPath = "solution/training_result.partial";
             TrainingResult trainingResult;
             if (fileExists(trainingRowPath)) {
                 FileInputStream fileInputStream = new FileInputStream(trainingRowPath);
@@ -52,17 +44,6 @@ class BatchRunner {
                 objectInputStream.close();
             } else
                 trainingResult = new TrainingResult();
-
-            if (trainingResult.getInstance() == null)
-                trainingResult.setInstance(instanceName);
-
-            trainingResult.setStrategy(Parameters.getFlightPickStrategy().toString());
-            trainingResult.setDistribution(Parameters.getDistributionType().toString());
-            trainingResult.setDistributionMean(Parameters.getDistributionMean());
-            trainingResult.setDistributionSd(Parameters.getDistributionSd());
-
-            if (trainingResult.getBudgetFraction() == null)
-                trainingResult.setBudgetFraction(Parameters.getRescheduleBudgetFraction());
 
             // solve models and write solutions
             Controller controller = new Controller();
@@ -92,14 +73,11 @@ class BatchRunner {
                 trainingResult.setBendersGap(controller.getBendersGap());
                 trainingResult.setBendersOptimalityGap(controller.getBendersOptimalityGap());
                 trainingResult.setBendersNumCuts(controller.getBendersNumCuts());
-                trainingResult.setBendersNumIterations(controller.getBendersNumIterations());
             }
 
             // write KPIs
             if (trainingResult.allPopulated()) {
-                BufferedWriter bw = new BufferedWriter(new FileWriter(trainingPath, true));
-                CSVHelper.writeLine(bw, trainingResult.getCsvRow());
-                bw.close();
+                Util.writeToYaml(trainingResult.asMap(), Parameters.getOutputPath());
                 File file = new File(trainingRowPath);
                 if (!file.delete())
                     throw new OptException("unable to delete object file");

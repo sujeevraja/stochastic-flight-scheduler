@@ -3,18 +3,9 @@ package stochastic.main;
 import stochastic.registry.Parameters;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.HashMap;
 
 class TrainingResult implements Serializable {
-    private String instance;
-    private String strategy;
-    private String distribution;
-    private Double distributionMean;
-    private Double distributionSd;
-    private Double budgetFraction;
-
     private ModelStats naiveModelStats;
     private Double naiveRescheduleCost;
     private Double naiveSolutionTime;
@@ -31,37 +22,8 @@ class TrainingResult implements Serializable {
     private Double bendersGap;
     private Double bendersOptimalityGap;
     private Integer bendersNumCuts;
-    private Integer bendersNumIterations;
 
     TrainingResult() {}
-
-    String getInstance() {
-        return instance;
-    }
-
-    void setStrategy(String strategy) {
-        this.strategy = strategy;
-    }
-
-    void setDistribution(String distribution) {
-        this.distribution = distribution;
-    }
-
-    void setDistributionMean(Double distributionMean) {
-        this.distributionMean = distributionMean;
-    }
-
-    void setDistributionSd(Double distributionSd) {
-        this.distributionSd = distributionSd;
-    }
-
-    void setBudgetFraction(Double budgetFraction) {
-        this.budgetFraction = budgetFraction;
-    }
-
-    Double getBudgetFraction() {
-        return budgetFraction;
-    }
 
     void setBendersGap(Double bendersGap) {
         this.bendersGap = bendersGap;
@@ -73,10 +35,6 @@ class TrainingResult implements Serializable {
 
     void setBendersNumCuts(Integer bendersNumCuts) {
         this.bendersNumCuts = bendersNumCuts;
-    }
-
-    void setBendersNumIterations(Integer bendersNumIterations) {
-        this.bendersNumIterations = bendersNumIterations;
     }
 
     void setBendersRescheduleCost(Double bendersRescheduleCost) {
@@ -111,10 +69,6 @@ class TrainingResult implements Serializable {
         this.depSolutionTime = depSolutionTime;
     }
 
-    void setInstance(String instance) {
-        this.instance = instance;
-    }
-
     void setNaiveModelStats(ModelStats naiveModelStats) {
         this.naiveModelStats = naiveModelStats;
     }
@@ -128,13 +82,7 @@ class TrainingResult implements Serializable {
     }
 
     boolean allPopulated() {
-        return instance != null
-            && strategy != null
-            && distribution != null
-            && distributionMean != null
-            && distributionSd != null
-            && budgetFraction != null
-            && naiveModelStats != null
+        return naiveModelStats != null
             && naiveRescheduleCost != null
             && naiveSolutionTime != null
             && depModelStats != null
@@ -147,75 +95,43 @@ class TrainingResult implements Serializable {
             && bendersGlobalUpperBound != null
             && bendersGap != null
             && bendersOptimalityGap != null
-            && bendersNumCuts != null
-            && bendersNumIterations != null;
+            && bendersNumCuts != null;
     }
 
+    public HashMap<String, Object> asMap() {
+        HashMap<String, Object> results = new HashMap<>();
+        results.put("instanceName", Parameters.getInstanceName());
+        results.put("model", Parameters.getModel());
+        results.put("budgetFraction", Parameters.getRescheduleBudgetFraction());
+        results.put("flightRescheduleLimit", Parameters.getFlightRescheduleBound());
+        results.put("numTrainingScenarios", Parameters.getNumSecondStageScenarios());
+        results.put("distributionType", Parameters.getDistributionType());
+        results.put("distributionMean", Parameters.getDistributionMean());
+        results.put("distributionSd", Parameters.getDistributionSd());
+        results.put("flightPickStrategy", Parameters.getFlightPickStrategy());
+        results.put("bendersMultiCut", Parameters.isBendersMultiCut());
+        results.put("bendersIterations", Parameters.getNumBendersIterations());
+        results.put("columnGenStrategy", Parameters.getColumnGenStrategy());
+        results.put("useColumnCaching", Parameters.isUseColumnCaching());
+        results.put("numThreads", Parameters.getNumThreadsForSecondStage());
+        results.put("numTestScenarios", Parameters.getNumTestScenarios());
 
-    static List<String> getCsvHeaders() {
-        return new ArrayList<>(Arrays.asList(
-            "instance",
-            "strategy",
-            "distribution",
-            "mean",
-            "standard deviation",
-            "budget fraction",
-            "expected excess",
-            "excess target",
-            "excess aversion",
-            "Naive rows",
-            "Naive columns",
-            "Naive non-zeroes",
-            "Naive objective",
-            "Naive model reschedule cost",
-            "Naive model solution time (seconds)",
-            "DEP rows",
-            "DEP columns",
-            "DEP non-zeroes",
-            "DEP objective",
-            "DEP reschedule cost",
-            "DEP solution time (seconds)",
-            "Benders reschedule cost",
-            "Benders solution time (seconds)",
-            "Benders lower bound",
-            "Benders upper bound",
-            "Benders global upper bound",
-            "Benders gap (%)",
-            "Benders optimality gap (%)",
-            "Benders number of cuts",
-            "Benders number of iterations"));
-    }
+        results.putAll(naiveModelStats.asMap("naive"));
+        results.put("naiveRescheduleCost", naiveRescheduleCost);
+        results.put("naiveSolutionTimeSec", naiveSolutionTime);
 
-    List<String> getCsvRow() {
-        ArrayList<String> row = new ArrayList<>(Arrays.asList(
-            instance,
-            strategy,
-            distribution,
-            Double.toString(distributionMean),
-            Double.toString(distributionSd),
-            Double.toString(budgetFraction),
-            Boolean.toString(Parameters.isExpectedExcess()),
-            Integer.toString(Parameters.getExcessTarget()),
-            Double.toString(Parameters.getRiskAversion())));
+        results.putAll(depModelStats.asMap("dep"));
+        results.put("depRescheduleCost", depRescheduleCost);
+        results.put("depSolutionTimeSec", depSolutionTime);
 
-        row.addAll(naiveModelStats.getCsvRow());
-        row.add(Double.toString(naiveRescheduleCost));
-        row.add(Double.toString(naiveSolutionTime));
-
-        row.addAll(depModelStats.getCsvRow());
-        row.addAll(Arrays.asList(
-            Double.toString(depRescheduleCost),
-            Double.toString(depSolutionTime),
-            Double.toString(bendersRescheduleCost),
-            Double.toString(bendersSolutionTime),
-            Double.toString(bendersLowerBound),
-            Double.toString(bendersUpperBound),
-            Double.toString(bendersGlobalUpperBound),
-            Double.toString(bendersGap),
-            Double.toString(bendersOptimalityGap),
-            Integer.toString(bendersNumCuts),
-            Integer.toString(bendersNumIterations)));
-
-        return row;
+        results.put("bendersRescheduleCost", bendersRescheduleCost);
+        results.put("bendersSolutionTime", bendersSolutionTime);
+        results.put("bendersLowerBound", bendersLowerBound);
+        results.put("bendersUpperBound", bendersUpperBound);
+        results.put("bendersGlobalUpperBound", bendersGlobalUpperBound);
+        results.put("bendersGap", bendersGap);
+        results.put("bendersOptimalityGap", bendersOptimalityGap);
+        results.put("bendersNumCuts", bendersNumCuts);
+        return results;
     }
 }
