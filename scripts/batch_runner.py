@@ -78,16 +78,18 @@ def generate_delays(orig_cmd: typing.List[str], num_scenarios: typing.Optional[i
     subprocess.check_call(cmd)
 
 
-def generate_reschedule_solution(orig_cmd: typing.List[str], model: str):
+def generate_reschedule_solution(orig_cmd: typing.List[str], model: str, prefix: str):
     cmd = [c for c in orig_cmd]
     cmd.extend([
         "-model", model,
         "-parseDelays",
-        "-type", "training"])
+        "-type", "training",
+        "-output", f"solution/{prefix}_training.yaml"
+    ])
     subprocess.check_call(cmd)
 
 
-def generate_test_results(orig_cmd: typing.List[str], parse_delays=False):
+def generate_test_results(orig_cmd: typing.List[str], parse_delays: bool, prefix: str):
     cmd = [c for c in orig_cmd]
     cmd.extend(["-type", "test"])
     if parse_delays:
@@ -95,15 +97,15 @@ def generate_test_results(orig_cmd: typing.List[str], parse_delays=False):
     subprocess.check_call(cmd)
 
 
-def generate_all_results(cmd: typing.List[str], models: typing.List[str]):
+def generate_all_results(cmd: typing.List[str], models: typing.List[str], prefix: str):
     generate_delays(cmd)
     log.info(f"generated delays for {cmd}")
 
     for model in models:
-        generate_reschedule_solution(cmd, model)
+        generate_reschedule_solution(cmd, model, prefix)
         log.info(f"finished training run for {model}")
 
-    generate_test_results(cmd)
+    generate_test_results(cmd, False, prefix)
     log.info(f"generated test results for {cmd}")
 
 
@@ -181,6 +183,7 @@ class Controller:
     def _run_budget_set(self):
         log.info("starting budget comparison runs...")
         budget_fractions = ["0.25", "0.5", "0.75", "1", "2"]
+        counter = 0
         for name in self.config.names:
             for bf in budget_fractions:
                 cmd = [c for c in self._base_cmd]
@@ -196,7 +199,9 @@ class Controller:
                     "-parallel", str(self._default_num_threads),
                 ])
 
-                generate_all_results(cmd, self._models)
+                prefix = f"budget_{counter}"
+                generate_all_results(cmd, self._models, prefix)
+                counter += 1
         log.info("completed budget comparison runs.")
 
     def _run_column_caching_set(self):
