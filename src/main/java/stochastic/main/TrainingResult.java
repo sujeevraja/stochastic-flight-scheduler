@@ -101,17 +101,17 @@ class TrainingResult implements Serializable {
     public HashMap<String, Object> asMap() {
         HashMap<String, Object> results = new HashMap<>();
         results.put("instanceName", Parameters.getInstanceName());
-        results.put("model", Parameters.getModel());
+        results.put("model", Parameters.getModel().name());
         results.put("budgetFraction", Parameters.getRescheduleBudgetFraction());
         results.put("flightRescheduleLimit", Parameters.getFlightRescheduleBound());
         results.put("numTrainingScenarios", Parameters.getNumSecondStageScenarios());
-        results.put("distributionType", Parameters.getDistributionType());
+        results.put("distributionType", Parameters.getDistributionType().name());
         results.put("distributionMean", Parameters.getDistributionMean());
         results.put("distributionSd", Parameters.getDistributionSd());
-        results.put("flightPickStrategy", Parameters.getFlightPickStrategy());
+        results.put("flightPickStrategy", Parameters.getFlightPickStrategy().name());
         results.put("bendersMultiCut", Parameters.isBendersMultiCut());
         results.put("bendersIterations", Parameters.getNumBendersIterations());
-        results.put("columnGenStrategy", Parameters.getColumnGenStrategy());
+        results.put("columnGenStrategy", Parameters.getColumnGenStrategy().name());
         results.put("useColumnCaching", Parameters.isUseColumnCaching());
         results.put("numThreads", Parameters.getNumThreadsForSecondStage());
         results.put("numTestScenarios", Parameters.getNumTestScenarios());
