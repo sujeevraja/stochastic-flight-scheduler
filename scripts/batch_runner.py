@@ -65,8 +65,8 @@ def clean_delay_files():
     base = os.path.abspath(os.path.dirname(__file__))
     sln_path = os.path.join(base, 'solution')
     for f in os.listdir(sln_path):
-        if (f.endswith(".csv")
-                and (f.startswith("primary_delay") or f.startswith("reschedule_"))):
+        if (f.endswith(".csv") and (f.startswith("primary_delay") or
+                                    f.startswith("reschedule_"))):
             os.remove(os.path.join(sln_path, f))
 
 
@@ -116,7 +116,8 @@ def validate_setup(config: Config):
     if os.path.isdir(config.cplex_lib_path):
         log.info("located cplex library path.")
     else:
-        raise ScriptException(f"invalid cplex lib path: {config.cplex_lib_path}")
+        raise ScriptException(
+            f"invalid cplex lib path: {config.cplex_lib_path}")
 
     os.makedirs("logs", exist_ok=True)
     log.info("created/checked logs folder")
@@ -207,6 +208,11 @@ class Controller:
                     "-batch",
                     "-name", name,
                     "-type", "benders",
+                    "-d", str(self._default_delay_distribution),
+                    "-mean", str(self._default_delay_mean),
+                    "-sd", str(self._default_delay_sd),
+                    "-r", str(self._default_budget_fraction),
+                    "-f", self._default_column_gen_strategy,
                     "-parallel", "1", ])
 
                 generate_delays(cmd)
@@ -397,7 +403,8 @@ class Controller:
 
 
 def guess_cplex_library_path() -> str:
-    gp_path = os.path.join(os.path.expanduser("~"), ".gradle", "gradle.properties")
+    gp_path = os.path.join(os.path.expanduser(
+        "~"), ".gradle", "gradle.properties")
     if not os.path.isfile(gp_path):
         raise ScriptException(f"gradle.properties not available at {gp_path}")
 
@@ -411,7 +418,8 @@ def guess_cplex_library_path() -> str:
 
 
 def handle_command_line() -> Config:
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     run_type_dict = {
         "b": RunType.Budget,
@@ -439,7 +447,8 @@ def handle_command_line() -> Config:
     args_dict = vars(parser.parse_args())
     args_dict["cplex_lib_path"] = guess_cplex_library_path()
     args_dict["run_type"] = run_type_dict[args_dict["run_type"]]
-    args_dict["jar_path"] = os.path.join(root, "build", "libs", "stochastic_uber.jar")
+    args_dict["jar_path"] = os.path.join(
+        root, "build", "libs", "stochastic_uber.jar")
     return Config(**args_dict)
 
 
