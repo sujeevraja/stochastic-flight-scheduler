@@ -274,42 +274,6 @@ class Controller {
         }
     }
 
-    final double getBendersRescheduleCost() {
-        return bendersSolution.getRescheduleCost();
-    }
-
-    final double getBendersSolutionTime() {
-        return bendersSolutionTime;
-    }
-
-    final double getBendersLowerBound() {
-        return bendersLowerBound;
-    }
-
-    final double getBendersUpperBound() {
-        return bendersUpperBound;
-    }
-
-    final double getBendersGlobalUpperBound() {
-        return bendersGlobalUpperBound;
-    }
-
-    final double getBendersOptimalityGap() {
-        return bendersOptimalityGap;
-    }
-
-    final double getBendersGap() {
-        return bendersGap;
-    }
-
-    final int getBendersNumCuts() {
-        return bendersNumCuts;
-    }
-
-    final int getBendersNumIterations() {
-        return bendersNumIterations;
-    }
-
     private void solveWithNaiveApproach() throws OptException {
         try {
             NaiveSolver naiveSolver = new NaiveSolver(dataRegistry);
@@ -447,5 +411,18 @@ class Controller {
                 (new RescheduleSolutionDAO(model, legs)).getRescheduleSolution());
 
         return rescheduleSolutions;
+    }
+
+    HashMap<String, Object> getBendersResults() {
+        HashMap<String, Object> results = Parameters.asMap();
+        results.put("bendersRescheduleCost", bendersSolution.getRescheduleCost());
+        results.put("bendersSolutionTime", bendersSolutionTime);
+        results.put("bendersLowerBound", bendersLowerBound);
+        results.put("bendersUpperBound", bendersUpperBound);
+        results.put("bendersGlobalUpperBound", bendersGlobalUpperBound);
+        results.put("bendersGap", bendersGap);
+        results.put("bendersOptimalityGap", bendersOptimalityGap);
+        results.put("bendersNumCuts", bendersNumCuts);
+        return results;
     }
 }

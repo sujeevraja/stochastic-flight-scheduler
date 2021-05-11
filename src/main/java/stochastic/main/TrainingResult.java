@@ -14,47 +14,14 @@ class TrainingResult implements Serializable {
     private Double depRescheduleCost;
     private Double depSolutionTime;
 
-    private Double bendersRescheduleCost;
-    private Double bendersSolutionTime;
-    private Double bendersLowerBound;
-    private Double bendersUpperBound;
-    private Double bendersGlobalUpperBound;
-    private Double bendersGap;
-    private Double bendersOptimalityGap;
-    private Integer bendersNumCuts;
+    private Boolean bendersDone;
 
-    TrainingResult() {}
-
-    void setBendersGap(Double bendersGap) {
-        this.bendersGap = bendersGap;
+    TrainingResult() {
+        bendersDone = false;
     }
 
-    void setBendersLowerBound(Double bendersLowerBound) {
-        this.bendersLowerBound = bendersLowerBound;
-    }
-
-    void setBendersNumCuts(Integer bendersNumCuts) {
-        this.bendersNumCuts = bendersNumCuts;
-    }
-
-    void setBendersRescheduleCost(Double bendersRescheduleCost) {
-        this.bendersRescheduleCost = bendersRescheduleCost;
-    }
-
-    void setBendersSolutionTime(Double bendersSolutionTime) {
-        this.bendersSolutionTime = bendersSolutionTime;
-    }
-
-    void setBendersUpperBound(Double bendersUpperBound) {
-        this.bendersUpperBound = bendersUpperBound;
-    }
-
-    void setBendersGlobalUpperBound(Double bendersGlobalUpperBound) {
-        this.bendersGlobalUpperBound = bendersGlobalUpperBound;
-    }
-
-    void setBendersOptimalityGap(double bendersOptimalityGap) {
-        this.bendersOptimalityGap = bendersOptimalityGap;
+    void markBendersDone() {
+        bendersDone = true;
     }
 
     void setDepModelStats(ModelStats depModelStats) {
@@ -88,33 +55,11 @@ class TrainingResult implements Serializable {
             && depModelStats != null
             && depRescheduleCost != null
             && depSolutionTime != null
-            && bendersRescheduleCost != null
-            && bendersSolutionTime != null
-            && bendersLowerBound != null
-            && bendersUpperBound != null
-            && bendersGlobalUpperBound != null
-            && bendersGap != null
-            && bendersOptimalityGap != null
-            && bendersNumCuts != null;
+            && bendersDone;
     }
 
     public HashMap<String, Object> asMap() {
-        HashMap<String, Object> results = new HashMap<>();
-        results.put("instanceName", Parameters.getInstanceName());
-        results.put("model", Parameters.getModel().name());
-        results.put("budgetFraction", Parameters.getRescheduleBudgetFraction());
-        results.put("flightRescheduleLimit", Parameters.getFlightRescheduleBound());
-        results.put("numTrainingScenarios", Parameters.getNumSecondStageScenarios());
-        results.put("distributionType", Parameters.getDistributionType().name());
-        results.put("distributionMean", Parameters.getDistributionMean());
-        results.put("distributionSd", Parameters.getDistributionSd());
-        results.put("flightPickStrategy", Parameters.getFlightPickStrategy().name());
-        results.put("bendersMultiCut", Parameters.isBendersMultiCut());
-        results.put("bendersIterations", Parameters.getNumBendersIterations());
-        results.put("columnGenStrategy", Parameters.getColumnGenStrategy().name());
-        results.put("useColumnCaching", Parameters.isUseColumnCaching());
-        results.put("numThreads", Parameters.getNumThreadsForSecondStage());
-        results.put("numTestScenarios", Parameters.getNumTestScenarios());
+        HashMap<String, Object> results = Parameters.asMap();
 
         results.putAll(naiveModelStats.asMap("naive"));
         results.put("naiveRescheduleCost", naiveRescheduleCost);
@@ -124,14 +69,6 @@ class TrainingResult implements Serializable {
         results.put("depRescheduleCost", depRescheduleCost);
         results.put("depSolutionTimeSec", depSolutionTime);
 
-        results.put("bendersRescheduleCost", bendersRescheduleCost);
-        results.put("bendersSolutionTime", bendersSolutionTime);
-        results.put("bendersLowerBound", bendersLowerBound);
-        results.put("bendersUpperBound", bendersUpperBound);
-        results.put("bendersGlobalUpperBound", bendersGlobalUpperBound);
-        results.put("bendersGap", bendersGap);
-        results.put("bendersOptimalityGap", bendersOptimalityGap);
-        results.put("bendersNumCuts", bendersNumCuts);
         return results;
     }
 }

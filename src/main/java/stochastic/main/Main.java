@@ -55,6 +55,7 @@ public class Main {
             "column gen strategy (enum/all/best/first)");
         options.addOption("cache", true,
             "use column caching (y/n)");
+        options.addOption("cut", true, "benders cut type (single/multi)");
         options.addOption("d", true,
             "distribution (exp/tnorm/lnorm)");
         options.addOption("expectedExcess", true,
@@ -78,7 +79,6 @@ public class Main {
             "parse primary delays from files");
         options.addOption("path", true, "path to folder with instance");
         options.addOption("r", true, "reschedule budget fraction");
-        options.addOption("s", false, "use single-cut Benders");
         options.addOption("sd", true, "standard deviation");
         options.addOption("stats", false, "generate stats about instance");
         options.addOption("type", true,
@@ -235,6 +235,14 @@ public class Main {
                     break;
             }
         }
+        if (cmd.hasOption("cut")) {
+            final String cutType = cmd.getOptionValue("cut");
+            if (cutType.equals("single"))
+                Parameters.setBendersMultiCut(false);
+            else if (cutType.equals("multi"))
+                Parameters.setBendersMultiCut(true);
+            else throw new OptException("unknown cut type " + cutType);
+        }
         if (cmd.hasOption('d')) {
             final String distribution = cmd.getOptionValue('d');
             switch (distribution) {
@@ -314,7 +322,6 @@ public class Main {
             Parameters.setUseColumnCaching(useCaching);
             logger.info("use column caches: " + useCaching);
         }
-        Parameters.setBendersMultiCut(!cmd.hasOption('s'));
         if (cmd.hasOption("sd")) {
             final double sd = Double.parseDouble(cmd.getOptionValue("sd"));
             Parameters.setDistributionSd(sd);
