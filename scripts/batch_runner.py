@@ -185,11 +185,11 @@ class Controller:
                     "-batch",
                     "-name", name,
                     "-r", bf,
-                    "-d", self._default_delay_distribution,
-                    "-mean", self._default_delay_mean,
-                    "-sd", self._default_delay_sd,
+                    "-d", str(self._default_delay_distribution),
+                    "-mean", str(self._default_delay_mean),
+                    "-sd", str(self._default_delay_sd),
                     "-f", self._default_column_gen_strategy,
-                    "-parallel", self._default_num_threads,
+                    "-parallel", str(self._default_num_threads),
                 ])
 
                 generate_all_results(cmd, self._models)
@@ -391,7 +391,6 @@ class Controller:
                 log.info(f'generated test results for {cmd} with excess')
 
         log.info("completed expected excess comparison runs.")
-
 
 
 def guess_cplex_library_path() -> str:
