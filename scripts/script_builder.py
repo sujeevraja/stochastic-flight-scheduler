@@ -39,7 +39,7 @@ def main():
     arg_tups = [
         ("budget", "r", ["0.25", "0.5", "0.75", "1", "2"], True),
         ("column_caching", "cache", ["y", "n"], False),
-        ("mean", "m", ["15", "30", "45", "60"], True),
+        ("mean", "mean", ["15", "30", "45", "60"], True),
         ("thread", "parallel", ["1", "10", "20", "30"], False),
         ("quality", "f", ["hub", "rush"], True),
         ("column", "c", ["enum", "all", "best", "first"], False),
