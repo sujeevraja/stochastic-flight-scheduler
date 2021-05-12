@@ -136,7 +136,7 @@ class Controller {
         logger.info("starting scenario writing...");
         Scenario[] scenarios = dataRegistry.getDelayScenarios();
         ArrayList<Leg> legs = dataRegistry.getLegs();
-        String prefix = "solution/primary_delays_";
+        String prefix = Parameters.getOutputPath() + "/primary_delays_";
         String suffix = ".csv";
         List<String> headers = new ArrayList<>(Arrays.asList("leg_id", "delay_minutes"));
 
@@ -174,7 +174,7 @@ class Controller {
         final int numScenarios = Parameters.getNumSecondStageScenarios();
         final double probability = 1.0 / numScenarios;
         Scenario[] scenarios = new Scenario[numScenarios];
-        final String prefix = "solution/primary_delays_";
+        final String prefix = Parameters.getOutputPath() + "/primary_delays_";
         final String suffix = ".csv";
 
         // Build map from leg id to index for delay data collection.

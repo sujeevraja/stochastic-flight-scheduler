@@ -36,7 +36,7 @@ class BatchRunner {
     void trainingRun() throws OptException {
         try {
             logger.info("starting training run...");
-            final String trainingRowPath = "solution/training_result.partial";
+            final String trainingRowPath = Parameters.getOutputPath() + "/training_result.partial";
             TrainingResult trainingResult;
             if (fileExists(trainingRowPath)) {
                 FileInputStream fileInputStream = new FileInputStream(trainingRowPath);
@@ -73,7 +73,8 @@ class BatchRunner {
             if (trainingResult.allPopulated()) {
                 HashMap<String, Object> resultMap = trainingResult.asMap();
                 resultMap.putAll(controller.getBendersResults());
-                Util.writeToYaml(trainingResult.asMap(), Parameters.getOutputPath());
+                Util.writeToYaml(trainingResult.asMap(),
+                    Parameters.getOutputPath() + "/" + Parameters.getOutputName());
                 File file = new File(trainingRowPath);
                 if (!file.delete())
                     throw new OptException("unable to delete object file");
@@ -97,7 +98,7 @@ class BatchRunner {
 
     void testRun() throws OptException {
         try {
-            final String testPath = Parameters.getOutputPath();
+            final String testPath = Parameters.getOutputPath() + "/" + Parameters.getOutputName();
             final boolean addTestHeaders = !fileExists(testPath);
             BufferedWriter testWriter = new BufferedWriter(new FileWriter(testPath, true));
 
@@ -213,7 +214,8 @@ class BatchRunner {
         // collect solution KPIs
         HashMap<String, Object> resultMap = Parameters.asMap();
         resultMap.putAll(controller.getBendersResults());
-        Util.writeToYaml(resultMap, Parameters.getOutputPath());
+        Util.writeToYaml(resultMap, Parameters.getOutputPath() + "/" +
+            Parameters.getOutputName());
     }
 
     static boolean fileExists(String pathString) {

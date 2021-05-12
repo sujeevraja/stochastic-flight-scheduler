@@ -87,7 +87,7 @@ public class QualityChecker {
 
     public void compareSolutions(ArrayList<RescheduleSolution> rescheduleSolutions)
             throws IOException, OptException {
-        String compareFileName = "solution/comparison.csv";
+        String compareFileName = Parameters.getOutputPath() + "/comparison.csv";
         BufferedWriter csvWriter = new BufferedWriter(new FileWriter(compareFileName));
 
         ArrayList<String> headerRow = new ArrayList<>(Arrays.asList(

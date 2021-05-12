@@ -5,9 +5,10 @@ import stochastic.utility.Enums;
 import java.util.HashMap;
 
 public class Parameters {
-    private static String instanceName;
     private static String instancePath;
+    private static String instanceName;
     private static String outputPath;
+    private static String outputName;
     private static Enums.Model model;
 
     /**
@@ -51,14 +52,6 @@ public class Parameters {
     private static double riskAversion;
     private static int excessTarget;
 
-    public static void setInstanceName(String instanceName) {
-        Parameters.instanceName = instanceName;
-    }
-
-    public static String getInstanceName() {
-        return instanceName;
-    }
-
     public static void setInstancePath(String instancePath) {
         Parameters.instancePath = instancePath;
     }
@@ -67,12 +60,25 @@ public class Parameters {
         return instancePath;
     }
 
+
+    public static void setInstanceName(String instanceName) {
+        Parameters.instanceName = instanceName;
+    }
+
     public static String getOutputPath() {
         return outputPath;
     }
 
     public static void setOutputPath(String outputPath) {
         Parameters.outputPath = outputPath;
+    }
+
+    public static String getOutputName() {
+        return outputName;
+    }
+
+    public static void setOutputName(String outputName) {
+        Parameters.outputName = outputName;
     }
 
     public static void setModel(Enums.Model model) {

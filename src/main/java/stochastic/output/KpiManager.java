@@ -30,7 +30,7 @@ public class KpiManager {
         TreeMap<String, Object> allKpis = new TreeMap<>();
         allKpis.put("input", getInputKpis());
         allKpis.put("output", kpis);
-        Util.writeToYaml(allKpis, "solution/kpis.yaml");
+        Util.writeToYaml(allKpis, Parameters.getOutputPath() + "/kpis.yaml");
         logger.info("solution processing completed.");
     }
 

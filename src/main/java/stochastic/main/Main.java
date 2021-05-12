@@ -26,8 +26,8 @@ public class Main {
             final String path = cmd.getOptionValue("path", "data");
             Parameters.setInstanceName(name);
             Parameters.setInstancePath(path + "/" + name + ".xml");
-            Parameters.setOutputPath(
-                    cmd.getOptionValue("output", "solution/result.yaml"));
+            Parameters.setOutputPath(cmd.getOptionValue("outputPath", "solution"));
+            Parameters.setOutputName(cmd.getOptionValue("outputName", "result.yaml"));
 
             setDefaultParameters();
             // writeDefaultParameters();
@@ -72,7 +72,8 @@ public class Main {
         options.addOption("model", true, "model (naive/dep/benders/all)");
         options.addOption("name", true, "instance name");
         options.addOption("numScenarios", true, "number of scenarios");
-        options.addOption("output", true, "path to output file");
+        options.addOption("outputPath", true, "path to output folder");
+        options.addOption("outputName", true, "name of output file");
         options.addOption("parallel", true,
             "number of parallel runs for second stage");
         options.addOption("parseDelays", false,
@@ -184,34 +185,6 @@ public class Main {
         Parameters.setExpectedExcess(false);
         Parameters.setRiskAversion(0.9);
         Parameters.setExcessTarget(40);
-    }
-
-    private static void writeDefaultParameters() throws OptException {
-        String kpiFileName = "solution/parameters.yaml";
-        if (BatchRunner.fileExists(kpiFileName))
-            return;
-
-        TreeMap<String, Object> parameters = new TreeMap<>();
-
-        parameters.put("column gen strategy", Parameters.getColumnGenStrategy().name());
-        parameters.put("column gen num reduced cost paths per tail", Parameters.getNumReducedCostPaths());
-        parameters.put("distribution mean", Parameters.getDistributionMean());
-        parameters.put("distribution standard deviation", Parameters.getDistributionSd());
-        parameters.put("distribution type", Parameters.getDistributionType().name());
-        parameters.put("benders multi-cut", Parameters.isBendersMultiCut());
-        parameters.put("benders tolerance", Parameters.getBendersTolerance());
-        parameters.put("benders num iterations", Parameters.getNumBendersIterations());
-        parameters.put("benders warm start", Parameters.isWarmStartBenders());
-        parameters.put("flight pick strategy", Parameters.getFlightPickStrategy().name());
-        parameters.put("reschedule time budget fraction", Parameters.getRescheduleBudgetFraction());
-        parameters.put("reschedule time limit for flights", Parameters.getFlightRescheduleBound());
-        parameters.put("second stage in parallel", Parameters.isRunSecondStageInParallel());
-        parameters.put("second stage num scenarios", Parameters.getNumSecondStageScenarios());
-        parameters.put("second stage num threads", Parameters.getNumThreadsForSecondStage());
-        parameters.put("test number of scenarios", Parameters.getNumTestScenarios());
-
-        Util.writeToYaml(parameters, kpiFileName);
-        logger.info("wrote default parameters");
     }
 
     private static void updateParameters(CommandLine cmd) throws OptException {

@@ -1,6 +1,7 @@
 package stochastic.output;
 
 import stochastic.domain.Leg;
+import stochastic.registry.Parameters;
 import stochastic.utility.CSVHelper;
 
 import java.io.BufferedWriter;
@@ -50,7 +51,7 @@ public class RescheduleSolution {
      * Writes stored solution to a file with the given path.
      */
     public void writeCSV(ArrayList<Leg> legs) throws IOException {
-        String path = "solution/reschedule_solution_" + name + ".csv";
+        String path = Parameters.getOutputPath() + "/reschedule_solution_" + name + ".csv";
         BufferedWriter writer = new BufferedWriter(new FileWriter(path));
         ArrayList<String> headers = new ArrayList<>(Arrays.asList("leg_id", "flt_num", "reschedule"));
         CSVHelper.writeLine(writer, headers);

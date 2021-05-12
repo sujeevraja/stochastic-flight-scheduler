@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import stochastic.domain.Leg;
 import stochastic.output.RescheduleSolution;
+import stochastic.registry.Parameters;
 import stochastic.utility.CSVHelper;
 import stochastic.utility.OptException;
 
@@ -22,7 +23,8 @@ public class RescheduleSolutionDAO {
     public RescheduleSolutionDAO(String modelName, ArrayList<Leg> legs) throws OptException {
         try {
             // Collect reschedule values.
-            String filePath = "solution/reschedule_solution_" + modelName + ".csv";
+            String filePath = Parameters.getOutputPath() + "/reschedule_solution_" + modelName +
+                ".csv";
             BufferedReader reader = new BufferedReader(new FileReader(filePath));
             Map<Integer, Integer> legIdRescheduleMap = new HashMap<>();
             CSVHelper.parseLine(reader); // parse once to skip headers
