@@ -10,8 +10,8 @@
     </Appenders>
     <Loggers>
         <Root level="INFO">
-            <!--<AppenderRef ref="Console"/>-->
-            <AppenderRef ref="TimedLog"/>
+            <AppenderRef ref="Console"/>
+            <!--<AppenderRef ref="TimedLog"/>-->
         </Root>
     </Loggers>
 </Configuration>
