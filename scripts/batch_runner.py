@@ -45,7 +45,7 @@ def clean_delay_files():
             os.remove(os.path.join(sln_path, f))
 
 
-def generate_delays(orig_cmd, num_scenarios):
+def generate_delays(orig_cmd, num_scenarios=None):
     cmd = [c for c in orig_cmd]
     cmd.append("-generateDelays")
     if num_scenarios is not None:
