@@ -4,11 +4,9 @@
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} | %msg%n"/>
         </Console>
-        <!--
         <File name="TimedLog" fileName="logs/console_timed.log" immediateFlush="false" append="true">
             <PatternLayout pattern="%d{yyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} | %msg%n"/>
         </File>
-        -->
     </Appenders>
     <Loggers>
         <Root level="INFO">
