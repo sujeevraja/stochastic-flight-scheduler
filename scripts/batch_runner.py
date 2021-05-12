@@ -49,11 +49,11 @@ def clean_delay_files(prefix):
             os.remove(os.path.join(sln_path, f))
 
 
-def generate_delays(orig_cmd, num_scenarios=None):
-    cmd = [c for c in orig_cmd]
-    cmd.append("-generateDelays")
-    if num_scenarios is not None:
-        cmd.extend(["-numScenarios", str(num_scenarios)])
+def generate_delays(orig_cmd, prefix):
+    cmd = [c for c in orig_cmd] + [
+        "-generateDelays",
+        "-outputPath", get_sln_path(prefix)
+    ]
     subprocess.check_call(cmd)
 
 
@@ -83,7 +83,7 @@ def generate_test_results(orig_cmd, parse_delays, prefix):
 
 def generate_all_results(cmd, models, prefix):
     log.info("quality run cmd: {}".format(cmd))
-    generate_delays(cmd)
+    generate_delays(cmd, prefix)
     log.info("generated delays for {}".format(cmd))
 
     for model in models:
@@ -135,6 +135,7 @@ class Controller:
         ]
 
     def run(self):
+        os.makedirs(get_sln_path(self.config.prefix), exist_ok=True)
         additional_args = {}
         if self.config.quality_run is not None:
             if self.config.key == "-m":
@@ -181,7 +182,7 @@ class Controller:
             for k, v in args.items():
                 cmd.extend([k, v])
 
-            generate_delays(cmd)
+            generate_delays(cmd, self.config.prefix)
             for value in self.config.time_run:
                 run_cmd = [c for c in cmd]
                 sln_name = "{}_{}.yaml".format(self.config.prefix, counter)
@@ -195,7 +196,7 @@ class Controller:
                 subprocess.check_call(run_cmd)
                 counter += 1
 
-        clean_delay_files()
+        clean_delay_files(self.config.prefix)
         log.info("completed time run for {}, {}".format(
             self.config.prefix, self.config.instance))
 
