@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
 
 import logging
-import typing
 
 
-def get_run_lines(instances: typing.List[str], prefix: str, key: str,
-                  values: typing.List[str], quality: bool) -> typing.List[str]:
+def get_run_lines(instances, prefix, key, values, quality):
     base_cmd = [
         "python",
         "batch_runner.py",
         "-k", key,
     ]
-    lines: typing.List[str] = []
+    lines = []
     counter = 0
     for name in instances:
         cmd = [c for c in base_cmd]

@@ -4,21 +4,21 @@ import argparse
 import logging
 import os
 import subprocess
-import typing
 
 log = logging.getLogger(__name__)
 
 
-class Config(typing.NamedTuple):
-    """Script parameters"""
-    cplex_lib_path: str
-    instance: str
-    jar_path: str
-    key: str
-    prefix: str
-    path: str
-    quality_run: typing.Optional[str]
-    time_run: typing.List[str]
+class Config:
+    def __init__(self, cplex_lib_path, instance, jar_path, key, prefix, path,
+                 quality_run, time_run):
+        self.cplex_lib_path = cplex_lib_path
+        self.instance = instance
+        self.jar_path = jar_path
+        self.key = key
+        self.prefix = prefix
+        self.path = path
+        self.quality_run = quality_run
+        self.time_run = time_run
 
 
 class ScriptException(Exception):
@@ -32,7 +32,7 @@ class ScriptException(Exception):
         return repr(self.value)
 
 
-def get_root() -> str:
+def get_root():
     return os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 
@@ -45,8 +45,7 @@ def clean_delay_files():
             os.remove(os.path.join(sln_path, f))
 
 
-def generate_delays(orig_cmd: typing.List[str],
-                    num_scenarios: typing.Optional[int] = None):
+def generate_delays(orig_cmd, num_scenarios):
     cmd = [c for c in orig_cmd]
     cmd.append("-generateDelays")
     if num_scenarios is not None:
@@ -54,8 +53,7 @@ def generate_delays(orig_cmd: typing.List[str],
     subprocess.check_call(cmd)
 
 
-def generate_reschedule_solution(orig_cmd: typing.List[str], model: str,
-                                 prefix: str):
+def generate_reschedule_solution(orig_cmd, model, prefix):
     cmd = [c for c in orig_cmd]
     cmd.extend([
         "-model", model,
@@ -66,8 +64,7 @@ def generate_reschedule_solution(orig_cmd: typing.List[str], model: str,
     subprocess.check_call(cmd)
 
 
-def generate_test_results(orig_cmd: typing.List[str], parse_delays: bool,
-                          prefix: str):
+def generate_test_results(orig_cmd, parse_delays, prefix):
     cmd = [c for c in orig_cmd]
     cmd.extend([
         "-type", "test",
@@ -78,8 +75,7 @@ def generate_test_results(orig_cmd: typing.List[str], parse_delays: bool,
     subprocess.check_call(cmd)
 
 
-def generate_all_results(cmd: typing.List[str], models: typing.List[str],
-                         prefix: str):
+def generate_all_results(cmd, models, prefix):
     log.info(f"quality run cmd: {cmd}")
     generate_delays(cmd)
     log.info(f"generated delays for {cmd}")
@@ -91,7 +87,7 @@ def generate_all_results(cmd: typing.List[str], models: typing.List[str],
     log.info(f"generated test results for {cmd}")
 
 
-def validate_setup(config: Config):
+def validate_setup(config):
     if not os.path.isfile(config.jar_path):
         raise ScriptException(f"unable to find uberjar at {config.jar_path}.")
     else:
@@ -113,11 +109,11 @@ def validate_setup(config: Config):
 class Controller:
     """class that manages the functionality of the entire script."""
 
-    def __init__(self, config: Config):
+    def __init__(self, config):
         validate_setup(config)
-        self.config: Config = config
-        self._models: typing.List[str] = ["naive", "dep", "benders"]
-        self._defaults: typing.Dict[str, str] = {
+        self.config = config
+        self._models = ["naive", "dep", "benders"]
+        self._defaults = {
             "-numScenarios": "30",
             "-r": "0.5",  # reschedule budget fraction
             "-d": "lnorm",  # delay distribution
@@ -139,7 +135,7 @@ class Controller:
         ]
 
     def run(self):
-        additional_args: typing.Dict[str, str] = {}
+        additional_args = {}
         if self.config.quality_run is not None:
             if self.config.key == "-m":
                 additional_args["-d"] = "exp"
@@ -151,7 +147,7 @@ class Controller:
         else:
             log.warning("no quality/time run values provided")
 
-    def _quality_run(self, additional_args: typing.Dict[str, str]):
+    def _quality_run(self, additional_args):
         log.info(f"starting {self.config.prefix} quality run for instance "
                  f"{self.config.instance}...")
         args = self._defaults.copy()
@@ -167,7 +163,7 @@ class Controller:
         log.info(f"completed {self.config.prefix} quality run for instance "
                  f"{self.config.instance}...")
 
-    def _time_run(self, additional_args: typing.Dict[str, str]):
+    def _time_run(self, additional_args):
         log.info(f"starting {self.config.prefix} time run for instance "
                  f"{self.config.instance}...")
         args = self._defaults.copy()
@@ -202,7 +198,7 @@ class Controller:
                  f"{self.config.instance}...")
 
 
-def guess_cplex_library_path() -> str:
+def guess_cplex_library_path():
     gp_path = os.path.join(os.path.expanduser(
         "~"), ".gradle", "gradle.properties")
     if not os.path.isfile(gp_path):
@@ -217,7 +213,7 @@ def guess_cplex_library_path() -> str:
     raise ScriptException("cplex lib path not found from gradle.properties")
 
 
-def handle_command_line() -> Config:
+def handle_command_line():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
