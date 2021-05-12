@@ -36,9 +36,13 @@ def get_root():
     return os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 
-def clean_delay_files():
+def get_sln_path(prefix):
+    return "solution_" + prefix
+
+
+def clean_delay_files(prefix):
     base = os.path.abspath(os.path.dirname(__file__))
-    sln_path = os.path.join(base, 'solution')
+    sln_path = os.path.join(base, get_sln_path(prefix))
     for f in os.listdir(sln_path):
         if (f.endswith(".csv") and (f.startswith("primary_delay") or
                                     f.startswith("reschedule_"))):
@@ -59,7 +63,8 @@ def generate_reschedule_solution(orig_cmd, model, prefix):
         "-model", model,
         "-parseDelays",
         "-type", "training",
-        "-output", "solution/{}_training.yaml".format(prefix)
+        "-outputPath", get_sln_path(prefix),
+        "-outputName", "{}_training.yaml".format(prefix)
     ])
     subprocess.check_call(cmd)
 
@@ -68,7 +73,8 @@ def generate_test_results(orig_cmd, parse_delays, prefix):
     cmd = [c for c in orig_cmd]
     cmd.extend([
         "-type", "test",
-        "-output", "solution/{}_test.csv".format(prefix)
+        "-outputPath", get_sln_path(prefix),
+        "-outputName", "{}_test.csv".format(prefix)
     ])
     if parse_delays:
         cmd.append("-parseDelays")
@@ -98,12 +104,6 @@ def validate_setup(config):
     else:
         raise ScriptException("invalid cplex lib path " +
                               config.cplex_lib_path)
-
-    os.makedirs("logs", exist_ok=True)
-    log.info("created/checked logs folder")
-
-    os.makedirs("solution", exist_ok=True)
-    log.info("created/checked solution folder")
 
 
 class Controller:
@@ -159,6 +159,7 @@ class Controller:
         for k, v in args.items():
             cmd.extend([k, v])
         generate_all_results(cmd, self._models, self.config.prefix)
+        clean_delay_files(self.config.prefix)
         log.info("completed quality run for {}, {}".format(
             self.config.prefix, self.config.instance))
 
@@ -175,7 +176,7 @@ class Controller:
         args["-type"] = "benders"
 
         counter = 0
-        for i in range(5):
+        for _ in range(5):
             cmd = [c for c in self._base_cmd]
             for k, v in args.items():
                 cmd.extend([k, v])
@@ -183,13 +184,13 @@ class Controller:
             generate_delays(cmd)
             for value in self.config.time_run:
                 run_cmd = [c for c in cmd]
-                sln_path = "solution/{}_{}.yaml".format(
-                    self.config.prefix, counter)
+                sln_name = "{}_{}.yaml".format(self.config.prefix, counter)
                 run_cmd.extend([
                     "-parseDelays",
                     "-model", "benders",
                     self.config.key, value,
-                    "-output", sln_path
+                    "-outputPath", get_sln_path(self.config.prefix),
+                    "-outputName", sln_name
                 ])
                 subprocess.check_call(run_cmd)
                 counter += 1
