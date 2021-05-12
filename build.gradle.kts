@@ -45,6 +45,8 @@ dependencies {
 
 tasks {
     register<Jar>("uberJar") {
+        group = "Build"
+        description = "Build a fat JAR of this project including all external dependencies."
         // archiveClassifier.set("uber")
         // archiveAppendix.set("_uber")
         archiveFileName.set("stochastic_uber.jar")
@@ -65,6 +67,8 @@ tasks {
     }
 
     register<Delete>("cleanLogs") {
+        group = "Build"
+        description = "Clean generated output files."
         delete(fileTree("logs") {
            include("*.csv", "*.lp", "*.log", "*.txt", "*.xml")
         })

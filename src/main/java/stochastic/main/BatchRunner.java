@@ -11,6 +11,7 @@ import stochastic.registry.Parameters;
 import stochastic.utility.CSVHelper;
 import stochastic.utility.Enums;
 import stochastic.utility.OptException;
+import stochastic.utility.Util;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -18,6 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -25,7 +27,7 @@ import java.util.List;
  */
 class BatchRunner {
     private final static Logger logger = LogManager.getLogger(BatchRunner.class);
-    private String instanceName;
+    private final String instanceName;
 
     BatchRunner(String instanceName) {
         this.instanceName = instanceName;
@@ -34,16 +36,7 @@ class BatchRunner {
     void trainingRun() throws OptException {
         try {
             logger.info("starting training run...");
-            final String trainingPath = "solution/results_training.csv";
-            final boolean addTrainingHeaders = !fileExists(trainingPath);
-            if (addTrainingHeaders) {
-                BufferedWriter trainingWriter = new BufferedWriter(
-                    new FileWriter(trainingPath));
-                CSVHelper.writeLine(trainingWriter, TrainingResult.getCsvHeaders());
-                trainingWriter.close();
-            }
-
-            final String trainingRowPath = "solution/partial_training_result.txt";
+            final String trainingRowPath = "solution/training_result.partial";
             TrainingResult trainingResult;
             if (fileExists(trainingRowPath)) {
                 FileInputStream fileInputStream = new FileInputStream(trainingRowPath);
@@ -52,17 +45,6 @@ class BatchRunner {
                 objectInputStream.close();
             } else
                 trainingResult = new TrainingResult();
-
-            if (trainingResult.getInstance() == null)
-                trainingResult.setInstance(instanceName);
-
-            trainingResult.setStrategy(Parameters.getFlightPickStrategy().toString());
-            trainingResult.setDistribution(Parameters.getDistributionType().toString());
-            trainingResult.setDistributionMean(Parameters.getDistributionMean());
-            trainingResult.setDistributionSd(Parameters.getDistributionSd());
-
-            if (trainingResult.getBudgetFraction() == null)
-                trainingResult.setBudgetFraction(Parameters.getRescheduleBudgetFraction());
 
             // solve models and write solutions
             Controller controller = new Controller();
@@ -84,22 +66,14 @@ class BatchRunner {
                 trainingResult.setDepSolutionTime(controller.getDepSolutionTime());
             }
             if (model == Enums.Model.BENDERS || model == Enums.Model.ALL) {
-                trainingResult.setBendersRescheduleCost(controller.getBendersRescheduleCost());
-                trainingResult.setBendersSolutionTime(controller.getBendersSolutionTime());
-                trainingResult.setBendersLowerBound(controller.getBendersLowerBound());
-                trainingResult.setBendersUpperBound(controller.getBendersUpperBound());
-                trainingResult.setBendersGlobalUpperBound(controller.getBendersGlobalUpperBound());
-                trainingResult.setBendersGap(controller.getBendersGap());
-                trainingResult.setBendersOptimalityGap(controller.getBendersOptimalityGap());
-                trainingResult.setBendersNumCuts(controller.getBendersNumCuts());
-                trainingResult.setBendersNumIterations(controller.getBendersNumIterations());
+                trainingResult.markBendersDone();
             }
 
             // write KPIs
             if (trainingResult.allPopulated()) {
-                BufferedWriter bw = new BufferedWriter(new FileWriter(trainingPath, true));
-                CSVHelper.writeLine(bw, trainingResult.getCsvRow());
-                bw.close();
+                HashMap<String, Object> resultMap = trainingResult.asMap();
+                resultMap.putAll(controller.getBendersResults());
+                Util.writeToYaml(trainingResult.asMap(), Parameters.getOutputPath());
                 File file = new File(trainingRowPath);
                 if (!file.delete())
                     throw new OptException("unable to delete object file");
@@ -123,7 +97,7 @@ class BatchRunner {
 
     void testRun() throws OptException {
         try {
-            final String testPath = "solution/results_test.csv";
+            final String testPath = Parameters.getOutputPath();
             final boolean addTestHeaders = !fileExists(testPath);
             BufferedWriter testWriter = new BufferedWriter(new FileWriter(testPath, true));
 
@@ -170,6 +144,7 @@ class BatchRunner {
             // write test results
             Double baseObj = null;
             Double baseExpExcessObj = null;
+            HashMap<String, Object> resultMap = Parameters.asMap();
             for (int j = 0; j < testKPISets.length; ++j) {
                 TestKPISet testKPISet = testKPISets[j];
                 final double rescheduleCost = rescheduleSolutions.get(j).getRescheduleCost();
@@ -229,62 +204,16 @@ class BatchRunner {
     }
 
     void bendersRun() throws OptException {
-        try {
-            final String resultPath = "solution/results_benders.csv";
-            final boolean addHeaders = !fileExists(resultPath);
-            if (addHeaders) {
-                BufferedWriter trainingWriter = new BufferedWriter(
-                    new FileWriter(resultPath));
-                ArrayList<String> headers = new ArrayList<>(Arrays.asList(
-                        "instance",
-                        "column strategy",
-                        "caching",
-                        "threads",
-                        "multi cut",
-                        "Benders reschedule cost",
-                        "Benders solution time (seconds)",
-                        "Benders lower bound",
-                        "Benders upper bound",
-                        "Benders global upper bound",
-                        "Benders gap (%)",
-                        "Benders optimality gap (%)",
-                        "Benders number of cuts",
-                        "Benders number of iterations"));
-                CSVHelper.writeLine(trainingWriter, headers);
-                trainingWriter.close();
-            }
+        // solve models
+        Controller controller = new Controller();
+        controller.setDelayGenerator();
+        controller.buildScenarios();
+        controller.solve();
 
-            List<String> row = new ArrayList<>();
-            row.add(instanceName);
-            row.add(Parameters.getColumnGenStrategy().toString());
-            row.add(Boolean.toString(Parameters.isUseColumnCaching()));
-            row.add(Integer.toString(Parameters.getNumThreadsForSecondStage()));
-            row.add(Boolean.toString(Parameters.isBendersMultiCut()));
-
-            // solve models and write solutions
-            Controller controller = new Controller();
-            controller.setDelayGenerator();
-            controller.buildScenarios();
-            controller.solve();
-
-            // collect solution KPIs
-            row.add(Double.toString(controller.getBendersRescheduleCost()));
-            row.add(Double.toString(controller.getBendersSolutionTime()));
-            row.add(Double.toString(controller.getBendersLowerBound()));
-            row.add(Double.toString(controller.getBendersUpperBound()));
-            row.add(Double.toString(controller.getBendersGlobalUpperBound()));
-            row.add(Double.toString(controller.getBendersGap()));
-            row.add(Double.toString(controller.getBendersOptimalityGap()));
-            row.add(Double.toString(controller.getBendersNumCuts()));
-            row.add(Integer.toString(controller.getBendersNumIterations()));
-
-            BufferedWriter bw = new BufferedWriter(new FileWriter(resultPath, true));
-            CSVHelper.writeLine(bw, row);
-            bw.close();
-        } catch (IOException ex) {
-            logger.error(ex);
-            throw new OptException("error writing to csv during multi-threading run");
-        }
+        // collect solution KPIs
+        HashMap<String, Object> resultMap = Parameters.asMap();
+        resultMap.putAll(controller.getBendersResults());
+        Util.writeToYaml(resultMap, Parameters.getOutputPath());
     }
 
     static boolean fileExists(String pathString) {

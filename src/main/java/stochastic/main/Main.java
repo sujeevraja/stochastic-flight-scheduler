@@ -22,14 +22,15 @@ public class Main {
             if (cmd == null)
                 return;
 
-            final String name = cmd.hasOption('n')
-                ? cmd.getOptionValue('n')
-                : "s6";
-            String instancePath = "data/" + name + ".xml";
-            Parameters.setInstancePath(instancePath);
+            final String name = cmd.getOptionValue("name", "s6");
+            final String path = cmd.getOptionValue("path", "data");
+            Parameters.setInstanceName(name);
+            Parameters.setInstancePath(path + "/" + name + ".xml");
+            Parameters.setOutputPath(
+                    cmd.getOptionValue("output", "solution/result.yaml"));
 
             setDefaultParameters();
-            writeDefaultParameters();
+            // writeDefaultParameters();
             updateParameters(cmd);
 
             if (cmd.hasOption("stats"))
@@ -54,6 +55,7 @@ public class Main {
             "column gen strategy (enum/all/best/first)");
         options.addOption("cache", true,
             "use column caching (y/n)");
+        options.addOption("cut", true, "benders cut type (single/multi)");
         options.addOption("d", true,
             "distribution (exp/tnorm/lnorm)");
         options.addOption("expectedExcess", true,
@@ -68,15 +70,15 @@ public class Main {
             "generate primary delays, write to file and exit");
         options.addOption("mean", true, "distribution mean");
         options.addOption("model", true, "model (naive/dep/benders/all)");
-        options.addOption("n", true,
-            "instance name");
+        options.addOption("name", true, "instance name");
         options.addOption("numScenarios", true, "number of scenarios");
+        options.addOption("output", true, "path to output file");
         options.addOption("parallel", true,
             "number of parallel runs for second stage");
         options.addOption("parseDelays", false,
             "parse primary delays from files");
+        options.addOption("path", true, "path to folder with instance");
         options.addOption("r", true, "reschedule budget fraction");
-        options.addOption("s", false, "use single-cut Benders");
         options.addOption("sd", true, "standard deviation");
         options.addOption("stats", false, "generate stats about instance");
         options.addOption("type", true,
@@ -233,6 +235,14 @@ public class Main {
                     break;
             }
         }
+        if (cmd.hasOption("cut")) {
+            final String cutType = cmd.getOptionValue("cut");
+            if (cutType.equals("single"))
+                Parameters.setBendersMultiCut(false);
+            else if (cutType.equals("multi"))
+                Parameters.setBendersMultiCut(true);
+            else throw new OptException("unknown cut type " + cutType);
+        }
         if (cmd.hasOption('d')) {
             final String distribution = cmd.getOptionValue('d');
             switch (distribution) {
@@ -312,7 +322,6 @@ public class Main {
             Parameters.setUseColumnCaching(useCaching);
             logger.info("use column caches: " + useCaching);
         }
-        Parameters.setBendersMultiCut(!cmd.hasOption('s'));
         if (cmd.hasOption("sd")) {
             final double sd = Double.parseDouble(cmd.getOptionValue("sd"));
             Parameters.setDistributionSd(sd);

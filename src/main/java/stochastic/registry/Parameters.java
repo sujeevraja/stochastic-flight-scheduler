@@ -2,8 +2,12 @@ package stochastic.registry;
 
 import stochastic.utility.Enums;
 
+import java.util.HashMap;
+
 public class Parameters {
+    private static String instanceName;
     private static String instancePath;
+    private static String outputPath;
     private static Enums.Model model;
 
     /**
@@ -47,12 +51,28 @@ public class Parameters {
     private static double riskAversion;
     private static int excessTarget;
 
+    public static void setInstanceName(String instanceName) {
+        Parameters.instanceName = instanceName;
+    }
+
+    public static String getInstanceName() {
+        return instanceName;
+    }
+
     public static void setInstancePath(String instancePath) {
         Parameters.instancePath = instancePath;
     }
 
     public static String getInstancePath() {
         return instancePath;
+    }
+
+    public static String getOutputPath() {
+        return outputPath;
+    }
+
+    public static void setOutputPath(String outputPath) {
+        Parameters.outputPath = outputPath;
     }
 
     public static void setModel(Enums.Model model) {
@@ -261,5 +281,25 @@ public class Parameters {
 
     public static int getExcessTarget() {
         return excessTarget;
+    }
+
+    public static HashMap<String, Object> asMap() {
+        HashMap<String, Object> results = new HashMap<>();
+        results.put("instanceName", instanceName);
+        results.put("model", model.name());
+        results.put("budgetFraction", rescheduleBudgetFraction);
+        results.put("flightRescheduleLimit", flightRescheduleBound);
+        results.put("numTrainingScenarios", numSecondStageScenarios);
+        results.put("distributionType", distributionType.name());
+        results.put("distributionMean", distributionMean);
+        results.put("distributionSd", distributionSd);
+        results.put("flightPickStrategy", flightPickStrategy.name());
+        results.put("bendersMultiCut", bendersMultiCut);
+        results.put("bendersIterations", numBendersIterations);
+        results.put("columnGenStrategy", columnGenStrategy.name());
+        results.put("useColumnCaching", useColumnCaching);
+        results.put("numThreads", numThreadsForSecondStage);
+        results.put("numTestScenarios", numTestScenarios);
+        return results;
     }
 }

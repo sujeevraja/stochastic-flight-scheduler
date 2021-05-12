@@ -2,8 +2,9 @@ package stochastic.output;
 
 import ilog.concert.IloException;
 import ilog.cplex.IloCplex;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import stochastic.delay.Scenario;
-import stochastic.domain.Leg;
 import stochastic.registry.DataRegistry;
 import stochastic.registry.Parameters;
 import stochastic.solver.PathCache;
@@ -29,10 +30,11 @@ import java.util.stream.Collectors;
  * original schedule (i.e no reschedule). This is done by running the second-stage model as a MIP.
  */
 public class QualityChecker {
-    private DataRegistry dataRegistry;
+    private final static Logger logger = LogManager.getLogger(QualityChecker.class);
+    private final DataRegistry dataRegistry;
     private IloCplex cplex;
-    private int[] zeroReschedules;
-    private Scenario[] testScenarios;
+    private final int[] zeroReschedules;
+    private final Scenario[] testScenarios;
 
     public QualityChecker(DataRegistry dataRegistry, Scenario[] testScenarios) {
         this.dataRegistry = dataRegistry;
@@ -65,17 +67,18 @@ public class QualityChecker {
         initCplex();
         for (int i = 0; i < rescheduleSolutions.size(); ++i) {
             RescheduleSolution rescheduleSolution = rescheduleSolutions.get(i);
+            logger.info("starting test runs for " + rescheduleSolution.getName());
             TestKPISet[] kpis = new TestKPISet[testScenarios.length];
             for (int j = 0; j < testScenarios.length; ++j) {
+                logger.info("starting scenario " + j + " out of " + testScenarios.length);
                 DelaySolution delaySolution = getDelaySolution(testScenarios[j], j,
                     rescheduleSolution.getName(), rescheduleSolution.getReschedules());
-
                 kpis[j] = delaySolution.getTestKPISet();
             }
-
             TestKPISet averageKPIs = new TestKPISet();
             averageKPIs.storeAverageKPIs(kpis);
             delaySolutionKPIs[i] = averageKPIs;
+            logger.info("completed test runs for " + rescheduleSolution.getName());
         }
         endCplex();
 
