@@ -138,7 +138,7 @@ class Controller:
         os.makedirs(get_sln_path(self.config.prefix), exist_ok=True)
         additional_args = {}
         if self.config.quality_run is not None:
-            if self.config.key == "-m":
+            if self.config.key == "-mean":
                 additional_args["-d"] = "exp"
             self._quality_run(additional_args)
         elif self.config.time_run:
