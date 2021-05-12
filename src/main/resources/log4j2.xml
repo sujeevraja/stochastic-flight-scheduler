@@ -11,8 +11,8 @@
         -->
     </Appenders>
     <Loggers>
-        <Root level="DEBUG">
-            <AppenderRef ref="Console"/>
+        <Root level="INFO">
+            <!--<AppenderRef ref="Console"/>-->
             <AppenderRef ref="TimedLog"/>
         </Root>
     </Loggers>
