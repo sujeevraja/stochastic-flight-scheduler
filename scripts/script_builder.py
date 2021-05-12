@@ -19,14 +19,14 @@ def get_run_lines(instances, prefix, key, values, quality):
                 run_cmd = [c for c in cmd]
                 run_cmd.extend([
                     "-q", str(value),
-                    "-x", f"{prefix}_{counter}",
+                    "-x", "{}_{}".format(prefix, counter),
                 ])
                 lines.append(" ".join(run_cmd))
                 counter += 1
         else:
             cmd.extend([
                 "-t", " ".join(values),
-                "-x", f"{prefix}_{counter}",
+                "-x", "{}_{}".format(prefix, counter),
             ])
             lines.append(" ".join(cmd))
             counter += 1
@@ -53,7 +53,7 @@ def main():
 
     # Runs to get all instance results for scenario table.
     args = ("scenario", "numScenarios", ["10", "20", "30", "40", "50"], True)
-    instances = [f"s{i}" for i in range(1, 7)]
+    instances = ["s{}".format(i) for i in range(1, 7)]
     lines.extend(get_run_lines(instances, *args))
 
     with open("submit_runs.sh", "w") as script_file:
