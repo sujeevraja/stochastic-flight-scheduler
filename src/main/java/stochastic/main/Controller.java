@@ -53,9 +53,9 @@ class Controller {
 
     Controller() throws OptException {
         logger.info("Started reading data...");
-        String instancePath = Parameters.getInstancePath();
-        logger.debug("instance path: " + instancePath);
-        ArrayList<Leg> legs = new ScheduleDAO(instancePath).getLegs();
+        final String filePath = Parameters.getInstancePath() + "/" + Parameters.getInstanceName();
+        logger.debug("instance path: " + filePath);
+        ArrayList<Leg> legs = new ScheduleDAO(filePath).getLegs();
         dataRegistry = (new DataRegistryBuilder(legs)).dataRegistry;
         logger.info("completed reading data.");
     }

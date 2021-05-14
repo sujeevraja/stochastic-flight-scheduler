@@ -60,9 +60,12 @@ public class Parameters {
         return instancePath;
     }
 
-
     public static void setInstanceName(String instanceName) {
         Parameters.instanceName = instanceName;
+    }
+
+    public static String getInstanceName() {
+        return instanceName;
     }
 
     public static String getOutputPath() {

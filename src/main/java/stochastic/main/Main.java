@@ -19,13 +19,6 @@ public class Main {
             if (cmd == null)
                 return;
 
-            final String name = cmd.getOptionValue("name", "s6");
-            final String path = cmd.getOptionValue("path", "data");
-            Parameters.setInstanceName(name);
-            Parameters.setInstancePath(path + "/" + name + ".xml");
-            Parameters.setOutputPath(cmd.getOptionValue("outputPath", "solution"));
-            Parameters.setOutputName(cmd.getOptionValue("outputName", "result.yaml"));
-
             setDefaultParameters();
             updateParameters(cmd);
 
@@ -34,7 +27,7 @@ public class Main {
             else if (cmd.hasOption("generateDelays"))
                 writeDelaysAndExit();
             else if (cmd.hasOption("batch"))
-                batchRun(cmd.getOptionValue("type"));
+                batchRun(cmd.getOptionValue("batch"));
             else
                 singleRun();
         } catch (OptException ex) {
@@ -45,8 +38,9 @@ public class Main {
 
     private static CommandLine addOptions(String[] args) throws OptException {
         Options options = new Options();
-        options.addOption("batch", false,
-            "batch run (single run otherwise)");
+        options.addOption("batch", true,
+            "type of batch run (benders/train/test)");
+        options.addOption("budget", true, "reschedule budget fraction");
         options.addOption("columnGen", true,
             "column gen strategy (enum/all/best/first)");
         options.addOption("cache", true,
@@ -64,9 +58,10 @@ public class Main {
             "flight pick (all/hub/rush)");
         options.addOption("generateDelays", false,
             "generate primary delays, write to file and exit");
+        options.addOption("inputName", true, "instance name");
+        options.addOption("inputPath", true, "path to folder with instance");
         options.addOption("mean", true, "distribution mean");
         options.addOption("model", true, "model (benders/dep/naive/original)");
-        options.addOption("name", true, "instance name");
         options.addOption("numScenarios", true, "number of scenarios");
         options.addOption("outputPath", true, "path to output folder");
         options.addOption("outputName", true, "name of output file");
@@ -74,12 +69,8 @@ public class Main {
             "number of parallel runs for second stage");
         options.addOption("parseDelays", false,
             "parse primary delays from files");
-        options.addOption("path", true, "path to folder with instance");
-        options.addOption("r", true, "reschedule budget fraction");
         options.addOption("sd", true, "standard deviation");
         options.addOption("stats", false, "generate stats about instance");
-        options.addOption("type", true,
-            "type (benders/training/test)");
         options.addOption("h", false, "help (show options and exit)");
 
         CommandLineParser parser = new DefaultParser();
@@ -124,7 +115,7 @@ public class Main {
             case "test":
                 batchRunner.testRun();
                 break;
-            case "training":
+            case "train":
                 batchRunner.trainingRun();
                 break;
             default:
@@ -139,7 +130,6 @@ public class Main {
         controller.setDelayGenerator();
         controller.buildScenarios();
         controller.solve();
-        // controller.processSolution();
         logger.info("completed optimization.");
     }
 
@@ -184,6 +174,10 @@ public class Main {
     }
 
     private static void updateParameters(CommandLine cmd) throws OptException {
+        Parameters.setInstancePath(cmd.getOptionValue("inputPath", "data"));
+        Parameters.setInstanceName(cmd.getOptionValue("inputName", "s6"));
+        Parameters.setOutputPath(cmd.getOptionValue("outputPath", "solution"));
+        Parameters.setOutputName(cmd.getOptionValue("outputName", "result.yaml"));
         if (cmd.hasOption("columnGen")) {
             final String columnGen = cmd.getOptionValue("columnGen");
             switch (columnGen) {
@@ -281,8 +275,8 @@ public class Main {
         }
         if (cmd.hasOption("parseDelays"))
             Parameters.setParsePrimaryDelaysFromFiles(true);
-        if (cmd.hasOption('r')) {
-            final double budgetFraction = Double.parseDouble(cmd.getOptionValue('r'));
+        if (cmd.hasOption("budget")) {
+            final double budgetFraction = Double.parseDouble(cmd.getOptionValue("budget"));
             Parameters.setRescheduleBudgetFraction(budgetFraction);
         }
         if (cmd.hasOption("cache")) {

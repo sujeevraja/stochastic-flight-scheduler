@@ -132,13 +132,14 @@ class BatchRunner {
     }
 
     void bendersRun() throws OptException {
-        // solve models
+        // Solve model with Benders.
         Controller controller = new Controller();
+        Parameters.setModel(Enums.Model.BENDERS);
         controller.setDelayGenerator();
         controller.buildScenarios();
         controller.solve();
 
-        // collect solution KPIs
+        // Collect and write Benders KPIs
         HashMap<String, Object> resultMap = Parameters.asMap();
         resultMap.putAll(controller.getBendersResults());
         Util.writeToYaml(resultMap, Parameters.getOutputPath() + "/" +
