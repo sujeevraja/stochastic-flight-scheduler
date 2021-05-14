@@ -1,5 +1,22 @@
 #!/usr/bin/env python3
 
+"""
+Runs to be generated are:
+- all runs for s6.
+- scenario runs for s5 and s6.
+
+Runs are timing out because of not being able to finish 100 test scenarios
+within a 2 hour period. So, we have to split the runs up.
+
+For quality runs, we need separate scripts to:
+- generate training results
+- generate delay scenarios
+- generate 4 types of test results using the same test scenarios.
+
+For time runs, we need to split runs for each value type. We also need to
+split the repeats for each config.
+"""
+
 import logging
 
 
