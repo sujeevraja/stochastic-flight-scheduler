@@ -18,11 +18,12 @@ class Run(enum.Enum):
 
 
 class Config:
-    def __init__(self, cplex_lib_path, instance, jar_path, path, run_type,
-                 run_id, key, value):
+    def __init__(self, cplex_lib_path, instance, jar_path, num_delays, path,
+                 run_type, run_id, key, value):
         self.cplex_lib_path = cplex_lib_path
         self.instance = instance
         self.jar_path = jar_path
+        self.num_delays = num_delays
         self.path = path
         self.run_type = run_type
         self.run_id = run_id
@@ -60,12 +61,6 @@ def clean_delay_files(prefix):
         if (f.endswith(".csv") and (f.startswith("primary_delay") or
                                     f.startswith("reschedule_"))):
             os.remove(os.path.join(sln_path, f))
-
-
-def generate_delays(orig_cmd):
-    cmd = [c for c in orig_cmd] + ["-generateDelays", ]
-    subprocess.check_call(cmd)
-    log.info("generated delays for {}".format(orig_cmd))
 
 
 def validate_setup(config):
@@ -123,11 +118,13 @@ class Controller:
             return
 
         if run_type == Run.GenerateDelays:
-            subprocess.check_call(cmd + ["-generateDelays"])
+            subprocess.check_call(
+                cmd + ["-generateDelays", self.config.num_delays])
             return
 
         if self.config.run_type == Run.Train:
-            subprocess.check_call(cmd + ["-generateDelays"])
+            subprocess.check_call(
+                cmd + ["-generateDelays", self.config.num_delays])
             for model in self._models:
                 subprocess.check_call(
                     [c for c in cmd] + ["-parseDelays", "-model", model])
@@ -191,6 +188,9 @@ def handle_command_line():
     default_path = os.path.join(root, "data")
     parser.add_argument("-p", "--path", type=str, default=default_path,
                         help="path to folder with xml files")
+
+    parser.add_argument("-n", "--num_delays", type=str,
+                        help="number of primary delay scenario to generate")
 
     parser.add_argument("-r", "--run_id", type=str,
                         help="run id (to make output folder name unique)")
