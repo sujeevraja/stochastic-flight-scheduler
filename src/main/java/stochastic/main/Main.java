@@ -222,7 +222,7 @@ public class Main {
 
     private static void updateParameters(CommandLine cmd) throws OptException {
         Parameters.setInstancePath(cmd.getOptionValue("inputPath", "data"));
-        Parameters.setInstanceName(cmd.getOptionValue("inputName", "s6"));
+        Parameters.setInstanceName(cmd.getOptionValue("inputName", "s6.xml"));
         Parameters.setOutputPath(cmd.getOptionValue("outputPath", "solution"));
         Parameters.setOutputName(cmd.getOptionValue("outputName", "result.yaml"));
         if (cmd.hasOption("columnGen")) {

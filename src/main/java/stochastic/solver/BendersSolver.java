@@ -211,6 +211,8 @@ public class BendersSolver {
         logger.info("----- number of cuts added: " + numBendersCuts);
 
         if (upperBound <= lowerBound - Constants.EPS) {
+            logger.error("upper bound " + lowerBound);
+            logger.error("lower bound " + lowerBound);
             throw new OptException("upper bound strictly less than lower bound");
         }
     }
