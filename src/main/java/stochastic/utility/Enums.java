@@ -4,13 +4,13 @@ public class Enums {
 
     /**
      * Model specifies the approach to use for generating the reschedule solution.
-     *
+     * <p>
+     * ORIGINAL: use original schedule without reschedule
      * BENDERS: run Benders decomposition
      * DEP: use DEP model
      * NAIVE: use naive model
-     * ALL: run all approaches
      */
-    public enum Model {BENDERS, DEP, NAIVE, ALL}
+    public enum Model {ORIGINAL, BENDERS, DEP, NAIVE}
 
     /**
      * DistributionType specifies the probability distribution to use for generating random flight
@@ -20,7 +20,7 @@ public class Enums {
 
     /**
      * FlightPickStrategy specifies the strategy to select flights with primary delays.
-     *
+     * <p>
      * ALL: pick all flights.
      * HUB: all flights departing from the airport that has the most departures.
      * RUSH_TIME: pick flights in the first quarter of the day.
@@ -33,9 +33,9 @@ public class Enums {
      * FULL_ENUMERATION: enumerate all paths and solve single LP once.
      * ALL_PATHS: finish the labeling procedure and use all negative reduced cost paths.
      * BEST_PATHS: finish the labeling procedure and use a specific number of the most negative
-     *             reduced cost paths.
+     * reduced cost paths.
      * FIRST_PATHS: exit the labeling procedure as soon as a specific number of paths have been
-     *              found.
+     * found.
      * <p>
      * The number of paths for the BEST_PATHS and FIRST_PATHS strategy is specified using
      * "numReducedCostPaths."

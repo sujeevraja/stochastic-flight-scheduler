@@ -58,31 +58,23 @@ public class QualityChecker {
         cplex = null;
     }
 
-    public TestKPISet[] collectAverageTestStatsForBatchRun(
-            ArrayList<RescheduleSolution> rescheduleSolutions) throws OptException {
-        // delaySolutionKpis[i] contains average delay KPIs of all test scenarios generated with
-        // rescheduleSolutions[i] applied to the base schedule.
-        TestKPISet[] delaySolutionKPIs = new TestKPISet[rescheduleSolutions.size()];
-
+    public TestKPISet collectAverageTestStatsForBatchRun(
+            RescheduleSolution rescheduleSolution) throws OptException {
         initCplex();
-        for (int i = 0; i < rescheduleSolutions.size(); ++i) {
-            RescheduleSolution rescheduleSolution = rescheduleSolutions.get(i);
-            logger.info("starting test runs for " + rescheduleSolution.getName());
-            TestKPISet[] kpis = new TestKPISet[testScenarios.length];
-            for (int j = 0; j < testScenarios.length; ++j) {
-                logger.info("starting scenario " + j + " out of " + testScenarios.length);
-                DelaySolution delaySolution = getDelaySolution(testScenarios[j], j,
-                    rescheduleSolution.getName(), rescheduleSolution.getReschedules());
-                kpis[j] = delaySolution.getTestKPISet();
-            }
-            TestKPISet averageKPIs = new TestKPISet();
-            averageKPIs.storeAverageKPIs(kpis);
-            delaySolutionKPIs[i] = averageKPIs;
-            logger.info("completed test runs for " + rescheduleSolution.getName());
+        logger.info("starting test runs for " + rescheduleSolution.getName());
+        TestKPISet[] kpis = new TestKPISet[testScenarios.length];
+        for (int j = 0; j < testScenarios.length; ++j) {
+            logger.info("starting scenario " + j + " out of " + testScenarios.length);
+            DelaySolution delaySolution = getDelaySolution(testScenarios[j], j,
+                rescheduleSolution.getName(), rescheduleSolution.getReschedules());
+            kpis[j] = delaySolution.getTestKPISet();
         }
+        TestKPISet averageKPISet = new TestKPISet();
+        averageKPISet.storeAverageKPIs(kpis);
+        logger.info("completed test runs for " + rescheduleSolution.getName());
         endCplex();
 
-        return delaySolutionKPIs;
+        return averageKPISet;
     }
 
     public void compareSolutions(ArrayList<RescheduleSolution> rescheduleSolutions)

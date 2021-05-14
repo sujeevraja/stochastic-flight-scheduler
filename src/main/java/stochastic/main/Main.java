@@ -6,9 +6,6 @@ import org.apache.logging.log4j.Logger;
 import stochastic.registry.Parameters;
 import stochastic.utility.Enums;
 import stochastic.utility.OptException;
-import stochastic.utility.Util;
-
-import java.util.TreeMap;
 
 /**
  * Class that owns main().
@@ -30,7 +27,6 @@ public class Main {
             Parameters.setOutputName(cmd.getOptionValue("outputName", "result.yaml"));
 
             setDefaultParameters();
-            // writeDefaultParameters();
             updateParameters(cmd);
 
             if (cmd.hasOption("stats"))
@@ -38,7 +34,7 @@ public class Main {
             else if (cmd.hasOption("generateDelays"))
                 writeDelaysAndExit();
             else if (cmd.hasOption("batch"))
-                batchRun(name, cmd.getOptionValue("type"));
+                batchRun(cmd.getOptionValue("type"));
             else
                 singleRun();
         } catch (OptException ex) {
@@ -69,7 +65,7 @@ public class Main {
         options.addOption("generateDelays", false,
             "generate primary delays, write to file and exit");
         options.addOption("mean", true, "distribution mean");
-        options.addOption("model", true, "model (naive/dep/benders/all)");
+        options.addOption("model", true, "model (benders/dep/naive/original)");
         options.addOption("name", true, "instance name");
         options.addOption("numScenarios", true, "number of scenarios");
         options.addOption("outputPath", true, "path to output folder");
@@ -119,8 +115,8 @@ public class Main {
         logger.info("completed primary delay generation.");
     }
 
-    private static void batchRun(String name, String runType) throws OptException {
-        BatchRunner batchRunner = new BatchRunner(name);
+    private static void batchRun(String runType) throws OptException {
+        BatchRunner batchRunner = new BatchRunner();
         switch (runType) {
             case "benders":
                 batchRunner.bendersRun();
@@ -266,11 +262,10 @@ public class Main {
                 case "naive":
                     Parameters.setModel(Enums.Model.NAIVE);
                     break;
-                case "all":
-                    Parameters.setModel(Enums.Model.ALL);
-                    break;
+                case "original":
+                    Parameters.setModel(Enums.Model.ORIGINAL);
                 default:
-                    throw new OptException("unknown model type, use benders/dep/naive/all");
+                    throw new OptException("unknown model type, use benders/dep/naive");
             }
         }
         else

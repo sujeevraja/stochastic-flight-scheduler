@@ -12,12 +12,12 @@ import java.util.Arrays;
 
 public class RescheduleSolution {
     /**
-     * RescheduleSolution objects store solutions of the master problem that reschedule legs to protect against
-     * uncertain delays.
+     * RescheduleSolution objects store solutions of the master problem that reschedule legs to
+     * protect against uncertain delays.
      */
-    private String name;
-    private double rescheduleCost;
-    private int[] reschedules;
+    private final String name;
+    private final double rescheduleCost;
+    private final int[] reschedules;
     private boolean isOriginalSchedule;
 
     public RescheduleSolution(String name, double rescheduleCost, int[] reschedules) {

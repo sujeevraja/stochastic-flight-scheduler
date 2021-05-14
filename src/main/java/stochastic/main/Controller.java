@@ -3,7 +3,6 @@ package stochastic.main;
 import ilog.concert.IloException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import stochastic.dao.RescheduleSolutionDAO;
 import stochastic.dao.ScheduleDAO;
 import stochastic.delay.DelayGenerator;
 import stochastic.delay.Scenario;
@@ -24,7 +23,6 @@ import stochastic.solver.UpperBoundSolver;
 import stochastic.utility.CSVHelper;
 import stochastic.utility.Enums;
 import stochastic.utility.OptException;
-import stochastic.utility.Util;
 
 import java.io.*;
 import java.util.*;
@@ -235,9 +233,7 @@ class Controller {
         else if (model == Enums.Model.DEP) solveWithDEP();
         else if (model == Enums.Model.NAIVE) solveWithNaiveApproach();
         else {
-            solveWithNaiveApproach();
-            solveWithDEP();
-            solveWithBenders();
+            logger.info("nothing to solve for model type " + model);
         }
     }
 
@@ -395,22 +391,6 @@ class Controller {
             logger.error(ex);
             throw new OptException("problem writing reschedule solutions to csv");
         }
-    }
-
-    ArrayList<RescheduleSolution> collectRescheduleSolutionsFromFiles() throws OptException {
-        ArrayList<RescheduleSolution> rescheduleSolutions = new ArrayList<>();
-        RescheduleSolution original = new RescheduleSolution("original", 0, null);
-        original.setOriginalSchedule(true);
-        rescheduleSolutions.add(original);
-
-        ArrayList<Leg> legs = dataRegistry.getLegs();
-
-        String[] models = new String[]{"naive", "dep", "benders"};
-        for (String model : models)
-            rescheduleSolutions.add(
-                (new RescheduleSolutionDAO(model, legs)).getRescheduleSolution());
-
-        return rescheduleSolutions;
     }
 
     HashMap<String, Object> getBendersResults() {
