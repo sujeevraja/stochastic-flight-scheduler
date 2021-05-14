@@ -72,7 +72,7 @@ def get_run_lines(instances, prefix, key, values, quality):
 
 
 def write_time_run_script():
-    instances = ["s6"]
+    instances = ["s6.xml"]
     time_runs = [
         ("cache", ["y", "n"]),
         ("parallel", ["1", "10", "20", "30"]),
