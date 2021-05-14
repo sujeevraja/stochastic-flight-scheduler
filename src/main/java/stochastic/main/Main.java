@@ -47,12 +47,12 @@ public class Main {
         Options options = new Options();
         options.addOption("batch", false,
             "batch run (single run otherwise)");
-        options.addOption("c", true,
+        options.addOption("columnGen", true,
             "column gen strategy (enum/all/best/first)");
         options.addOption("cache", true,
             "use column caching (y/n)");
         options.addOption("cut", true, "benders cut type (single/multi)");
-        options.addOption("d", true,
+        options.addOption("distribution", true,
             "distribution (exp/tnorm/lnorm)");
         options.addOption("expectedExcess", true,
             "enable expected excess (y/n)");
@@ -60,7 +60,7 @@ public class Main {
             "expected excess target");
         options.addOption("excessAversion", true,
             "expected excess risk aversion");
-        options.addOption("f", true,
+        options.addOption("flightPick", true,
             "flight pick (all/hub/rush)");
         options.addOption("generateDelays", false,
             "generate primary delays, write to file and exit");
@@ -184,8 +184,8 @@ public class Main {
     }
 
     private static void updateParameters(CommandLine cmd) throws OptException {
-        if (cmd.hasOption('c')) {
-            final String columnGen = cmd.getOptionValue('c');
+        if (cmd.hasOption("columnGen")) {
+            final String columnGen = cmd.getOptionValue("columnGen");
             switch (columnGen) {
                 case "enum":
                     Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.FULL_ENUMERATION);
@@ -212,8 +212,8 @@ public class Main {
                 Parameters.setBendersMultiCut(true);
             else throw new OptException("unknown cut type " + cutType);
         }
-        if (cmd.hasOption('d')) {
-            final String distribution = cmd.getOptionValue('d');
+        if (cmd.hasOption("distribution")) {
+            final String distribution = cmd.getOptionValue("distribution");
             switch (distribution) {
                 case "exp":
                     Parameters.setDistributionType(Enums.DistributionType.EXPONENTIAL);
@@ -229,8 +229,8 @@ public class Main {
                     break;
             }
         }
-        if (cmd.hasOption('f')) {
-            final String distribution = cmd.getOptionValue('f');
+        if (cmd.hasOption("flightPick")) {
+            final String distribution = cmd.getOptionValue("flightPick");
             switch (distribution) {
                 case "all":
                     Parameters.setFlightPickStrategy(Enums.FlightPickStrategy.ALL);
