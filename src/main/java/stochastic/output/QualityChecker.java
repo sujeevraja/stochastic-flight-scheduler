@@ -58,173 +58,23 @@ public class QualityChecker {
         cplex = null;
     }
 
-    public TestKPISet[] collectAverageTestStatsForBatchRun(
-            ArrayList<RescheduleSolution> rescheduleSolutions) throws OptException {
-        // delaySolutionKpis[i] contains average delay KPIs of all test scenarios generated with
-        // rescheduleSolutions[i] applied to the base schedule.
-        TestKPISet[] delaySolutionKPIs = new TestKPISet[rescheduleSolutions.size()];
-
+    public TestKPISet collectAverageTestStatsForBatchRun(
+            RescheduleSolution rescheduleSolution) throws OptException {
         initCplex();
-        for (int i = 0; i < rescheduleSolutions.size(); ++i) {
-            RescheduleSolution rescheduleSolution = rescheduleSolutions.get(i);
-            logger.info("starting test runs for " + rescheduleSolution.getName());
-            TestKPISet[] kpis = new TestKPISet[testScenarios.length];
-            for (int j = 0; j < testScenarios.length; ++j) {
-                logger.info("starting scenario " + j + " out of " + testScenarios.length);
-                DelaySolution delaySolution = getDelaySolution(testScenarios[j], j,
-                    rescheduleSolution.getName(), rescheduleSolution.getReschedules());
-                kpis[j] = delaySolution.getTestKPISet();
-            }
-            TestKPISet averageKPIs = new TestKPISet();
-            averageKPIs.storeAverageKPIs(kpis);
-            delaySolutionKPIs[i] = averageKPIs;
-            logger.info("completed test runs for " + rescheduleSolution.getName());
-        }
-        endCplex();
-
-        return delaySolutionKPIs;
-    }
-
-    public void compareSolutions(ArrayList<RescheduleSolution> rescheduleSolutions)
-            throws IOException, OptException {
-        String compareFileName = Parameters.getOutputPath() + "/comparison.csv";
-        BufferedWriter csvWriter = new BufferedWriter(new FileWriter(compareFileName));
-
-        ArrayList<String> headerRow = new ArrayList<>(Arrays.asList(
-                "name",
-                "distribution",
-                "mean",
-                "variance",
-                "strategy",
-                "probability",
-                "reschedule type",
-                "reschedule cost"));
-
-        for (Enums.TestKPI testKPI : Enums.TestKPI.values()) {
-            headerRow.add(testKPI.name());
-            if (testKPI != Enums.TestKPI.delaySolutionTimeInSec)
-                headerRow.add("decrease (%)");
-        }
-
-        CSVHelper.writeLine(csvWriter, headerRow);
-
-        ArrayList<Map<Enums.TestKPI, Double>> averageKpis = new ArrayList<>();
-        ArrayList<Map<Enums.TestKPI, Double>> averageDecreases = new ArrayList<>();
-
-        { // New block here is to de-scope kpiMap.
-            Map<Enums.TestKPI, Double> kpiMap = new HashMap<>();
-            for (Enums.TestKPI kpi : Enums.TestKPI.values())
-                kpiMap.put(kpi, 0.0);
-
-            for (int i = 0; i < rescheduleSolutions.size(); ++i) {
-                Map<Enums.TestKPI, Double> mapCopy = kpiMap.entrySet().stream().collect(
-                        Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-                averageKpis.add(mapCopy);
-
-                mapCopy = kpiMap.entrySet().stream().collect(
-                        Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-                averageDecreases.add(mapCopy);
-            }
-        }
-
-        // collect solutions and write results for each scenario and setting.
-        initCplex();
+        logger.info("starting test runs for " + rescheduleSolution.getName());
+        TestKPISet[] kpis = new TestKPISet[testScenarios.length];
         for (int j = 0; j < testScenarios.length; ++j) {
-            final double probability = testScenarios[j].getProbability();
-            TestKPISet baseSet = null;
-
-            for (int i = 0; i < rescheduleSolutions.size(); ++i) {
-                ArrayList<String> row = new ArrayList<>();
-                row.add("scenario " + j);
-                row.add(Parameters.getDistributionType().name());
-                row.add(Double.toString(Parameters.getDistributionMean()));
-
-                if (Parameters.getDistributionType() == Enums.DistributionType.EXPONENTIAL) {
-                    final double variance = Parameters.getDistributionMean() *
-                        Parameters.getDistributionMean();
-                    row.add(Double.toString(variance));
-                } else
-                    row.add(Double.toString(Parameters.getDistributionSd()));
-
-                row.add(Parameters.getFlightPickStrategy().name());
-                row.add(Double.toString(probability));
-
-                RescheduleSolution rescheduleSolution = rescheduleSolutions.get(i);
-                row.add(rescheduleSolution.getName());
-                row.add(Double.toString(rescheduleSolution.getRescheduleCost()));
-
-                DelaySolution delaySolution = getDelaySolution(testScenarios[j], j,
-                    rescheduleSolution.getName(), rescheduleSolution.getReschedules());
-
-                TestKPISet testKPISet = delaySolution.getTestKPISet();
-                TestKPISet percentDecreaseSet = baseSet != null
-                        ? TestKPISet.getPercentageDecrease(baseSet, testKPISet)
-                        : null;
-
-                Map<Enums.TestKPI, Double> averageKPISet = averageKpis.get(i);
-                Map<Enums.TestKPI, Double> averageDecreasesSet = averageDecreases.get(i);
-
-                for (Enums.TestKPI kpi : Enums.TestKPI.values()) {
-                    row.add(testKPISet.getKpi(kpi).toString());
-                    averageKPISet.put(kpi, averageKPISet.get(kpi) + testKPISet.getKpi(kpi));
-
-                    if (kpi != Enums.TestKPI.delaySolutionTimeInSec) {
-                        double dec = percentDecreaseSet != null
-                                ? percentDecreaseSet.getKpi(kpi)
-                                : 0;
-                        row.add(Double.toString(dec));
-                        averageDecreasesSet.put(kpi, averageDecreasesSet.get(kpi) + dec);
-                    }
-                }
-                if (baseSet == null)
-                    baseSet = testKPISet;
-
-                CSVHelper.writeLine(csvWriter, row);
-            }
+            logger.info("starting scenario " + j + " out of " + testScenarios.length);
+            DelaySolution delaySolution = getDelaySolution(testScenarios[j], j,
+                rescheduleSolution.getName(), rescheduleSolution.getReschedules());
+            kpis[j] = delaySolution.getTestKPISet();
         }
+        TestKPISet averageKPISet = new TestKPISet();
+        averageKPISet.storeAverageKPIs(kpis);
+        logger.info("completed test runs for " + rescheduleSolution.getName());
         endCplex();
 
-        // write average results across all scenarios.
-        final double numTestScenarios = testScenarios.length;
-        for (int i = 0; i < rescheduleSolutions.size(); ++i) {
-            Map<Enums.TestKPI, Double> averageSet = averageKpis.get(i);
-            averageSet.replaceAll((k, v) -> v / numTestScenarios);
-
-            Map<Enums.TestKPI, Double> decreaseSet = averageDecreases.get(i);
-            decreaseSet.replaceAll((k, v) -> v / numTestScenarios);
-        }
-
-        for (int i = 0; i < rescheduleSolutions.size(); ++i) {
-            ArrayList<String> row = new ArrayList<>();
-            row.add("average");
-            row.add(Parameters.getDistributionType().name());
-            row.add(Double.toString(Parameters.getDistributionMean()));
-
-            if (Parameters.getDistributionType() == Enums.DistributionType.EXPONENTIAL) {
-                final double variance = Parameters.getDistributionMean() *
-                    Parameters.getDistributionMean();
-                row.add(Double.toString(variance));
-            } else
-                row.add(Double.toString(Parameters.getDistributionSd()));
-
-            row.add(Parameters.getFlightPickStrategy().name());
-            row.add("-");
-
-            RescheduleSolution rescheduleSolution = rescheduleSolutions.get(i);
-            row.add(rescheduleSolution.getName());
-            row.add(Double.toString(rescheduleSolution.getRescheduleCost()));
-
-            Map<Enums.TestKPI, Double> averageSet = averageKpis.get(i);
-            Map<Enums.TestKPI, Double> averageDecreaseSet = averageDecreases.get(i);
-
-            for (Enums.TestKPI kpi : Enums.TestKPI.values()) {
-                row.add(averageSet.get(kpi).toString());
-                if (kpi != Enums.TestKPI.delaySolutionTimeInSec)
-                    row.add(averageDecreaseSet.get(kpi).toString());
-            }
-            CSVHelper.writeLine(csvWriter, row);
-        }
-        csvWriter.close();
+        return averageKPISet;
     }
 
     private DelaySolution getDelaySolution(Scenario scen, int scenarioNum, String slnName,

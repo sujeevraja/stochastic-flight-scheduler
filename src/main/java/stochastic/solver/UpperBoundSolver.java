@@ -8,16 +8,13 @@ import stochastic.registry.Parameters;
 import stochastic.utility.Enums;
 import stochastic.utility.OptException;
 
-import java.util.ArrayList;
-import java.util.Collections;
-
 /**
  * Finds an upper bound to the 2-stage formulation with binary route variables by fixing the
  * first-stage variable values with the given reschedule solution.
  */
 public class UpperBoundSolver {
-    private DataRegistry dataRegistry;
-    private RescheduleSolution rescheduleSolution;
+    private final DataRegistry dataRegistry;
+    private final RescheduleSolution rescheduleSolution;
 
     public UpperBoundSolver(DataRegistry dataRegistry, RescheduleSolution rescheduleSolution) {
         this.dataRegistry = dataRegistry;
@@ -29,7 +26,7 @@ public class UpperBoundSolver {
         Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.FULL_ENUMERATION);
         QualityChecker qc = new QualityChecker(dataRegistry, dataRegistry.getDelayScenarios());
         TestKPISet averageKPISet = qc.collectAverageTestStatsForBatchRun(
-            new ArrayList<>(Collections.singletonList(rescheduleSolution)))[0];
+            rescheduleSolution);
         Parameters.setColumnGenStrategy(originalStrategy);
 
         final double delayCost = Parameters.isExpectedExcess()

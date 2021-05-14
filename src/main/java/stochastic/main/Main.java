@@ -3,12 +3,20 @@ package stochastic.main;
 import org.apache.commons.cli.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import stochastic.delay.Scenario;
+import stochastic.domain.Leg;
+import stochastic.registry.DataRegistry;
 import stochastic.registry.Parameters;
+import stochastic.utility.CSVHelper;
 import stochastic.utility.Enums;
 import stochastic.utility.OptException;
-import stochastic.utility.Util;
 
-import java.util.TreeMap;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Class that owns main().
@@ -22,23 +30,16 @@ public class Main {
             if (cmd == null)
                 return;
 
-            final String name = cmd.getOptionValue("name", "s6");
-            final String path = cmd.getOptionValue("path", "data");
-            Parameters.setInstanceName(name);
-            Parameters.setInstancePath(path + "/" + name + ".xml");
-            Parameters.setOutputPath(cmd.getOptionValue("outputPath", "solution"));
-            Parameters.setOutputName(cmd.getOptionValue("outputName", "result.yaml"));
-
             setDefaultParameters();
-            // writeDefaultParameters();
             updateParameters(cmd);
 
             if (cmd.hasOption("stats"))
                 writeStatsAndExit();
-            else if (cmd.hasOption("generateDelays"))
-                writeDelaysAndExit();
+            else if (cmd.hasOption("generateDelays")) {
+                writeDelaysAndExit(Integer.parseInt(cmd.getOptionValue("generateDelays")));
+            }
             else if (cmd.hasOption("batch"))
-                batchRun(name, cmd.getOptionValue("type"));
+                batchRun(cmd.getOptionValue("batch"));
             else
                 singleRun();
         } catch (OptException ex) {
@@ -49,14 +50,15 @@ public class Main {
 
     private static CommandLine addOptions(String[] args) throws OptException {
         Options options = new Options();
-        options.addOption("batch", false,
-            "batch run (single run otherwise)");
-        options.addOption("c", true,
+        options.addOption("batch", true,
+            "type of batch run (benders/train/test)");
+        options.addOption("budget", true, "reschedule budget fraction");
+        options.addOption("columnGen", true,
             "column gen strategy (enum/all/best/first)");
         options.addOption("cache", true,
             "use column caching (y/n)");
         options.addOption("cut", true, "benders cut type (single/multi)");
-        options.addOption("d", true,
+        options.addOption("distribution", true,
             "distribution (exp/tnorm/lnorm)");
         options.addOption("expectedExcess", true,
             "enable expected excess (y/n)");
@@ -64,13 +66,14 @@ public class Main {
             "expected excess target");
         options.addOption("excessAversion", true,
             "expected excess risk aversion");
-        options.addOption("f", true,
+        options.addOption("flightPick", true,
             "flight pick (all/hub/rush)");
-        options.addOption("generateDelays", false,
+        options.addOption("generateDelays", true,
             "generate primary delays, write to file and exit");
+        options.addOption("inputName", true, "instance name");
+        options.addOption("inputPath", true, "path to folder with instance");
         options.addOption("mean", true, "distribution mean");
-        options.addOption("model", true, "model (naive/dep/benders/all)");
-        options.addOption("name", true, "instance name");
+        options.addOption("model", true, "model (benders/dep/naive/original)");
         options.addOption("numScenarios", true, "number of scenarios");
         options.addOption("outputPath", true, "path to output folder");
         options.addOption("outputName", true, "name of output file");
@@ -78,12 +81,8 @@ public class Main {
             "number of parallel runs for second stage");
         options.addOption("parseDelays", false,
             "parse primary delays from files");
-        options.addOption("path", true, "path to folder with instance");
-        options.addOption("r", true, "reschedule budget fraction");
         options.addOption("sd", true, "standard deviation");
         options.addOption("stats", false, "generate stats about instance");
-        options.addOption("type", true,
-            "type (benders/training/test)");
         options.addOption("h", false, "help (show options and exit)");
 
         CommandLineParser parser = new DefaultParser();
@@ -108,19 +107,50 @@ public class Main {
         logger.info("completed primary delay generation.");
     }
 
-    private static void writeDelaysAndExit() throws OptException {
+    private static void writeDelaysAndExit(int numScenarios) throws OptException {
         logger.info("started primary delay generation...");
         Controller controller = new Controller();
         controller.computeStats();
         controller.setDelayGenerator();
-        Parameters.setParsePrimaryDelaysFromFiles(false);
-        controller.buildScenarios();
-        controller.writeScenariosToFile();
+        DataRegistry dataRegistry = controller.getDataRegistry();
+        dataRegistry.buildScenariosFromDistribution(numScenarios);
         logger.info("completed primary delay generation.");
+
+        logger.info("starting scenario writing...");
+        Scenario[] scenarios = dataRegistry.getDelayScenarios();
+        ArrayList<Leg> legs = dataRegistry.getLegs();
+        String prefix = Parameters.getOutputPath() + "/primary_delays_";
+        String suffix = ".csv";
+        List<String> headers = new ArrayList<>(Arrays.asList("leg_id", "delay_minutes"));
+
+        for (int i = 0; i < scenarios.length; ++i) {
+            String filePath = prefix + i + suffix;
+            try {
+                BufferedWriter writer = new BufferedWriter(new FileWriter(filePath));
+                CSVHelper.writeLine(writer, headers);
+
+                int[] primaryDelays = scenarios[i].getPrimaryDelays();
+                for (int j = 0; j < primaryDelays.length; ++j) {
+                    if (primaryDelays[j] > 0) {
+                        Leg leg = legs.get(j);
+                        List<String> line = new ArrayList<>(Arrays.asList(
+                            leg.getId().toString(),
+                            Integer.toString(primaryDelays[j])));
+
+                        CSVHelper.writeLine(writer, line);
+                    }
+                }
+                writer.close();
+            } catch (IOException ex) {
+                logger.error(ex);
+                throw new OptException("error writing primary delays to file");
+            }
+        }
+        logger.info("completed scenario writing.");
     }
 
-    private static void batchRun(String name, String runType) throws OptException {
-        BatchRunner batchRunner = new BatchRunner(name);
+    private static void batchRun(String runType) throws OptException {
+        BatchRunner batchRunner = new BatchRunner();
         switch (runType) {
             case "benders":
                 batchRunner.bendersRun();
@@ -128,7 +158,7 @@ public class Main {
             case "test":
                 batchRunner.testRun();
                 break;
-            case "training":
+            case "train":
                 batchRunner.trainingRun();
                 break;
             default:
@@ -141,9 +171,12 @@ public class Main {
         Controller controller = new Controller();
         controller.computeStats();
         controller.setDelayGenerator();
-        controller.buildScenarios();
+        if (Parameters.isParsePrimaryDelaysFromFiles())
+            controller.getDataRegistry().parsePrimaryDelaysFromFiles();
+        else
+            controller.getDataRegistry().buildScenariosFromDistribution(
+                Parameters.getNumSecondStageScenarios());
         controller.solve();
-        // controller.processSolution();
         logger.info("completed optimization.");
     }
 
@@ -188,8 +221,12 @@ public class Main {
     }
 
     private static void updateParameters(CommandLine cmd) throws OptException {
-        if (cmd.hasOption('c')) {
-            final String columnGen = cmd.getOptionValue('c');
+        Parameters.setInstancePath(cmd.getOptionValue("inputPath", "data"));
+        Parameters.setInstanceName(cmd.getOptionValue("inputName", "s6.xml"));
+        Parameters.setOutputPath(cmd.getOptionValue("outputPath", "solution"));
+        Parameters.setOutputName(cmd.getOptionValue("outputName", "result.yaml"));
+        if (cmd.hasOption("columnGen")) {
+            final String columnGen = cmd.getOptionValue("columnGen");
             switch (columnGen) {
                 case "enum":
                     Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.FULL_ENUMERATION);
@@ -216,8 +253,8 @@ public class Main {
                 Parameters.setBendersMultiCut(true);
             else throw new OptException("unknown cut type " + cutType);
         }
-        if (cmd.hasOption('d')) {
-            final String distribution = cmd.getOptionValue('d');
+        if (cmd.hasOption("distribution")) {
+            final String distribution = cmd.getOptionValue("distribution");
             switch (distribution) {
                 case "exp":
                     Parameters.setDistributionType(Enums.DistributionType.EXPONENTIAL);
@@ -233,8 +270,8 @@ public class Main {
                     break;
             }
         }
-        if (cmd.hasOption('f')) {
-            final String distribution = cmd.getOptionValue('f');
+        if (cmd.hasOption("flightPick")) {
+            final String distribution = cmd.getOptionValue("flightPick");
             switch (distribution) {
                 case "all":
                     Parameters.setFlightPickStrategy(Enums.FlightPickStrategy.ALL);
@@ -266,11 +303,10 @@ public class Main {
                 case "naive":
                     Parameters.setModel(Enums.Model.NAIVE);
                     break;
-                case "all":
-                    Parameters.setModel(Enums.Model.ALL);
-                    break;
+                case "original":
+                    Parameters.setModel(Enums.Model.ORIGINAL);
                 default:
-                    throw new OptException("unknown model type, use benders/dep/naive/all");
+                    throw new OptException("unknown model type, use benders/dep/naive");
             }
         }
         else
@@ -286,8 +322,8 @@ public class Main {
         }
         if (cmd.hasOption("parseDelays"))
             Parameters.setParsePrimaryDelaysFromFiles(true);
-        if (cmd.hasOption('r')) {
-            final double budgetFraction = Double.parseDouble(cmd.getOptionValue('r'));
+        if (cmd.hasOption("budget")) {
+            final double budgetFraction = Double.parseDouble(cmd.getOptionValue("budget"));
             Parameters.setRescheduleBudgetFraction(budgetFraction);
         }
         if (cmd.hasOption("cache")) {

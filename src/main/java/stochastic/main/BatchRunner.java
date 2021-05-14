@@ -2,13 +2,14 @@ package stochastic.main;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import stochastic.dao.RescheduleSolutionDAO;
 import stochastic.delay.Scenario;
+import stochastic.domain.Leg;
 import stochastic.output.QualityChecker;
 import stochastic.output.RescheduleSolution;
 import stochastic.output.TestKPISet;
 import stochastic.registry.DataRegistry;
 import stochastic.registry.Parameters;
-import stochastic.utility.CSVHelper;
 import stochastic.utility.Enums;
 import stochastic.utility.OptException;
 import stochastic.utility.Util;
@@ -18,20 +19,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
+import java.util.Locale;
 
 /**
  * Used to generate results for the paper.
  */
 class BatchRunner {
     private final static Logger logger = LogManager.getLogger(BatchRunner.class);
-    private final String instanceName;
-
-    BatchRunner(String instanceName) {
-        this.instanceName = instanceName;
-    }
 
     void trainingRun() throws OptException {
         try {
@@ -49,23 +44,27 @@ class BatchRunner {
             // solve models and write solutions
             Controller controller = new Controller();
             controller.setDelayGenerator();
-            controller.buildScenarios();
+            if (Parameters.isParsePrimaryDelaysFromFiles())
+                controller.getDataRegistry().parsePrimaryDelaysFromFiles();
+            else
+                controller.getDataRegistry().buildScenariosFromDistribution(
+                    Parameters.getNumSecondStageScenarios());
             controller.solve();
             controller.writeRescheduleSolutions();
 
             // collect solution KPIs
             Enums.Model model = Parameters.getModel();
-            if (model == Enums.Model.NAIVE || model == Enums.Model.ALL) {
+            if (model == Enums.Model.NAIVE) {
                 trainingResult.setNaiveModelStats(controller.getNaiveModelStats());
                 trainingResult.setNaiveRescheduleCost(controller.getNaiveModelRescheduleCost());
                 trainingResult.setNaiveSolutionTime(controller.getNaiveModelSolutionTime());
             }
-            if (model == Enums.Model.DEP || model == Enums.Model.ALL) {
+            if (model == Enums.Model.DEP) {
                 trainingResult.setDepModelStats(controller.getDepModelStats());
                 trainingResult.setDepRescheduleCost(controller.getDepRescheduleCost());
                 trainingResult.setDepSolutionTime(controller.getDepSolutionTime());
             }
-            if (model == Enums.Model.BENDERS || model == Enums.Model.ALL) {
+            if (model == Enums.Model.BENDERS) {
                 trainingResult.markBendersDone();
             }
 
@@ -89,129 +88,64 @@ class BatchRunner {
         } catch (ClassNotFoundException ex) {
             logger.error(ex);
             throw new OptException("unable to parse training row from file");
-        }
-        catch (IOException ex) {
+        } catch (IOException ex) {
             logger.error(ex);
             throw new OptException("error writing to csv during training run");
         }
     }
 
     void testRun() throws OptException {
-        try {
-            final String testPath = Parameters.getOutputPath() + "/" + Parameters.getOutputName();
-            final boolean addTestHeaders = !fileExists(testPath);
-            BufferedWriter testWriter = new BufferedWriter(new FileWriter(testPath, true));
+        // read model data and reschedule solution
+        Controller controller = new Controller();
+        DataRegistry dataRegistry = controller.getDataRegistry();
+        RescheduleSolution rescheduleSolution =
+            collectRescheduleSolution(dataRegistry.getLegs());
 
-            if (addTestHeaders) {
-                ArrayList<String> testHeaders = new ArrayList<>(Arrays.asList(
-                    "instance", "strategy", "distribution", "mean", "standard deviation",
-                    "budget fraction", "expected excess", "excess target", "excess aversion",
-                    "approach", "rescheduleCost", "twoStageObjective", "decrease (%)",
-                    "expExcessObjective", "decrease (%)"));
-
-                for (Enums.TestKPI kpi : Enums.TestKPI.values()) {
-                    testHeaders.add(kpi.name());
-                    testHeaders.add("decrease (%)");
-                }
-                CSVHelper.writeLine(testWriter, testHeaders);
-            }
-
-            // read model data
-            Controller controller = new Controller();
-
-            // read all reschedule solutions
-            ArrayList<RescheduleSolution> rescheduleSolutions =
-                controller.collectRescheduleSolutionsFromFiles();
-
-            // prepare test scenarios
-            DataRegistry dataRegistry = controller.getDataRegistry();
-            Scenario[] testScenarios;
-            if (Parameters.isParsePrimaryDelaysFromFiles()) {
-                controller.buildScenarios();
-                testScenarios = dataRegistry.getDelayScenarios();
-            }
-            else {
-                controller.setDelayGenerator();
-                testScenarios = dataRegistry.getDelayGenerator().generateScenarios(
-                    Parameters.getNumTestScenarios());
-            }
-
-            // prepare test results
-            Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.FULL_ENUMERATION);
-            QualityChecker qc = new QualityChecker(controller.getDataRegistry(), testScenarios);
-            TestKPISet[] testKPISets = qc.collectAverageTestStatsForBatchRun(rescheduleSolutions);
-            TestKPISet baseKPISet = testKPISets[0];
-
-            // write test results
-            Double baseObj = null;
-            Double baseExpExcessObj = null;
-            HashMap<String, Object> resultMap = Parameters.asMap();
-            for (int j = 0; j < testKPISets.length; ++j) {
-                TestKPISet testKPISet = testKPISets[j];
-                final double rescheduleCost = rescheduleSolutions.get(j).getRescheduleCost();
-                final double delayCost = testKPISet.getKpi(Enums.TestKPI.delayCost);
-                final double eeDelayCost = testKPISet.getKpi(Enums.TestKPI.expExcessDelayCost);
-                final double twoStageObj = rescheduleCost + delayCost;
-                final double eeObj = rescheduleCost + eeDelayCost;
-                if (baseObj == null) {
-                    baseObj = twoStageObj;
-                    baseExpExcessObj = eeObj;
-                }
-
-                ArrayList<String> row = new ArrayList<>(Arrays.asList(
-                        instanceName,
-                        Parameters.getFlightPickStrategy().toString(),
-                        Parameters.getDistributionType().toString(),
-                        Double.toString(Parameters.getDistributionMean()),
-                        Double.toString(Parameters.getDistributionSd()),
-                        Double.toString(Parameters.getRescheduleBudgetFraction()),
-                        Boolean.toString(Parameters.isExpectedExcess()),
-                        Integer.toString(Parameters.getExcessTarget()),
-                        Double.toString(Parameters.getRiskAversion())));
-
-                row.addAll(Arrays.asList(
-                    rescheduleSolutions.get(j).getName(),
-                    Double.toString(rescheduleCost),
-                    Double.toString(twoStageObj)));
-
-                double twoStageObjDecrease = 0.0;
-                if (j > 0) twoStageObjDecrease = ((baseObj - twoStageObj) / baseObj) * 100.0;
-                row.add(Double.toString(twoStageObjDecrease));
-
-                row.add(Double.toString(eeObj));
-                double eeObjDecrease = 0.0;
-                if (j > 0) eeObjDecrease = ((baseExpExcessObj - eeObj) / baseExpExcessObj) * 100.0;
-                row.add(Double.toString(eeObjDecrease));
-
-                TestKPISet percentDecreaseSet = j > 0
-                        ? TestKPISet.getPercentageDecrease(baseKPISet, testKPISet)
-                        : null;
-
-                for (Enums.TestKPI kpi : Enums.TestKPI.values()) {
-                    row.add(testKPISet.getKpi(kpi).toString());
-                    double decrease = percentDecreaseSet != null
-                            ? percentDecreaseSet.getKpi(kpi)
-                            : 0;
-                    row.add(Double.toString(decrease));
-                }
-                CSVHelper.writeLine(testWriter, row);
-            }
-
-            testWriter.close();
-        } catch (IOException ex) {
-            logger.error(ex);
-            throw new OptException("error writing to csv during test run");
+        // prepare test scenarios
+        if (Parameters.isParsePrimaryDelaysFromFiles())
+            dataRegistry.parsePrimaryDelaysFromFiles();
+        else {
+            controller.setDelayGenerator();
+            dataRegistry.buildScenariosFromDistribution(Parameters.getNumTestScenarios());
         }
+        Scenario[] testScenarios = dataRegistry.getDelayScenarios();
+
+        // prepare test results
+        Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.FULL_ENUMERATION);
+        QualityChecker qc = new QualityChecker(controller.getDataRegistry(), testScenarios);
+        TestKPISet testKPISet = qc.collectAverageTestStatsForBatchRun(rescheduleSolution);
+
+        HashMap<String, Object> resultMap = Parameters.asMap();
+        resultMap.put("approach", rescheduleSolution.getName());
+
+        final double rescheduleCost = rescheduleSolution.getRescheduleCost();
+        resultMap.put("rescheduleCost", rescheduleCost);
+
+        final double delayCost = testKPISet.getKpi(Enums.TestKPI.delayCost);
+        final double twoStageObj = rescheduleCost + delayCost;
+        resultMap.put("twoStageObj", twoStageObj);
+
+        for (Enums.TestKPI kpi : Enums.TestKPI.values())
+            resultMap.put(kpi.name(), testKPISet.getKpi(kpi).toString());
+
+        // write test results
+        Util.writeToYaml(resultMap,
+            Parameters.getOutputPath() + "/" + Parameters.getOutputName());
     }
 
     void bendersRun() throws OptException {
-        // solve models
+        // Solve model with Benders.
         Controller controller = new Controller();
+        Parameters.setModel(Enums.Model.BENDERS);
         controller.setDelayGenerator();
-        controller.buildScenarios();
+        if (Parameters.isParsePrimaryDelaysFromFiles())
+            controller.getDataRegistry().parsePrimaryDelaysFromFiles();
+        else
+            controller.getDataRegistry().buildScenariosFromDistribution(
+                Parameters.getNumSecondStageScenarios());
         controller.solve();
 
-        // collect solution KPIs
+        // Collect and write Benders KPIs
         HashMap<String, Object> resultMap = Parameters.asMap();
         resultMap.putAll(controller.getBendersResults());
         Util.writeToYaml(resultMap, Parameters.getOutputPath() + "/" +
@@ -221,5 +155,14 @@ class BatchRunner {
     static boolean fileExists(String pathString) {
         Path path = Paths.get(pathString);
         return Files.exists(path);
+    }
+
+    private static RescheduleSolution collectRescheduleSolution(
+        ArrayList<Leg> legs) throws OptException {
+        if (Parameters.getModel() == Enums.Model.ORIGINAL) {
+            return new RescheduleSolution("original", 0, null);
+        }
+        return (new RescheduleSolutionDAO(
+            Parameters.getModel().name().toLowerCase(Locale.ROOT), legs)).getRescheduleSolution();
     }
 }
