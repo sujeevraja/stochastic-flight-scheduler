@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import enum
 import logging
 import os
 import subprocess
@@ -8,17 +9,29 @@ import subprocess
 log = logging.getLogger(__name__)
 
 
+class Run(enum.Enum):
+    Benders = enum.auto()
+    CleanDelays = enum.auto()
+    GenerateDelays = enum.auto()
+    Test = enum.auto()
+    Train = enum.auto()
+
+
 class Config:
-    def __init__(self, cplex_lib_path, instance, jar_path, key, prefix, path,
-                 quality_run, time_run):
+    def __init__(self, cplex_lib_path, instance, jar_path, path, run_type,
+                 run_id, key, value):
         self.cplex_lib_path = cplex_lib_path
         self.instance = instance
         self.jar_path = jar_path
-        self.key = key
-        self.prefix = prefix
         self.path = path
-        self.quality_run = quality_run
-        self.time_run = time_run
+        self.run_type = run_type
+        self.run_id = run_id
+        self.key = key
+        self.value = value
+
+    @property
+    def prefix(self):
+        return "{}_{}".format(self.key, self.run_id)
 
 
 class ScriptException(Exception):
@@ -49,48 +62,10 @@ def clean_delay_files(prefix):
             os.remove(os.path.join(sln_path, f))
 
 
-def generate_delays(orig_cmd, prefix):
-    cmd = [c for c in orig_cmd] + [
-        "-generateDelays",
-        "-outputPath", get_sln_path(prefix)
-    ]
+def generate_delays(orig_cmd):
+    cmd = [c for c in orig_cmd] + ["-generateDelays", ]
     subprocess.check_call(cmd)
-
-
-def generate_reschedule_solution(orig_cmd, model, prefix):
-    cmd = [c for c in orig_cmd]
-    cmd.extend([
-        "-model", model,
-        "-parseDelays",
-        "-type", "training",
-        "-outputPath", get_sln_path(prefix),
-        "-outputName", "{}_training.yaml".format(prefix)
-    ])
-    subprocess.check_call(cmd)
-
-
-def generate_test_results(orig_cmd, parse_delays, prefix):
-    cmd = [c for c in orig_cmd]
-    cmd.extend([
-        "-type", "test",
-        "-outputPath", get_sln_path(prefix),
-        "-outputName", "{}_test.csv".format(prefix)
-    ])
-    if parse_delays:
-        cmd.append("-parseDelays")
-    subprocess.check_call(cmd)
-
-
-def generate_all_results(cmd, models, prefix):
-    log.info("quality run cmd: {}".format(cmd))
-    generate_delays(cmd, prefix)
-    log.info("generated delays for {}".format(cmd))
-
-    for model in models:
-        generate_reschedule_solution(cmd, model, prefix)
-        log.info("finished training run for {}".format(model))
-    generate_test_results(cmd, False, prefix)
-    log.info("generated test results for {}".format(cmd))
+    log.info("generated delays for {}".format(orig_cmd))
 
 
 def validate_setup(config):
@@ -115,12 +90,13 @@ class Controller:
         self._models = ["naive", "dep", "benders"]
         self._defaults = {
             "-numScenarios": "30",
-            "-r": "0.5",  # reschedule budget fraction
-            "-d": "lnorm",  # delay distribution
+            "-budget": "0.5",  # reschedule budget fraction
+            "-distribution": "lnorm",  # delay distribution
             "-mean": "30",  # delay distribution mean
-            "-c": "first",  # column gen strategy
-            "-f": "hub",  # flight pick strategy
+            "-columnGen": "first",  # column gen strategy
+            "-flightPick": "hub",  # flight pick strategy
             "-parallel": "30",  # number of threads for second stage
+            "-outputPath": get_sln_path(config.prefix)
         }
         self._base_cmd = [
             "java",
@@ -135,70 +111,55 @@ class Controller:
         ]
 
     def run(self):
-        os.makedirs(get_sln_path(self.config.prefix), exist_ok=True)
-        additional_args = {}
-        if self.config.quality_run is not None:
-            if self.config.key == "-mean":
-                additional_args["-d"] = "exp"
-            self._quality_run(additional_args)
-        elif self.config.time_run:
-            if self.config.key in ["-cache", "-cut"]:
-                additional_args["-parallel"] = "1"
-            self._time_run(additional_args)
-        else:
-            log.warning("no quality/time run values provided")
+        run_type = self.config.run_type
+        if run_type == Run.CleanDelays:
+            clean_delay_files(self.config.key)
+            return
 
-    def _quality_run(self, additional_args):
-        log.info("starting quality run for {}, {}".format(
-            self.config.prefix, self.config.instance))
+        cmd = self._build_cmd()
+        os.makedirs(get_sln_path(self.config.key), exist_ok=True)
+        if run_type == Run.Benders:
+            subprocess.check_call(cmd)
+            return
+
+        if run_type == Run.GenerateDelays:
+            subprocess.check_call(cmd + ["-generateDelays"])
+            return
+
+        if self.config.run_type == Run.Train:
+            subprocess.check_call(cmd + ["-generateDelays"])
+            for model in self._models:
+                subprocess.check_call(
+                    [c for c in cmd] + ["-parseDelays", "-model", model])
+                log.info("finished training run for {}".format(model))
+            clean_delay_files()
+            return
+
+        if self.config.run_type == Run.Test:
+            subprocess.check_call(cmd + ["-parseDelays"])
+            return
+
+        log.warning("unknown run type " + self.config.run_type)
+
+    def _build_cmd(self):
         args = self._defaults.copy()
-        for k, v in additional_args.items():
-            args[k] = v
         args["-name"] = self.config.instance
-        args[self.config.key] = self.config.quality_run
+        if self.config.key == "mean":
+            args["-distribution"] = "exp"
+        elif self.config.key in ["cache", "cut"]:
+            args["-parallel"] = "1"
+
+        args["-" + self.config.key] = self.config.value
+        if self.config.run_type in [Run.Benders, Run.Train, Run.Test]:
+            run = self.config.run_type.name.lower()
+            args["-batch"] = run
+            args["-outputName"] = "{}_{}.yaml".format(self.config.prefix, run)
+
         cmd = [c for c in self._base_cmd]
         for k, v in args.items():
             cmd.extend([k, v])
-        generate_all_results(cmd, self._models, self.config.prefix)
-        clean_delay_files(self.config.prefix)
-        log.info("completed quality run for {}, {}".format(
-            self.config.prefix, self.config.instance))
 
-    def _time_run(self, additional_args):
-        log.info("starting time run for {}, {}".format(
-            self.config.prefix, self.config.instance))
-        args = self._defaults.copy()
-        if self.config.key in args:
-            del args[self.config.key]
-        for k, v in additional_args.items():
-            args[k] = v
-
-        args["-name"] = self.config.instance
-        args["-type"] = "benders"
-
-        counter = 0
-        for _ in range(5):
-            cmd = [c for c in self._base_cmd]
-            for k, v in args.items():
-                cmd.extend([k, v])
-
-            generate_delays(cmd, self.config.prefix)
-            for value in self.config.time_run:
-                run_cmd = [c for c in cmd]
-                sln_name = "{}_{}.yaml".format(self.config.prefix, counter)
-                run_cmd.extend([
-                    "-parseDelays",
-                    "-model", "benders",
-                    self.config.key, value,
-                    "-outputPath", get_sln_path(self.config.prefix),
-                    "-outputName", sln_name
-                ])
-                subprocess.check_call(run_cmd)
-                counter += 1
-
-        clean_delay_files(self.config.prefix)
-        log.info("completed time run for {}, {}".format(
-            self.config.prefix, self.config.instance))
+        return cmd
 
 
 def guess_cplex_library_path():
@@ -220,31 +181,39 @@ def handle_command_line():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument("-i", "--instance", type=str,
-                        help="name of instance", default="s6")
+    parser.add_argument("-i", "--instance", type=str, required=True,
+                        help="name of instance")
 
-    parser.add_argument("-k", "--key", type=str,
-                        help="JAR arg name", required=True)
+    parser.add_argument("-k", "--key", type=str, required=True,
+                        help="JAR arg name")
 
     root = get_root()
     default_path = os.path.join(root, "data")
     parser.add_argument("-p", "--path", type=str, default=default_path,
                         help="path to folder with xml files")
 
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("-q", "--quality_run", type=str,
-                       help="value to use for quality comparison run")
-    group.add_argument("-t", "--time_run", type=str, nargs="+", default=[],
-                       help="values to use for time comparison run")
+    parser.add_argument("-r", "--run_id", type=str,
+                        help="run id (to make output folder name unique)")
 
-    parser.add_argument("-x", "--prefix", type=str, required=True,
-                        help="prefix to use for output files")
+    parser.add_argument("-t", "--run_type", required=True,
+                        help="type of run (clean/gen/benders/train/test)")
+
+    parser.add_argument("-v", "--value", type=str,
+                        help="JAR arg value", required=True)
 
     args_dict = vars(parser.parse_args())
-    args_dict["key"] = "-" + args_dict["key"]
     args_dict["cplex_lib_path"] = guess_cplex_library_path()
     args_dict["jar_path"] = os.path.join(
         root, "build", "libs", "stochastic_uber.jar")
+
+    run_type_dict = {
+        "clean": Run.CleanDelays,
+        "gen": Run.GenerateDelays,
+        "benders": Run.Benders,
+        "train": Run.Train,
+        "test": Run.Test
+    }
+    args_dict["run_type"] = run_type_dict[args_dict["run_type"]]
     return Config(**args_dict)
 
 
