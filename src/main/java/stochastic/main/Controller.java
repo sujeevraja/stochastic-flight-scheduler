@@ -10,8 +10,6 @@ import stochastic.delay.StrategicDelayGenerator;
 import stochastic.domain.Leg;
 import stochastic.domain.Tail;
 import stochastic.network.Network;
-import stochastic.output.KpiManager;
-import stochastic.output.QualityChecker;
 import stochastic.output.RescheduleSolution;
 import stochastic.registry.DataRegistry;
 import stochastic.registry.DataRegistryBuilder;
@@ -33,7 +31,6 @@ class Controller {
      */
     private final static Logger logger = LogManager.getLogger(Controller.class);
     private final DataRegistry dataRegistry;
-    private final KpiManager kpiManager;
 
     private ModelStats naiveModelStats;
     private RescheduleSolution naiveModelSolution;
@@ -41,7 +38,6 @@ class Controller {
 
     private ModelStats depModelStats;
     private RescheduleSolution depSolution;
-    private double depObjective;
     private double depSolutionTime;
 
     private RescheduleSolution bendersSolution;
@@ -51,6 +47,7 @@ class Controller {
     private double bendersGlobalUpperBound;
     private double bendersGap;
     private double bendersOptimalityGap;
+
     private int bendersNumIterations;
     private int bendersNumCuts;
 
@@ -61,7 +58,6 @@ class Controller {
         ArrayList<Leg> legs = new ScheduleDAO(instancePath).getLegs();
         dataRegistry = (new DataRegistryBuilder(legs)).dataRegistry;
         logger.info("completed reading data.");
-        kpiManager = new KpiManager(dataRegistry);
     }
 
     DataRegistry getDataRegistry() {
@@ -300,7 +296,6 @@ class Controller {
         depSolver.solve(dataRegistry);
         depModelStats = depSolver.getModelStats();
         depSolution = depSolver.getDepSolution();
-        depObjective = depSolver.getObjValue();
         depSolutionTime = depSolver.getSolutionTimeInSeconds();
     }
 
@@ -314,67 +309,6 @@ class Controller {
 
     final double getDepSolutionTime() {
         return depSolutionTime;
-    }
-
-    void processSolution() throws OptException {
-        try {
-            ArrayList<RescheduleSolution> rescheduleSolutions = getAllRescheduleSolutions();
-            for (RescheduleSolution sln : rescheduleSolutions) {
-                if (!sln.isOriginalSchedule()) {
-                    sln.writeCSV(dataRegistry.getLegs());
-                    logger.info("wrote " + sln.getName() + " reschedule solution");
-                    kpiManager.addKpi(sln.getName() + " reschedule cost", sln.getRescheduleCost());
-                }
-            }
-
-            kpiManager.addKpi("naive model solution time (seconds)", naiveModelSolutionTime);
-            kpiManager.addKpi("dep solution time (seconds)", depSolutionTime);
-            kpiManager.addKpi("dep objective", depObjective);
-            kpiManager.addKpi("benders solution time (seconds)", bendersSolutionTime);
-            kpiManager.addKpi("benders iterations", bendersNumIterations);
-            kpiManager.addKpi("benders lower bound", bendersLowerBound);
-            kpiManager.addKpi("benders upper bound", bendersUpperBound);
-            kpiManager.addKpi("benders gap (%)", bendersGap);
-            kpiManager.addKpi("benders cuts added", bendersNumCuts);
-            kpiManager.writeOutput();
-
-            if (Parameters.isCheckSolutionQuality()) {
-                Scenario[] testScenarios;
-                if (Parameters.isParsePrimaryDelaysFromFiles())
-                    testScenarios = dataRegistry.getDelayScenarios();
-                else
-                    testScenarios = dataRegistry.getDelayGenerator().generateScenarios(
-                        Parameters.getNumTestScenarios());
-
-                // The labeling algorithm only solves the root node LP. Getting the true MIP
-                // solution with labeling needs a proper branch and bound setup. So, we force the
-                // use of full enumeration here.
-                Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.FULL_ENUMERATION);
-
-                QualityChecker qc = new QualityChecker(dataRegistry, testScenarios);
-                qc.compareSolutions(rescheduleSolutions);
-            }
-        } catch (IOException ex) {
-            logger.error(ex);
-            throw new OptException("error writing solution");
-        }
-    }
-
-    private ArrayList<RescheduleSolution> getAllRescheduleSolutions() {
-        ArrayList<RescheduleSolution> rescheduleSolutions = new ArrayList<>();
-        RescheduleSolution original = new RescheduleSolution("original", 0, null);
-        original.setOriginalSchedule(true);
-        rescheduleSolutions.add(original);
-        if (naiveModelSolution != null)
-            rescheduleSolutions.add(naiveModelSolution);
-
-        if (depSolution != null)
-            rescheduleSolutions.add(depSolution);
-
-        if (bendersSolution != null)
-            rescheduleSolutions.add(bendersSolution);
-
-        return rescheduleSolutions;
     }
 
     void writeRescheduleSolutions() throws OptException {
@@ -402,6 +336,7 @@ class Controller {
         results.put("bendersGlobalUpperBound", bendersGlobalUpperBound);
         results.put("bendersGap", bendersGap);
         results.put("bendersOptimalityGap", bendersOptimalityGap);
+        results.put("bendersIterations", bendersNumIterations);
         results.put("bendersNumCuts", bendersNumCuts);
         return results;
     }

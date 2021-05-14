@@ -301,7 +301,6 @@ public class Parameters {
         results.put("distributionSd", distributionSd);
         results.put("flightPickStrategy", flightPickStrategy.name());
         results.put("bendersMultiCut", bendersMultiCut);
-        results.put("bendersIterations", numBendersIterations);
         results.put("columnGenStrategy", columnGenStrategy.name());
         results.put("useColumnCaching", useColumnCaching);
         results.put("numThreads", numThreadsForSecondStage);
