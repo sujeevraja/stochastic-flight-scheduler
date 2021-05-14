@@ -10,11 +10,11 @@ log = logging.getLogger(__name__)
 
 
 class Run(enum.Enum):
-    Benders = enum.auto()
-    CleanDelays = enum.auto()
-    GenerateDelays = enum.auto()
-    Test = enum.auto()
-    Train = enum.auto()
+    Benders = 1
+    CleanDelays = 2
+    GenerateDelays = 3
+    Test = 4
+    Train = 5
 
 
 class Config:
