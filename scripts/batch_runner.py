@@ -100,8 +100,7 @@ class Controller:
             "-Djava.library.path={}".format(self.config.cplex_lib_path),
             "-jar",
             self.config.jar_path,
-            "-path", self.config.path,
-            "-batch",
+            "-inputPath", self.config.path,
             "-sd", "15",
         ]
 
@@ -112,7 +111,7 @@ class Controller:
             return
 
         cmd = self._build_cmd()
-        os.makedirs(get_sln_path(self.config.key), exist_ok=True)
+        os.makedirs(get_sln_path(self.config.prefix), exist_ok=True)
         if run_type == Run.Benders:
             subprocess.check_call(cmd)
             return
@@ -140,7 +139,7 @@ class Controller:
 
     def _build_cmd(self):
         args = self._defaults.copy()
-        args["-name"] = self.config.instance
+        args["-inputName"] = self.config.instance
         if self.config.key == "mean":
             args["-distribution"] = "exp"
         elif self.config.key in ["cache", "cut"]:
