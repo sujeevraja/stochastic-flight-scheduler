@@ -44,7 +44,11 @@ class BatchRunner {
             // solve models and write solutions
             Controller controller = new Controller();
             controller.setDelayGenerator();
-            controller.buildScenarios();
+            if (Parameters.isParsePrimaryDelaysFromFiles())
+                controller.getDataRegistry().parsePrimaryDelaysFromFiles();
+            else
+                controller.getDataRegistry().buildScenariosFromDistribution(
+                    Parameters.getNumSecondStageScenarios());
             controller.solve();
             controller.writeRescheduleSolutions();
 
@@ -98,15 +102,13 @@ class BatchRunner {
             collectRescheduleSolution(dataRegistry.getLegs());
 
         // prepare test scenarios
-        Scenario[] testScenarios;
-        if (Parameters.isParsePrimaryDelaysFromFiles()) {
-            controller.buildScenarios();
-            testScenarios = dataRegistry.getDelayScenarios();
-        } else {
+        if (Parameters.isParsePrimaryDelaysFromFiles())
+            dataRegistry.parsePrimaryDelaysFromFiles();
+        else {
             controller.setDelayGenerator();
-            testScenarios = dataRegistry.getDelayGenerator().generateScenarios(
-                Parameters.getNumTestScenarios());
+            dataRegistry.buildScenariosFromDistribution(Parameters.getNumTestScenarios());
         }
+        Scenario[] testScenarios = dataRegistry.getDelayScenarios();
 
         // prepare test results
         Parameters.setColumnGenStrategy(Enums.ColumnGenStrategy.FULL_ENUMERATION);
@@ -136,7 +138,11 @@ class BatchRunner {
         Controller controller = new Controller();
         Parameters.setModel(Enums.Model.BENDERS);
         controller.setDelayGenerator();
-        controller.buildScenarios();
+        if (Parameters.isParsePrimaryDelaysFromFiles())
+            controller.getDataRegistry().parsePrimaryDelaysFromFiles();
+        else
+            controller.getDataRegistry().buildScenariosFromDistribution(
+                Parameters.getNumSecondStageScenarios());
         controller.solve();
 
         // Collect and write Benders KPIs
