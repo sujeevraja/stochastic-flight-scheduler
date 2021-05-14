@@ -12,9 +12,8 @@ log = logging.getLogger(__name__)
 class Run(enum.Enum):
     Benders = 1
     CleanDelays = 2
-    GenerateDelays = 3
-    Test = 4
-    Train = 5
+    Test = 3
+    Train = 4
 
 
 class Config:
@@ -116,19 +115,20 @@ class Controller:
             subprocess.check_call(cmd)
             return
 
-        if run_type == Run.GenerateDelays:
-            subprocess.check_call(
-                cmd + ["-generateDelays", self.config.num_delays])
-            return
-
         if self.config.run_type == Run.Train:
+            # generate training delays
             subprocess.check_call(
                 cmd + ["-generateDelays", self.config.num_delays])
+
+            # run Benders, naive and DEP models
             for model in self._models:
                 subprocess.check_call(
                     [c for c in cmd] + ["-parseDelays", "-model", model])
                 log.info("finished training run for {}".format(model))
+
+            # create test delays
             clean_delay_files()
+            subprocess.check_call(cmd + ["-generateDelays", "100"])
             return
 
         if self.config.run_type == Run.Test:
@@ -195,7 +195,7 @@ def handle_command_line():
                         help="run id (to make output folder name unique)")
 
     parser.add_argument("-t", "--run_type", required=True,
-                        help="type of run (clean/gen/benders/train/test)")
+                        help="type of run (clean/benders/train/test)")
 
     parser.add_argument("-v", "--value", type=str,
                         help="JAR arg value", required=True)
@@ -207,7 +207,6 @@ def handle_command_line():
 
     run_type_dict = {
         "clean": Run.CleanDelays,
-        "gen": Run.GenerateDelays,
         "benders": Run.Benders,
         "train": Run.Train,
         "test": Run.Test
