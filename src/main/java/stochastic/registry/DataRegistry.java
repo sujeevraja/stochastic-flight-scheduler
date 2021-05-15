@@ -94,9 +94,8 @@ public class DataRegistry {
         return rescheduleTimeBudget;
     }
 
-    public void parsePrimaryDelaysFromFiles() throws OptException {
+    public void parsePrimaryDelaysFromFiles(int numScenarios) throws OptException {
         logger.info("staring primary delay parsing...");
-        final int numScenarios = Parameters.getNumSecondStageScenarios();
         final double probability = 1.0 / numScenarios;
         Scenario[] scenarios = new Scenario[numScenarios];
         final String prefix = Parameters.getOutputPath() + "/primary_delays_";
