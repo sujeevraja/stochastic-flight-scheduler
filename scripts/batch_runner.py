@@ -112,8 +112,11 @@ class Controller:
 
         if self.config.run_type == Run.Train:
             # generate training delays
-            subprocess.check_call(
-                cmd + ["-generateDelays", self.config.num_delays])
+            if self.config.key == "numScenarios":
+                num_delays = self.config.value
+            else:
+                num_delays = self.config.num_delays
+            subprocess.check_call(cmd + ["-generateDelays", num_delays])
 
             # run Benders, naive and DEP models
             for model in self._models:
