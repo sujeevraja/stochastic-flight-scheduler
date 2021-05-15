@@ -57,8 +57,7 @@ def clean_delay_files(prefix):
     base = os.path.abspath(os.path.dirname(__file__))
     sln_path = os.path.join(base, get_sln_path(prefix))
     for f in os.listdir(sln_path):
-        if (f.endswith(".csv") and (f.startswith("primary_delay") or
-                                    f.startswith("reschedule_"))):
+        if f.endswith(".csv") and f.startswith("primary_delay"):
             os.remove(os.path.join(sln_path, f))
 
 
@@ -123,7 +122,7 @@ class Controller:
                 log.info("finished training run for {}".format(model))
 
             # create test delays
-            clean_delay_files()
+            clean_delay_files(self.config.prefix)
             subprocess.check_call(cmd + ["-generateDelays", "100"])
             return
 
@@ -146,7 +145,10 @@ class Controller:
         if self.config.run_type in [Run.Benders, Run.Train, Run.Test]:
             run = self.config.run_type.name.lower()
             args["-batch"] = run
-            args["-outputName"] = "{}_{}.yaml".format(self.config.prefix, run)
+            output_name = "{}_{}".format(self.config.prefix, run)
+            if self.config.run_type == Run.Test:
+                output_name += "_" + self.config.model
+            args["-outputName"] = output_name + ".yaml"
 
         cmd = [c for c in self._base_cmd]
         for k, v in args.items():
@@ -189,7 +191,7 @@ def handle_command_line():
                         choices=["original", "dep", "naive", "benders"],
                         help="type of model to test")
 
-    parser.add_argument("-n", "--num_delays", type=str,
+    parser.add_argument("-n", "--num_delays", type=str, default="30",
                         help="number of primary delay scenario to generate")
 
     parser.add_argument("-r", "--run_id", type=str,
