@@ -171,11 +171,11 @@ public class Main {
         Controller controller = new Controller();
         controller.computeStats();
         controller.setDelayGenerator();
+        final int numScenarios = Parameters.getNumSecondStageScenarios();
         if (Parameters.isParsePrimaryDelaysFromFiles())
-            controller.getDataRegistry().parsePrimaryDelaysFromFiles();
+            controller.getDataRegistry().parsePrimaryDelaysFromFiles(numScenarios);
         else
-            controller.getDataRegistry().buildScenariosFromDistribution(
-                Parameters.getNumSecondStageScenarios());
+            controller.getDataRegistry().buildScenariosFromDistribution(numScenarios);
         controller.solve();
         logger.info("completed optimization.");
     }
@@ -305,8 +305,10 @@ public class Main {
                     break;
                 case "original":
                     Parameters.setModel(Enums.Model.ORIGINAL);
+                    break;
                 default:
-                    throw new OptException("unknown model type, use benders/dep/naive");
+                    logger.error("unknown model type " + model);
+                    throw new OptException("use benders/dep/naive/original");
             }
         }
         else

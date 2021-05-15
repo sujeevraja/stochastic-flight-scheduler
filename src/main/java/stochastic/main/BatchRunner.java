@@ -44,11 +44,11 @@ class BatchRunner {
             // solve models and write solutions
             Controller controller = new Controller();
             controller.setDelayGenerator();
+            final int numScenarios = Parameters.getNumSecondStageScenarios();
             if (Parameters.isParsePrimaryDelaysFromFiles())
-                controller.getDataRegistry().parsePrimaryDelaysFromFiles();
+                controller.getDataRegistry().parsePrimaryDelaysFromFiles(numScenarios);
             else
-                controller.getDataRegistry().buildScenariosFromDistribution(
-                    Parameters.getNumSecondStageScenarios());
+                controller.getDataRegistry().buildScenariosFromDistribution(numScenarios);
             controller.solve();
             controller.writeRescheduleSolutions();
 
@@ -102,11 +102,12 @@ class BatchRunner {
             collectRescheduleSolution(dataRegistry.getLegs());
 
         // prepare test scenarios
+        final int numScenarios = Parameters.getNumTestScenarios();
         if (Parameters.isParsePrimaryDelaysFromFiles())
-            dataRegistry.parsePrimaryDelaysFromFiles();
+            dataRegistry.parsePrimaryDelaysFromFiles(numScenarios);
         else {
             controller.setDelayGenerator();
-            dataRegistry.buildScenariosFromDistribution(Parameters.getNumTestScenarios());
+            dataRegistry.buildScenariosFromDistribution(numScenarios);
         }
         Scenario[] testScenarios = dataRegistry.getDelayScenarios();
 
@@ -138,11 +139,11 @@ class BatchRunner {
         Controller controller = new Controller();
         Parameters.setModel(Enums.Model.BENDERS);
         controller.setDelayGenerator();
+        final int numScenarios = Parameters.getNumSecondStageScenarios();
         if (Parameters.isParsePrimaryDelaysFromFiles())
-            controller.getDataRegistry().parsePrimaryDelaysFromFiles();
+            controller.getDataRegistry().parsePrimaryDelaysFromFiles(numScenarios);
         else
-            controller.getDataRegistry().buildScenariosFromDistribution(
-                Parameters.getNumSecondStageScenarios());
+            controller.getDataRegistry().buildScenariosFromDistribution(numScenarios);
         controller.solve();
 
         // Collect and write Benders KPIs

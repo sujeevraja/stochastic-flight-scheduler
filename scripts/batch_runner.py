@@ -11,17 +11,17 @@ log = logging.getLogger(__name__)
 
 class Run(enum.Enum):
     Benders = 1
-    CleanDelays = 2
-    Test = 3
-    Train = 4
+    Test = 2
+    Train = 3
 
 
 class Config:
-    def __init__(self, cplex_lib_path, instance, jar_path, num_delays, path,
-                 run_type, run_id, key, value):
+    def __init__(self, cplex_lib_path, instance, jar_path, model, num_delays,
+                 path, run_type, run_id, key, value):
         self.cplex_lib_path = cplex_lib_path
         self.instance = instance
         self.jar_path = jar_path
+        self.model = model
         self.num_delays = num_delays
         self.path = path
         self.run_type = run_type
@@ -57,8 +57,7 @@ def clean_delay_files(prefix):
     base = os.path.abspath(os.path.dirname(__file__))
     sln_path = os.path.join(base, get_sln_path(prefix))
     for f in os.listdir(sln_path):
-        if (f.endswith(".csv") and (f.startswith("primary_delay") or
-                                    f.startswith("reschedule_"))):
+        if f.endswith(".csv") and f.startswith("primary_delay"):
             os.remove(os.path.join(sln_path, f))
 
 
@@ -105,10 +104,6 @@ class Controller:
 
     def run(self):
         run_type = self.config.run_type
-        if run_type == Run.CleanDelays:
-            clean_delay_files(self.config.key)
-            return
-
         cmd = self._build_cmd()
         os.makedirs(get_sln_path(self.config.prefix), exist_ok=True)
         if run_type == Run.Benders:
@@ -127,12 +122,13 @@ class Controller:
                 log.info("finished training run for {}".format(model))
 
             # create test delays
-            clean_delay_files()
+            clean_delay_files(self.config.prefix)
             subprocess.check_call(cmd + ["-generateDelays", "100"])
             return
 
         if self.config.run_type == Run.Test:
-            subprocess.check_call(cmd + ["-parseDelays"])
+            subprocess.check_call(
+                cmd + ["-parseDelays", "-model", self.config.model])
             return
 
         log.warning("unknown run type " + self.config.run_type)
@@ -149,7 +145,10 @@ class Controller:
         if self.config.run_type in [Run.Benders, Run.Train, Run.Test]:
             run = self.config.run_type.name.lower()
             args["-batch"] = run
-            args["-outputName"] = "{}_{}.yaml".format(self.config.prefix, run)
+            output_name = "{}_{}".format(self.config.prefix, run)
+            if self.config.run_type == Run.Test:
+                output_name += "_" + self.config.model
+            args["-outputName"] = output_name + ".yaml"
 
         cmd = [c for c in self._base_cmd]
         for k, v in args.items():
@@ -188,14 +187,19 @@ def handle_command_line():
     parser.add_argument("-p", "--path", type=str, default=default_path,
                         help="path to folder with xml files")
 
-    parser.add_argument("-n", "--num_delays", type=str,
+    parser.add_argument("-m", "--model", type=str,
+                        choices=["original", "dep", "naive", "benders"],
+                        help="type of model to test")
+
+    parser.add_argument("-n", "--num_delays", type=str, default="30",
                         help="number of primary delay scenario to generate")
 
     parser.add_argument("-r", "--run_id", type=str,
                         help="run id (to make output folder name unique)")
 
-    parser.add_argument("-t", "--run_type", required=True,
-                        help="type of run (clean/benders/train/test)")
+    parser.add_argument("-t", "--run_type", type=str, required=True,
+                        choices=["benders", "train", "test"],
+                        help="type of batch run")
 
     parser.add_argument("-v", "--value", type=str,
                         help="JAR arg value", required=True)
@@ -206,7 +210,6 @@ def handle_command_line():
         root, "build", "libs", "stochastic_uber.jar")
 
     run_type_dict = {
-        "clean": Run.CleanDelays,
         "benders": Run.Benders,
         "train": Run.Train,
         "test": Run.Test
