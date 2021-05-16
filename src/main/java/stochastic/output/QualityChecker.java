@@ -5,6 +5,7 @@ import ilog.cplex.IloCplex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import stochastic.delay.Scenario;
+import stochastic.domain.Leg;
 import stochastic.registry.DataRegistry;
 import stochastic.registry.Parameters;
 import stochastic.solver.PathCache;
@@ -78,9 +79,11 @@ public class QualityChecker {
     }
 
     private DelaySolution getDelaySolution(Scenario scen, int scenarioNum, String slnName,
-                                           int[] reschedules) {
-        if (reschedules == null)
-            reschedules = zeroReschedules;
+                                           int[] proposedReschedules) {
+        if (proposedReschedules != null) {
+            for (Leg leg :dataRegistry.getLegs())
+                leg.reschedule(proposedReschedules[leg.getIndex()]);
+        }
 
         // solve routing MIP and collect solution
         int[] delays = scen.getPrimaryDelays();
@@ -89,7 +92,7 @@ public class QualityChecker {
                 dataRegistry.getTailOrigPathMap(), delays));
 
         SubSolverRunnable ssr = new SubSolverRunnable(dataRegistry, 0, scenarioNum,
-            scen.getProbability(), reschedules, delays, pathCache);
+            scen.getProbability(), zeroReschedules, delays, pathCache);
         ssr.setCplex(cplex);
         ssr.setFilePrefix(slnName);
         ssr.setSolveForQuality(true);
@@ -100,6 +103,11 @@ public class QualityChecker {
 
         DelaySolution delaySolution = ssr.getDelaySolution();
         delaySolution.setSolutionTimeInSeconds(slnTime);
+
+        if (proposedReschedules != null) {
+            for (Leg leg : dataRegistry.getLegs())
+                leg.revertReschedule();
+        }
 
         return delaySolution;
     }
