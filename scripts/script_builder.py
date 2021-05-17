@@ -113,20 +113,33 @@ def write_quality_run_scripts():
             scriptfile.write(line + "\n")
 
 
-def write_flight_pick_scripts():
-    # Runs to get s6 results for quality table.
-    lines, _ = get_quality_run_lines(
-        ["s6.xml"], *("flightPick", ["hub", "rush"]))
+def write_smaller_mean_scripts():
+    arg_tups = [
+        ("budget", ["0.25", "0.5", "0.75", "1", "2"]),
+        ("flightPick", ["hub", "rush"]),
+    ]
 
-    with open("flight_pick_runs.sh", "w") as scriptfile:
-        for line in lines:
+    # Runs to get s6 results for all tables.
+    all_train_lines, all_test_lines = [], []
+    instances = ["s6.xml"]
+    for args in arg_tups:
+        train_lines, test_lines = get_quality_run_lines(instances, *args)
+        all_train_lines.extend(train_lines)
+        all_test_lines.extend(test_lines)
+
+    with open("0_train_runs.sh", "w") as scriptfile:
+        for line in all_train_lines:
+            scriptfile.write(line + "\n")
+
+    with open("1_test_runs.sh", "w") as scriptfile:
+        for line in all_test_lines:
             scriptfile.write(line + "\n")
 
 
 def main():
     # write_time_run_script()
     # write_quality_run_scripts()
-    write_flight_pick_scripts()
+    write_smaller_mean_scripts()
 
 
 if __name__ == '__main__':

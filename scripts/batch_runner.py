@@ -85,7 +85,7 @@ class Controller:
             "-numScenarios": "30",
             "-budget": "0.5",  # reschedule budget fraction
             "-distribution": "lnorm",  # delay distribution
-            "-mean": "30",  # delay distribution mean
+            "-mean": "15",  # delay distribution mean
             "-columnGen": "first",  # column gen strategy
             "-flightPick": "hub",  # flight pick strategy
             "-parallel": "30",  # number of threads for second stage
@@ -143,8 +143,6 @@ class Controller:
             args["-distribution"] = "exp"
         elif self.config.key in ["cache", "cut"]:
             args["-parallel"] = "1"
-        elif self.config.key == "flightPick":
-            args["-mean"] = "15"
 
         args["-" + self.config.key] = self.config.value
         if self.config.run_type in [Run.Benders, Run.Train, Run.Test]:
