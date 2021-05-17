@@ -143,6 +143,8 @@ class Controller:
             args["-distribution"] = "exp"
         elif self.config.key in ["cache", "cut"]:
             args["-parallel"] = "1"
+        elif self.config.key == "distribution":
+            args["-mean"] = "30"
 
         args["-" + self.config.key] = self.config.value
         if self.config.run_type in [Run.Benders, Run.Train, Run.Test]:

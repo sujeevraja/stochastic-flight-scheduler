@@ -116,6 +116,7 @@ def write_quality_run_scripts():
 def write_smaller_mean_scripts():
     arg_tups = [
         ("budget", ["0.25", "0.5", "0.75", "1", "2"]),
+        ("distribution", ["exp", "lnorm", "tnorm"]),
         ("flightPick", ["hub", "rush"]),
     ]
 
