@@ -116,7 +116,7 @@ def write_quality_run_scripts():
 def write_flight_pick_scripts():
     # Runs to get s6 results for quality table.
     lines, _ = get_quality_run_lines(
-        ["small1.xml"], *("flightPick", ["hub", "rush"]))
+        ["s6.xml"], *("flightPick", ["hub", "rush"]))
 
     with open("flight_pick_runs.sh", "w") as scriptfile:
         for line in lines:
