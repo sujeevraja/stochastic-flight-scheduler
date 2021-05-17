@@ -131,8 +131,8 @@ class Controller {
             bendersOptimalityGap = ((bendersGlobalUpperBound - bendersLowerBound) /
                 bendersGlobalUpperBound) * 100.0;
 
-            logger.debug("Benders global upper bound: " + bendersGlobalUpperBound);
-            logger.debug("Benders global optimality gap: " +
+            logger.info("Benders global upper bound: " + bendersGlobalUpperBound);
+            logger.info("Benders global optimality gap: " +
                 String.format("%.2f", bendersOptimalityGap) + " %");
         } catch (IloException ex) {
             logger.error(ex);
