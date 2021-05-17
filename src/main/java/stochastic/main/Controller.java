@@ -5,7 +5,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import stochastic.dao.ScheduleDAO;
 import stochastic.delay.DelayGenerator;
-import stochastic.delay.Scenario;
 import stochastic.delay.StrategicDelayGenerator;
 import stochastic.domain.Leg;
 import stochastic.domain.Tail;
@@ -18,7 +17,6 @@ import stochastic.solver.BendersSolver;
 import stochastic.solver.DepSolver;
 import stochastic.solver.NaiveSolver;
 import stochastic.solver.UpperBoundSolver;
-import stochastic.utility.CSVHelper;
 import stochastic.utility.Enums;
 import stochastic.utility.OptException;
 
