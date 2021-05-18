@@ -11,11 +11,6 @@ import yaml
 log = logging.getLogger(__name__)
 
 
-class Config:
-    def __init__(self, clean):
-        self.clean = clean
-
-
 class ScriptException(Exception):
     """Custom exception class with message for this module."""
 
@@ -329,23 +324,25 @@ def collect_run_4_results():
         "solutions_3", "run_4_quality_results.csv")
 
 
-def clean_generated_files():
+def clean_generated_files(clean_type):
     root = get_root_path()
-    for dir in ["completed", "output", "solutions", "output_1", "solutions_1",
-                "output_2", "output_2_train", "solutions_2", "output_3_train",
-                "solutions_3", ]:
-        dir_path = os.path.join(root, dir)
-        if os.path.isdir(dir_path):
-            log.info("removing " + dir)
-            shutil.rmtree(dir_path)
+    if clean_type in ["folder", "both"]:
+        for dir in ["completed", "output", "solutions", "output_1",
+                    "solutions_1", "output_2", "output_2_train", "solutions_2",
+                    "output_3_train", "solutions_3", ]:
+            dir_path = os.path.join(root, dir)
+            if os.path.isdir(dir_path):
+                log.info("removing " + dir)
+                shutil.rmtree(dir_path)
 
-    for file in ["run_1_scenario_results.csv", "run_2_time_results.csv",
-                 "run_3_quality_results.csv", "run_3_benders_results.csv",
-                 "run_4_benders_results.csv", "run_4_quality_results.csv"]:
-        file_path = os.path.join(root, file)
-        if os.path.isfile(file_path):
-            log.info("removing " + file)
-            os.remove(file_path)
+    if clean_type in ["file", "both"]:
+        for file in ["run_1_scenario_results.csv", "run_2_time_results.csv",
+                     "run_3_quality_results.csv", "run_3_benders_results.csv",
+                     "run_4_benders_results.csv", "run_4_quality_results.csv"]:
+            file_path = os.path.join(root, file)
+            if os.path.isfile(file_path):
+                log.info("removing " + file)
+                os.remove(file_path)
 
     log.info("cleaned all generated files")
 
@@ -354,25 +351,26 @@ def handle_command_line():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument("-c", "--clean", action="store_true",
-                        help="remove all generated files")
+    parser.add_argument("-c", "--clean", type=str, default="both",
+                        choices=["both", "file", "folder"],
+                        help="clean generated files")
 
     args = parser.parse_args()
-    return Config(**vars(args))
+    return args.clean
 
 
 def main():
     logging.basicConfig(format='%(asctime)s %(levelname)s--: %(message)s',
                         level=logging.DEBUG)
-    config = handle_command_line()
-    if config.clean:
-        clean_generated_files()
-        return
 
-    # collect_run_1_results()
-    # collect_run_2_results()
-    # collect_run_3_results()
-    collect_run_4_results()
+    clean_type = handle_command_line()
+    if clean_type is not None:
+        clean_generated_files(clean_type)
+    else:
+        collect_run_1_results()
+        collect_run_2_results()
+        collect_run_3_results()
+        collect_run_4_results()
 
 
 if __name__ == '__main__':

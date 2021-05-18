@@ -4,7 +4,10 @@ logs/
 !logs/.gitkeep
 out/
 pucks.xml
+scripts/**/*.csv
+scripts/**/*.out
 scripts/*.sh
+scripts/**/*.yaml
 solution/
 !solution.gitkeep
 
