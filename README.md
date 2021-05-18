@@ -18,11 +18,11 @@ The following sources were used for Tables reported in the paper.
 
 - Table 1 (data)
     Created manually.
-- Table 2 (quality):
+- Table 2 (quality)
     - Default distribution is LogNormal(15,15).
     - For s1,s2,s3,s4,s5: from "v2/results_training.csv" in
     "scripts/original_results/q.7z" filtered by LOG_NORMAL distribution and
-    {HUB,RUSH} strategy. 
+    {HUB,RUSH} strategy.
     - For s6: from "run_4_benders_results.csv" obtained by running
         `collect_results.py`.
 - Table 3 (column gen)
@@ -117,30 +117,28 @@ Open a terminal and make the `./gradlew` file executable if necessary. Run
 task can also be run directly. Two other useful tasks are `./gradlew clean`,
 which cleans the gradle build files and `./gradlew cleanLogs` which cleans
 logs and solution files. If Gradle is installed, `./gradlew` can be replaced
-with `gradle` in all the above commands.
+with `gradle` in all the above commands. Run `./gradlew --args="-h"` to see
+available command-line arguments.
 
 ## Batch runs
 
-The following types of batch runs are supported:
+The optimizer supports the following types of batch runs:
 
-- budget: get results with varying budget.
-- mean: get results with varying distribution and distribution mean.
-- quality: get results with varying distributions, flight pick strategies.
-- time: get results with varying reschedule time budget.
+- Generate delay run: launched with `./gradlew run --args="-generateDelays 50"`
+- Benders run: launched with `./gradlew run --args="-batch benders`. The optimizer
+    will run just the Benders algorithm for the scenario specified by the `inputName` arg.
+- Training run: launched with `./gradlew run --args="-batch train`. The optimizer will
+    will run the naive model, DEP and Benders and report some stats about each of them.
+- Test run: lanched with`./gradlew run --args="-batch test`. The model will take as input some
+    reschedule solutions (usually the output of a "train" run), apply them to a given schedule,
+    and will use a different set of test scenarios to generate stats like total propagated delay,
+    2-stage objective for 4 types of rescheduling approaches: original (i.e. do nothing), naive,
+    Benders and DEP.
 
-A separate python script named _batch_runner.py_ has been provided to do these
-runs. It has four command line arguments _(-b, -m, -q, -t)_ to run each of the
-above runs. It can also run do all the runs using the _-a_ argument. Use the
-following steps to setup and start a batch run.
-
-- Disable Java logging in _src/main/resources/log4j2.xml_.
-- Get to the repo folder in a terminal.
-- Run `gradle clean cleanLogs` to remove the project JAR and logs.
-- Run `gradle uberJar`. This prepares a fat JAR at _builds/libs_.
-- Start a batch run with Python. For example, `python3 batch_runner.py -a`.
-
-The batch run script can also be made executable with `chmod +x batch_runner.py`
-and run directly like `./batch_runner.py -q`.
+To collect results similar to Tables in the [paper]((https://arxiv.org/abs/2001.08548)), go to the
+"scripts" folder and run `python3 script_builder.py`. Look at any line of the shell scripts to see
+how `batch_runner.py` runs the optimizer. This gives an idea of how to generate different types of
+batch run results.
 
 ## Running with Intellij
 
