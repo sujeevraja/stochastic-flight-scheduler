@@ -369,9 +369,9 @@ def main():
         clean_generated_files()
         return
 
-    # collect_run_1_results()
-    # collect_run_2_results()
-    # collect_run_3_results()
+    collect_run_1_results()
+    collect_run_2_results()
+    collect_run_3_results()
     collect_run_4_results()
 
 
