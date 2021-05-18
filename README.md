@@ -7,6 +7,11 @@ where the first stage reschedules flights to adjust slacks in connection time. T
 minimizes excess delay after offsetting primary delays using the first stage rescheduling. The code
 requires CPLEX to run.
 
+## Results
+
+Results collected for the paper are available in the "scripts" folder. Refer to the readme file in
+that folder for further details.
+
 ## License
 
 License for code in this repo is the MIT license (see LICENSE file in the repo). However,

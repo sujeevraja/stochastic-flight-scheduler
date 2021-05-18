@@ -18,6 +18,13 @@ For time runs, we need separate scripts to repeat each value run 5 times.
 We can keep it simple by generating delay scenarios again every time.
 """
 
+import argparse
+import os
+
+
+def get_root_path():
+    return os.path.abspath(os.path.dirname(__file__))
+
 
 def get_time_run_lines(instances, key, values):
     base_cmd = [
@@ -126,7 +133,11 @@ def write_smaller_mean_scripts():
     for args in arg_tups:
         train_lines, test_lines = get_quality_run_lines(instances, *args)
         all_train_lines.extend(train_lines)
-        all_test_lines.extend(test_lines)
+
+        # We only want Benders results for flight-pick runs to add to the
+        # quality table. So we can skip the test runs.
+        if args[0] != "flightPick":
+            all_test_lines.extend(test_lines)
 
     with open("0_train_runs.sh", "w") as scriptfile:
         for line in all_train_lines:
@@ -137,7 +148,32 @@ def write_smaller_mean_scripts():
             scriptfile.write(line + "\n")
 
 
+def clean_generated_files():
+    for file in ["0_train_runs.sh", "1_test_runs.sh"]:
+        file_path = os.path.join(get_root_path(), file)
+        if os.path.isfile(file_path):
+            print("removing " + file)
+            os.remove(file_path)
+
+
+def handle_command_line():
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument("-c", "--clean", action="store_true",
+                        help="remove all generated files")
+
+    args = parser.parse_args()
+    return args.clean
+
+
 def main():
+    clean = handle_command_line()
+    if clean:
+        for f in ["0_train_runs.sh", "1_test_runs.sh"]:
+            os.remove(os.path.join(get_root_path(), f))
+        return
+
     # write_time_run_script()
     # write_quality_run_scripts()
     write_smaller_mean_scripts()

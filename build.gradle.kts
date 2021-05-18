@@ -62,18 +62,18 @@ tasks {
 
         dependsOn(configurations.runtimeClasspath)
         from(configurations.runtimeClasspath.get()
-                .onEach { println("add from dependencies: ${it.name}") }
-                .map { if (it.isDirectory) it else zipTree(it) })
+            .onEach { println("add from dependencies: ${it.name}") }
+            .map { if (it.isDirectory) it else zipTree(it) })
     }
 
     register<Delete>("cleanLogs") {
         group = "Build"
         description = "Clean generated output files."
         delete(fileTree("logs") {
-           include("*.csv", "*.lp", "*.log", "*.txt", "*.xml")
+            include("*.csv", "*.lp", "*.log", "*.txt", "*.xml")
         })
         delete(fileTree("solution") {
-            include("*.csv", "*.txt", "*.yaml")
+            include("*.csv", "*.partial", "*.txt", "*.yaml")
         })
     }
 
@@ -90,10 +90,11 @@ application {
     // Define the main class for the application
     mainClass.set("stochastic.main.Main")
 
-    val cplexLibPath : String by project
+    val cplexLibPath: String by project
     applicationDefaultJvmArgs = listOf(
         "-Xms32m",
         "-Xmx4g",
-        "-Djava.library.path=$cplexLibPath")
+        "-Djava.library.path=$cplexLibPath"
+    )
 }
 
