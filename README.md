@@ -12,6 +12,63 @@ requires CPLEX to run.
 Results collected for the paper are available in the "scripts" folder. Refer to the readme file in
 that folder for further details.
 
+## Table Sources
+
+The following sources were used for Tables reported in the paper.
+
+- Table 1 (data)
+    Created manually.
+- Table 2 (quality):
+    - Default distribution is LogNormal(15,15).
+    - For s1,s2,s3,s4,s5: from "v2/results_training.csv" in
+    "scripts/original_results/q.7z" filtered by LOG_NORMAL distribution and
+    {HUB,RUSH} strategy. 
+    - For s6: from "run_4_benders_results.csv" obtained by running
+        `collect_results.py`.
+- Table 3 (column gen)
+    - For s1,s2,s3,s4,s5: from "v2/results_benders.csv" in
+    "scripts/original_results/t.7z".
+    - For s6: from "run_2_time_results.csv" obtained by running
+        `collect_results.py`. Filter run type by "columnGen".
+- Table 4 (thread)
+    - For s1,s2,s3,s4,s5: from "v2/results_benders.csv" in
+        "scripts/original_results/p.7z".
+    - For s6: from "run_2_time_results.csv" obtained by running
+        `collect_results.py`. Filter run type by "parallel".
+- Table 5 (single/multi cut)
+    - For s1,s2,s3,s4,s5: from "v2/results_benders.csv" in
+        "scripts/original_results/s.7z".
+    - For s6: from "run_2_time_results.csv" obtained by running
+        `collect_results.py`. Filter run type by "cut".
+- Table 6 (column caching)
+    - For s1,s2,s3,s4,s5: from "v2/results_benders.csv" in
+        "scripts/original_results/c.7z".
+    - For s6: from "run_2_time_results.csv" obtained by running
+        `collect_results.py`. Filter run type by "cache".
+- Table 7 (budget)
+    - Default distribution is LogNormal(15,15).
+    - For s1,s2,s3,s4,s5: from "v2/results_test.csv" in
+        "scripts/original_results/b.7z".
+    - For s6: from "run_4_quality_results.csv" obtained by running
+        `collect_results.py`. Filter run type by "budget".
+- Table 8 (distribution)
+    - Default distribution mean is 30.
+    - For s1,s2,s3,s4,s5: from "v2/results_test.csv" in
+        "scripts/original_results/m.7z", filter mean by 30.
+    - For s6: from "run_4_quality_results.csv" obtained by running
+        `collect_results.py`. Filter run type by "distribution".
+- Table 9 (mean)
+    - Default distribution is exponential.
+    - For s1,s2,s3,s4,s5: from "v2/results_test.csv" in
+        "scripts/original_results/m.7z", filter distribution by "exponential".
+    - For s6: from "run_3_quality_results.ccsv" obtained by running
+        `collect_results.py`. Filter run type by "mean".
+- Table 10 (num scenarios)
+    - Default distribution is LogNormal(30,15).
+    - For s1,s2,s3,s4: from "run_1_scenario_results.csv".
+    - For s5,s6: from "run_3_quality_results.csv", filter run type by
+        "numScenarios".
+
 ## License
 
 License for code in this repo is the MIT license (see LICENSE file in the repo). However,
